@@ -6,6 +6,7 @@
 
 package net.finmath.montecarlo.assetderivativevaluation;
 
+import java.text.DecimalFormat;
 import java.util.Arrays;
 import java.util.Collection;
 
@@ -49,13 +50,18 @@ public class MonteCarloBlackScholesModelTest {
 		});
 	}
 
+	static final DecimalFormat formatterReal2	= new DecimalFormat(" 0.00");
+	static final DecimalFormat formatterReal4	= new DecimalFormat(" 0.0000");
+	static final DecimalFormat formatterSci4	= new DecimalFormat(" 0.0000E00;-0.0000E00");
+	static final DecimalFormat formatterSci1	= new DecimalFormat(" 0E00;-0.E00");
+
 	// Model properties
 	private final double	initialValue   = 1.0;
 	private final double	riskFreeRate   = 0.05;
 	private final double	volatility     = 0.30;
 
 	// Process discretization properties
-	private final int		numberOfPaths		= 20000;
+	private final int		numberOfPaths		= 10000;
 	private final int		numberOfTimeSteps	= 10;
 	private final double	deltaT				= 1.0;
 	
@@ -110,38 +116,9 @@ public class MonteCarloBlackScholesModelTest {
 	}
 
 	@Test
-	public void testDirectValuation() throws CalculationException {
-		// Create a model
-		AbstractModel model = new BlackScholesModel(initialValue, riskFreeRate, volatility);
-
-		// Create a corresponding MC process
-		AbstractProcess process = new ProcessEulerScheme(brownian);
-
-		// Link model and process for delegation
-		process.setModel(model);
-		model.setProcess(process);
-
-		/*
-		 * Value a call option - directly
-		 */
-		TimeDiscretizationInterface timeDiscretization = brownian.getTimeDiscretization();
-		
-		RandomVariableInterface asset = process.getProcessValue(timeDiscretization.getTimeIndex(optionMaturity), assetIndex);
-		RandomVariableInterface numeraireAtPayment = model.getNumeraire(optionMaturity);
-		RandomVariableInterface numeraireAtEval = model.getNumeraire(0.0);
-		
-		RandomVariableInterface payoff = asset.sub(optionStrike).floor(0.0);
-		double value = payoff.div(numeraireAtPayment).mult(numeraireAtEval).getAverage();
-
-		double valueAnalytic = AnalyticFormulas.blackScholesOptionValue(initialValue, riskFreeRate, volatility, optionMaturity, optionStrike);
-		System.out.println("value using Monte-Carlo.......: " + value);
-		System.out.println("value using analytic formula..: " + valueAnalytic);
-		
-		Assert.assertEquals(valueAnalytic, value, 0.005);
-	}
-
-	@Test
 	public void testProductImplementation() throws CalculationException {
+		long millisStart = System.currentTimeMillis();
+
 		// Create a model
 		AbstractModel model = new BlackScholesModel(initialValue, riskFreeRate, volatility);
 
@@ -158,9 +135,14 @@ public class MonteCarloBlackScholesModelTest {
 		double value = europeanOption.getValue(monteCarloBlackScholesModel);
 		double valueAnalytic = AnalyticFormulas.blackScholesOptionValue(initialValue, riskFreeRate, volatility, optionMaturity, optionStrike);
 
-		System.out.println("value using Monte-Carlo.......: " + value);
-		System.out.println("value using analytic formula..: " + valueAnalytic);
-		
+		System.out.print("   value Monte-Carlo = " + formatterReal4.format(value));
+		System.out.print("\t value analytic    = " + formatterReal4.format(valueAnalytic));
+
+		long millisEnd = System.currentTimeMillis();
+
+		System.out.println("\t calculation time = " + formatterReal2.format((millisEnd - millisStart)/1000.0) + " sec.");
+		System.out.println("");
+
 		Assert.assertEquals(valueAnalytic, value, 0.005);
 	}
 }

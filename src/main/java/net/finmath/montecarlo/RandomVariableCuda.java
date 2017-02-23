@@ -64,8 +64,11 @@ public class RandomVariableCuda implements RandomVariableInterface {
 	// Data model for the non-stochastic case (if realizations==null)
 	private final double      valueIfNonStochastic;
 
+	// @TODO: Support slices with different sizes! Handler need to check for size
 	private final static ReferenceQueue<RandomVariableCuda> referenceQueue = new ReferenceQueue<RandomVariableCuda>();
 	private final static Map<WeakReference<RandomVariableCuda>, CUdeviceptr> referenceMap = new ConcurrentHashMap<WeakReference<RandomVariableCuda>, CUdeviceptr>();
+	private final static int referenceMapSizeLowerTolerance = 20;
+	private final static int referenceMapSizeUpperTolerance = 50;
 
 	private final static Logger logger = Logger.getLogger("net.finmath");
 
@@ -232,7 +235,7 @@ public class RandomVariableCuda implements RandomVariableInterface {
 			}
 
 			// No pointer found, try GC
-			if(referenceMap.size() > 50) {
+			if(referenceMap.size() > referenceMapSizeLowerTolerance) {
 				System.gc();
 				try {
 					reference = referenceQueue.remove(1);
@@ -246,7 +249,7 @@ public class RandomVariableCuda implements RandomVariableInterface {
 				}
 
 				// Clean up all remaining pointers
-				while(referenceMap.size() > 30 && (reference = referenceQueue.poll()) != null) {
+				while(referenceMap.size() > referenceMapSizeUpperTolerance && (reference = referenceQueue.poll()) != null) {
 					CUdeviceptr cuPtr = referenceMap.remove(reference);
 					logger.fine("Freeing device pointer " + cuDevicePtr + " from " + reference);
 					JCudaDriver.cuMemFree(cuPtr);
@@ -706,9 +709,6 @@ public class RandomVariableCuda implements RandomVariableInterface {
 		}
 	}
 
-	/* (non-Javadoc)
-	 * @see net.finmath.stochastic.RandomVariableInterface#floor(double)
-	 */
 	@Override
 	public RandomVariableInterface floor(double floor) {
 		if(isDeterministic()) {
@@ -930,9 +930,6 @@ public class RandomVariableCuda implements RandomVariableInterface {
 		}
 	}
 
-	/* (non-Javadoc)
-	 * @see net.finmath.stochastic.RandomVariableInterface#sub(net.finmath.stochastic.RandomVariableInterface)
-	 */
 	public RandomVariableInterface sub(RandomVariableInterface randomVariable) {
 		// Set time of this random variable to maximum of time with respect to which measurability is known.
 		double newTime = Math.max(time, randomVariable.getFiltrationTime());
@@ -942,9 +939,7 @@ public class RandomVariableCuda implements RandomVariableInterface {
 			return new RandomVariableCuda(newTime, newValueIfNonStochastic);
 		}
 		else if(isDeterministic()) {
-			double[] newRealizations = new double[Math.max(size(), randomVariable.size())];
-			for(int i=0; i<newRealizations.length; i++) newRealizations[i]		 = valueIfNonStochastic - randomVariable.get(i);
-			return new RandomVariableCuda(newTime, newRealizations);
+			return randomVariable.mult(-1.0).add(valueIfNonStochastic);
 		}
 		else {
 			CUdeviceptr result = callCudaFunction(sub, new Pointer[] {
@@ -958,9 +953,6 @@ public class RandomVariableCuda implements RandomVariableInterface {
 		}
 	}
 
-	/* (non-Javadoc)
-	 * @see net.finmath.stochastic.RandomVariableInterface#mult(net.finmath.stochastic.RandomVariableInterface)
-	 */
 	public RandomVariableInterface mult(RandomVariableInterface randomVariable) {
 		// Set time of this random variable to maximum of time with respect to which measurability is known.
 		double newTime = Math.max(time, randomVariable.getFiltrationTime());
@@ -970,7 +962,7 @@ public class RandomVariableCuda implements RandomVariableInterface {
 			return new RandomVariableCuda(newTime, newValueIfNonStochastic);
 		}
 		else if(!isDeterministic() && randomVariable.isDeterministic()) {
-			return this.mult((float)randomVariable.get(0));
+			return this.mult(randomVariable.get(0));
 		}
 		else if(isDeterministic() && !randomVariable.isDeterministic()) {
 			return randomVariable.mult(this.valueIfNonStochastic);
@@ -1003,7 +995,6 @@ public class RandomVariableCuda implements RandomVariableInterface {
 			return randomVariable.div(valueIfNonStochastic).invert();
 		}
 		else if(randomVariable.isDeterministic()) {
-			// @TODO Write a kernel to be faster
 			return this.div(randomVariable.get(0));
 		}
 		else {
@@ -1058,7 +1049,7 @@ public class RandomVariableCuda implements RandomVariableInterface {
 			double newValueIfNonStochastic = Math.min(valueIfNonStochastic, randomVariable.get(0));
 			return new RandomVariableCuda(newTime, newValueIfNonStochastic);
 		}
-		else if(isDeterministic()) return randomVariable.cap(this);
+		else if(isDeterministic()) return randomVariable.cap(valueIfNonStochastic);
 		else {
 			CUdeviceptr result = callCudaFunction(cap, new Pointer[] {
 					Pointer.to(new int[] { size() }),
@@ -1079,7 +1070,7 @@ public class RandomVariableCuda implements RandomVariableInterface {
 			double newValueIfNonStochastic = Math.max(valueIfNonStochastic, randomVariable.get(0));
 			return new RandomVariableCuda(newTime, newValueIfNonStochastic);
 		}
-		else if(isDeterministic()) return randomVariable.floor(this);
+		else if(isDeterministic()) return randomVariable.floor(valueIfNonStochastic);
 		else {
 			CUdeviceptr result = callCudaFunction(cuFloor, new Pointer[] {
 					Pointer.to(new int[] { size() }),
