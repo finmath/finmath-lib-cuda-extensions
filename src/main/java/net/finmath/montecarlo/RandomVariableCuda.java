@@ -971,10 +971,11 @@ public class RandomVariableCuda implements RandomVariableInterface {
 			double newValueIfNonStochastic = valueIfNonStochastic * randomVariable.get(0);
 			return new RandomVariableCuda(newTime, newValueIfNonStochastic);
 		}
+		else if(!isDeterministic()) {
+			return this.mult((float)randomVariable.get(0));
+		}
 		else if(isDeterministic()) {
-			float[] newRealizations = new float[Math.max(size(), randomVariable.size())];
-			for(int i=0; i<newRealizations.length; i++) newRealizations[i]		 = (float) (valueIfNonStochastic * randomVariable.get(i));
-			return new RandomVariableCuda(newTime, newRealizations);
+			return randomVariable.mult(this.valueIfNonStochastic);
 		}
 		else {
 			CUdeviceptr result = callCudaFunction(mult, new Pointer[] {
@@ -1173,8 +1174,8 @@ public class RandomVariableCuda implements RandomVariableInterface {
 	 */
 	@Override
 	public RandomVariableInterface addProduct(RandomVariableInterface factor1, double factor2) {
-		// TODO Auto-generated method stub
-		return null;
+		// TODO Implement a kernel here
+		return this.add(factor1.mult(factor2));
 	}
 
 	/* (non-Javadoc)
@@ -1182,8 +1183,8 @@ public class RandomVariableCuda implements RandomVariableInterface {
 	 */
 	@Override
 	public RandomVariableInterface addProduct(RandomVariableInterface factor1, RandomVariableInterface factor2) {
-		// TODO Auto-generated method stub
-		return null;
+		// TODO Implement a kernel here
+		return this.add(factor1.mult(factor2));
 	}
 
 	/* (non-Javadoc)
@@ -1191,8 +1192,8 @@ public class RandomVariableCuda implements RandomVariableInterface {
 	 */
 	@Override
 	public RandomVariableInterface addRatio(RandomVariableInterface numerator, RandomVariableInterface denominator) {
-		// TODO Auto-generated method stub
-		return null;
+		// TODO Implement a kernel here
+		return this.add(numerator.div(denominator));
 	}
 
 	/* (non-Javadoc)
@@ -1200,8 +1201,8 @@ public class RandomVariableCuda implements RandomVariableInterface {
 	 */
 	@Override
 	public RandomVariableInterface subRatio(RandomVariableInterface numerator, RandomVariableInterface denominator) {
-		// TODO Auto-generated method stub
-		return null;
+		// TODO Implement a kernel here
+		return this.sub(numerator.div(denominator));
 	}
 
 	/* (non-Javadoc)

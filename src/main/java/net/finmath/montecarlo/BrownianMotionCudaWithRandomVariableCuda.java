@@ -190,7 +190,7 @@ public class BrownianMotionCudaWithRandomVariableCuda implements BrownianMotionI
 
 	@Override
 	public RandomVariableInterface getRandomVariableForConstant(double value) {
-		return randomVariableFactory.createRandomVariable(value);
+		return new RandomVariableCuda(value);
 	}
 
 	/**
