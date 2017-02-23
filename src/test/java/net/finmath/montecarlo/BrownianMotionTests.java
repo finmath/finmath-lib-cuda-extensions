@@ -17,12 +17,6 @@ import org.junit.runner.RunWith;
 import org.junit.runners.Parameterized;
 import org.junit.runners.Parameterized.Parameters;
 
-import net.finmath.functions.JarqueBeraTest;
-import net.finmath.montecarlo.BrownianMotionJavaRandom;
-import net.finmath.montecarlo.BrownianMotionCudaWithHostRandomVariable;
-import net.finmath.montecarlo.BrownianMotionCudaWithRandomVariableCuda;
-import net.finmath.montecarlo.BrownianMotionInterface;
-import net.finmath.montecarlo.RandomVariableFactory;
 import net.finmath.stochastic.RandomVariableInterface;
 import net.finmath.time.TimeDiscretization;
 import net.finmath.time.TimeDiscretizationInterface;
