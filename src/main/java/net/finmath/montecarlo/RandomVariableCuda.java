@@ -342,11 +342,8 @@ public class RandomVariableCuda implements RandomVariableInterface {
 
 	@Override
 	public double get(int pathOrState) {
-		throw new UnsupportedOperationException();
-		/*
 		if(isDeterministic())   return valueIfNonStochastic;
-		else               		return realizations[pathOrState];
-		 */
+		else               		throw new UnsupportedOperationException();
 	}
 
 	@Override
@@ -776,7 +773,7 @@ public class RandomVariableCuda implements RandomVariableInterface {
 			CUdeviceptr result = callCudaFunction(multScalar, new Pointer[] {
 					Pointer.to(new int[] { size() }),
 					Pointer.to(realizations),
-					Pointer.to(new float[] { (float)value }),
+					Pointer.to(new float[] { ((float)value) }),
 					new Pointer()}
 					);
 
@@ -919,7 +916,8 @@ public class RandomVariableCuda implements RandomVariableInterface {
 			double newValueIfNonStochastic = valueIfNonStochastic + randomVariable.get(0);
 			return new RandomVariableCuda(newTime, newValueIfNonStochastic);
 		}
-		else if(isDeterministic()) return randomVariable.add(this);
+		else if(isDeterministic())					return randomVariable.add(valueIfNonStochastic);
+		else if(randomVariable.isDeterministic())	return this.add(randomVariable.get(0));
 		else {
 			CUdeviceptr result = callCudaFunction(add, new Pointer[] {
 					Pointer.to(new int[] { size() }),
@@ -971,10 +969,10 @@ public class RandomVariableCuda implements RandomVariableInterface {
 			double newValueIfNonStochastic = valueIfNonStochastic * randomVariable.get(0);
 			return new RandomVariableCuda(newTime, newValueIfNonStochastic);
 		}
-		else if(!isDeterministic()) {
+		else if(!isDeterministic() && randomVariable.isDeterministic()) {
 			return this.mult((float)randomVariable.get(0));
 		}
-		else if(isDeterministic()) {
+		else if(isDeterministic() && !randomVariable.isDeterministic()) {
 			return randomVariable.mult(this.valueIfNonStochastic);
 		}
 		else {
@@ -1001,9 +999,12 @@ public class RandomVariableCuda implements RandomVariableInterface {
 			return new RandomVariableCuda(newTime, newValueIfNonStochastic);
 		}
 		else if(isDeterministic()) {
-			double[] newRealizations = new double[Math.max(size(), randomVariable.size())];
-			for(int i=0; i<newRealizations.length; i++) newRealizations[i]		 = valueIfNonStochastic / randomVariable.get(i);
-			return new RandomVariableCuda(newTime, newRealizations);
+			// @TODO Write a kernel to be faster
+			return randomVariable.div(valueIfNonStochastic).invert();
+		}
+		else if(randomVariable.isDeterministic()) {
+			// @TODO Write a kernel to be faster
+			return this.div(randomVariable.get(0));
 		}
 		else {
 			CUdeviceptr result = callCudaFunction(cuDiv, new Pointer[] {
@@ -1215,24 +1216,27 @@ public class RandomVariableCuda implements RandomVariableInterface {
 	}
 
 	private CUdeviceptr callCudaFunction(CUfunction function, Pointer[] arguments) {
-		// Allocate device output memory
-		CUdeviceptr result = getCUdeviceptr((long)size());
-		arguments[arguments.length-1] = Pointer.to(result);
+		CUdeviceptr result = null;
+		synchronized (referenceMap) {
+			// Allocate device output memory
+			result = getCUdeviceptr((long)size());
+			arguments[arguments.length-1] = Pointer.to(result);
 
-		// Set up the kernel parameters: A pointer to an array
-		// of pointers which point to the actual values.
-		Pointer kernelParameters = Pointer.to(arguments);
+			// Set up the kernel parameters: A pointer to an array
+			// of pointers which point to the actual values.
+			Pointer kernelParameters = Pointer.to(arguments);
 
-		// Call the kernel function.
-		int blockSizeX = 256;
-		int gridSizeX = (int)Math.ceil((double)size() / blockSizeX);
-		cuLaunchKernel(function,
-				gridSizeX,  1, 1,      // Grid dimension
-				blockSizeX, 1, 1,      // Block dimension
-				0, null,               // Shared memory size and stream
-				kernelParameters, null // Kernel- and extra parameters
-				);
-		cuCtxSynchronize();
+			// Call the kernel function.
+			int blockSizeX = 256;
+			int gridSizeX = (int)Math.ceil((double)size() / blockSizeX);
+			cuLaunchKernel(function,
+					gridSizeX,  1, 1,      // Grid dimension
+					blockSizeX, 1, 1,      // Block dimension
+					0, null,               // Shared memory size and stream
+					kernelParameters, null // Kernel- and extra parameters
+					);
+			cuCtxSynchronize();
+		}
 		return result;
 	}
 }

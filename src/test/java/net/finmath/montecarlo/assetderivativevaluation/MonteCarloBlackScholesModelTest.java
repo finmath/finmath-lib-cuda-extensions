@@ -57,7 +57,7 @@ public class MonteCarloBlackScholesModelTest {
 	// Process discretization properties
 	private final int		numberOfPaths		= 20000;
 	private final int		numberOfTimeSteps	= 10;
-	private final double	deltaT				= 0.5;
+	private final double	deltaT				= 1.0;
 	
 	private final int		seed				= 31415;
 
@@ -76,6 +76,7 @@ public class MonteCarloBlackScholesModelTest {
 
 	@Before
 	public void setUp() {
+		System.setProperty("net.finmath.montecarlo.process.ProcessEulerScheme.isUseMultiThreadding","false");
 		// Create a time discretizeion
 		TimeDiscretizationInterface timeDiscretization = new TimeDiscretization(0.0 /* initial */, numberOfTimeSteps, deltaT);
 

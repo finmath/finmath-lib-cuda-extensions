@@ -196,28 +196,28 @@ __global__ void cuDiv(int n, float *a, float *b, float *result)
     int i = blockIdx.x * blockDim.x + threadIdx.x;
     if (i<n)
     {
-        result[i] = a[i] * b[i];
+        result[i] = a[i] / b[i];
     }
 
 }
 
 extern "C"
-__global__ void accrue(int n, float *a, float *b, float *p, float *result)
+__global__ void accrue(int n, float *a, float *b, float p, float *result)
 {
     int i = blockIdx.x * blockDim.x + threadIdx.x;
     if (i<n)
     {
-        result[i] = a[i] * (1.0 + b[i] * p[0]);
+        result[i] = a[i] * (1.0f + b[i] * p);
     }
 }
 
 extern "C"
-__global__ void discount(int n, float *a, float *b, float *p, float *result)
+__global__ void discount(int n, float *a, float *b, float p, float *result)
 {
     int i = blockIdx.x * blockDim.x + threadIdx.x;
     if (i<n)
     {
-        result[i] = a[i] / (1.0 + b[i] * p[0]);
+        result[i] = a[i] / (1.0f + b[i] * p);
     }
 }
 

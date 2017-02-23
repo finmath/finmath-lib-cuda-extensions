@@ -47,6 +47,8 @@ public class RandomVariableTests {
 		// Perform some calculations
 		randomVariable2 = randomVariable2.add(4.0);
 		randomVariable2 = randomVariable2.div(2.0);
+		randomVariable2 = randomVariable2.mult(2.0);
+		randomVariable2 = randomVariable2.div(2.0);
 		
 		// The random variable has average value 2.0
 		Assert.assertTrue(randomVariable2.getAverage() == 2.0);

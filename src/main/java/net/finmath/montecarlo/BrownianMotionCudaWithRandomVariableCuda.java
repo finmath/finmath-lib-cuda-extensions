@@ -161,7 +161,7 @@ public class BrownianMotionCudaWithRandomVariableCuda implements BrownianMotionI
 			float sqrtOfTimeStep = (float)Math.sqrt(timeDiscretization.getTimeStep(timeIndex));
 
 			for(int factor=0; factor<numberOfFactors; factor++) {
-				// Generate n floats on device 
+				// Generate n floats on device			
 				CUdeviceptr realizations = RandomVariableCuda.getCUdeviceptr((long)numberOfPaths);
 				jcuda.jcurand.JCurand.curandGenerateNormal(generator, realizations, numberOfPaths, 0.0f /* mean */, sqrtOfTimeStep /* stddev */);
 
