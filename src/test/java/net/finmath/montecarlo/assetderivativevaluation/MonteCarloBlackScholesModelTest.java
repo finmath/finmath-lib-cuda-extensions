@@ -29,6 +29,7 @@ import net.finmath.montecarlo.assetderivativevaluation.products.EuropeanOption;
 import net.finmath.montecarlo.model.AbstractModel;
 import net.finmath.montecarlo.process.AbstractProcess;
 import net.finmath.montecarlo.process.ProcessEulerScheme;
+import net.finmath.stochastic.RandomVariableInterface;
 import net.finmath.time.TimeDiscretization;
 import net.finmath.time.TimeDiscretizationInterface;
 
@@ -124,14 +125,22 @@ public class MonteCarloBlackScholesModelTest {
 		// Create a corresponding MC process
 		AbstractProcess process = new ProcessEulerScheme(brownian);
 
-		// Using the process (Euler scheme), create an MC simulation of a Black-Scholes model
-		AssetModelMonteCarloSimulationInterface monteCarloBlackScholesModel = new MonteCarloAssetModel(model, process);
+		// Link model and process for delegation
+		process.setModel(model);
+		model.setProcess(process);
 
 		/*
-		 * Value a call option (using the product implementation)
+		 * Value a call option - directly
 		 */
-		EuropeanOption europeanOption = new EuropeanOption(optionMaturity, optionStrike);
-		double value = europeanOption.getValue(monteCarloBlackScholesModel);
+		TimeDiscretizationInterface timeDiscretization = brownian.getTimeDiscretization();
+		
+		RandomVariableInterface asset = process.getProcessValue(timeDiscretization.getTimeIndex(optionMaturity), assetIndex);
+		RandomVariableInterface numeraireAtPayment = model.getNumeraire(optionMaturity);
+		RandomVariableInterface numeraireAtEval = model.getNumeraire(0.0);
+		
+		RandomVariableInterface payoff = asset.sub(optionStrike).floor(0.0);
+		double value = payoff.div(numeraireAtPayment).mult(numeraireAtEval).getAverage();
+
 		double valueAnalytic = AnalyticFormulas.blackScholesOptionValue(initialValue, riskFreeRate, volatility, optionMaturity, optionStrike);
 
 		System.out.print("   value Monte-Carlo = " + formatterReal4.format(value));
