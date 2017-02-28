@@ -1,9 +1,10 @@
-package jcuda.examples;
+package net.finmath.jcuda;
 
 import java.io.ByteArrayOutputStream;
 import java.io.File;
 import java.io.IOException;
 import java.io.InputStream;
+import java.net.URL;
 
 /**
  * Adapted from JCuda examples: Reads a CUDA file, compiles it to a PTX file
@@ -22,8 +23,9 @@ public class JCudaUtils
      * @return The name of the PTX file
      * @throws IOException If an I/O error occurs
      */
-    public static String preparePtxFile(String cuFileName) throws IOException
+    public static String preparePtxFile(URL cuFileURL) throws IOException
     {
+    	String cuFileName = cuFileURL.getFile();
         int endIndex = cuFileName.lastIndexOf('.');
         if (endIndex == -1)
         {

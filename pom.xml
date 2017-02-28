@@ -32,12 +32,18 @@
 				</configuration>
 			</plugin>
 		</plugins>
+		<resources>
+			<resource>
+				<directory>src/main/cuda</directory>
+				<filtering>false</filtering>
+			</resource>
+		</resources>
 	</build>
 	<dependencies>
 		<dependency>
 			<groupId>net.finmath</groupId>
 			<artifactId>finmath-lib</artifactId>
-			<version>2.4.1</version>
+			<version>2.4.3-SNAPSHOT</version>
 			<classifier>java6</classifier>
 		</dependency>
 		<dependency>
