@@ -67,6 +67,21 @@ public class RandomVariableTests {
 	}
 
 	@Test
+	public void testRandomVariableAverage() throws InterruptedException {
+		int size = 100000;
+		float[] values = new float[size];
+		for(int i=0;i<size; i++) {
+			values[i] = (float)i;
+		}
+		
+		RandomVariableInterface randomVariable = new RandomVariableCuda(0.0,values);
+		
+		double average = randomVariable.getAverage();
+		
+		Assert.assertEquals((double)size*((double)size-1.0)/2.0/(double)size, average, 1E-2);
+	}
+
+	@Test
 	public void testRandomVariableArithmeticSqrtPow() {
 
 		// Create a stochastic random variable
