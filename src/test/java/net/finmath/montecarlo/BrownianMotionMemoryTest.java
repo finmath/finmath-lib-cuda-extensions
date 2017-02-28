@@ -25,81 +25,41 @@ import net.finmath.time.TimeDiscretizationInterface;
  * @author Christian Fries
  * 
  */
-@RunWith(Parameterized.class)
-public class BrownianMotionTests {
-
-	@Parameters
-	public static Collection<Object[]> data() {
-		return Arrays.asList(new Object[][] {
-				{ "BrownianMotion" },							// Text case 1: Java implementation
-				{ "BrownianMotionJavaRandom" },					// Text case 2: Java implementation
-				{ "BrownianMotionCudaWithHostRandomVariable" },	// Text case 3: Java implementation
-				{ "BrownianMotionCudaWithRandomVariableCuda" }	// Text case 4: Java implementation			
-		});
-	}
+public class BrownianMotionMemoryTest {
 
 	static final DecimalFormat formatterReal2	= new DecimalFormat(" 0.00");
+	static final DecimalFormat formatterPercent	= new DecimalFormat(" 00.0%");
 	static final DecimalFormat formatterSci4	= new DecimalFormat(" 0.0000E00;-0.0000E00");
 	static final DecimalFormat formatterSci1	= new DecimalFormat(" 0E00;-0.E00");
 
-	private String testCase;
-
-	public BrownianMotionTests(String testCase) {
-		this.testCase = testCase;
-	}
-
-	@Before
-	public void setUp() {
-	}
-
 	@Test
-	public void testBrownianMotion() {
+	public void testBrownianMotionMemory() {
 		// The parameters
 		int		seed		= 53252;
 		double	lastTime	= 1;
 		double	dt			= 0.1;
-		int		numberOfPaths = 1000000;
-
-		System.out.print("Test of performance of " + String.format("%-40s", testCase) + "\t");
 
 		// Create the time discretization
 		TimeDiscretizationInterface timeDiscretization = new TimeDiscretization(0.0, (int)(lastTime/dt), dt);
 
 		long millisStart = System.currentTimeMillis();
 
-		for(int i=0; i<100; i++) {
-			if(i%10 == 0) System.out.print(".");
+		System.out.println("The test generates BrownianMotionCudaWithRandomVariableCuda with different paths.");
+		System.out.println("You may observe that the RandomVariableCuda performs clean ups, if memory becomes below a certain level.\n");
+		for(int i=0; i<=100; i++) {
+			int numberOfPaths = 100000+10000*i;
+			long[] free = new long[1];
+			long[] total = new long[1];
+			jcuda.runtime.JCuda.cudaMemGetInfo(free, total);
+			System.out.println("Number of paths = " + numberOfPaths + "\tDevice free memory: " + formatterPercent.format((double)free[0]/(total[0])) + ".");
 
 			// Test the quality of the Brownian motion
-			BrownianMotionInterface brownian;
-
-			switch(testCase) {
-			case "BrownianMotion":
-			default:
-				brownian = new BrownianMotion(timeDiscretization, 1, numberOfPaths, seed,
-						new RandomVariableFactory(true));
-				break;
-			case "BrownianMotionJavaRandom":
-				brownian = new BrownianMotionJavaRandom(timeDiscretization, 1, numberOfPaths, seed,
-						new RandomVariableFactory(true));
-				break;
-			case "BrownianMotionCudaWithHostRandomVariable":
-				brownian = new BrownianMotionCudaWithHostRandomVariable(
+			BrownianMotionInterface brownian = new BrownianMotionCudaWithRandomVariableCuda(
 						timeDiscretization,
 						1,
 						numberOfPaths,
 						seed
 						);
-				break;
-			case "BrownianMotionCudaWithRandomVariableCuda":
-				brownian = new BrownianMotionCudaWithRandomVariableCuda(
-						timeDiscretization,
-						1,
-						numberOfPaths,
-						seed
-						);
-				break;
-			}
 
 			RandomVariableInterface brownianRealization = brownian.getBrownianIncrement(0, 0);
 			double mean		= brownianRealization.getAverage();
@@ -111,6 +71,6 @@ public class BrownianMotionTests {
 
 		long millisEnd = System.currentTimeMillis();
 
-		System.out.println("test took " + (millisEnd-millisStart)/1000.0 + " sec.");
+		System.out.println("Test took " + (millisEnd-millisStart)/1000.0 + " sec.");
 	}
 }

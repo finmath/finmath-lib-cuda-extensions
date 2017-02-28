@@ -16,7 +16,7 @@ import net.finmath.stochastic.RandomVariableInterface;
  * @author Christian Fries
  * @see net.finmath.montecarlo.RandomVariable
  */
-public class RandomVariableTests {
+public class RandomVariableTest {
 
 	@Test
 	public void testRandomVariableDeterministc() {
