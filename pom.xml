@@ -61,7 +61,7 @@
 		<dependency>
 			<groupId>net.finmath</groupId>
 			<artifactId>finmath-lib</artifactId>
-			<version>2.4.3-SNAPSHOT</version>
+			<version>2.4.2</version>
 			<classifier>java6</classifier>
 		</dependency>
 		<dependency>

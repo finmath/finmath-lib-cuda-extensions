@@ -58,7 +58,7 @@ public class RandomVariableTest {
 		Assert.assertTrue(randomVariable.getVariance() == 2.0);
 		
 		// Multiply two random variables, this will expand the receiver to a stochastic one
-		RandomVariableInterface randomVariable2 = new RandomVariable(3.0);
+		RandomVariableInterface randomVariable2 = new RandomVariableCuda(3.0);
 		randomVariable2 = randomVariable2.mult(randomVariable);
 		
 		// The random variable has average value 6.0
