@@ -18,6 +18,7 @@ import java.io.IOException;
 import java.lang.ref.Reference;
 import java.lang.ref.ReferenceQueue;
 import java.lang.ref.WeakReference;
+import java.net.URL;
 import java.util.Map;
 import java.util.concurrent.Callable;
 import java.util.concurrent.ConcurrentHashMap;
@@ -118,7 +119,8 @@ public class RandomVariableCuda implements RandomVariableInterface {
 			// Create the PTX file by calling the NVCC
 			String ptxFileName = null;
 			try {
-				ptxFileName = jcuda.examples.JCudaUtils.preparePtxFile("RandomVariableCudaKernel.cu");
+				URL cuFileURL = RandomVariableCuda.class.getClassLoader().getResource("net/finmath/montecarlo/RandomVariableCudaKernel.cu");
+				ptxFileName = net.finmath.jcuda.JCudaUtils.preparePtxFile(cuFileURL);
 			} catch (IOException e) {
 				// TODO Auto-generated catch block
 				e.printStackTrace();
@@ -226,6 +228,16 @@ public class RandomVariableCuda implements RandomVariableInterface {
 		this(time, getFloatArray(realisations));
 	}
 
+	/**
+	 * Create a stochastic random variable.
+	 *
+	 * @param realisations the vector of realizations.
+	 */
+	public RandomVariableCuda(float[] realisations) {
+		this(0.0, realisations);
+	}
+
+	
 	public static CUdeviceptr getCUdeviceptr(final long size) {
 		CUdeviceptr cuDevicePtr = null;
 		synchronized (vectorsInUseReferenceMap) {

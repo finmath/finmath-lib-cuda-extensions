@@ -40,30 +40,32 @@ public class RandomVariableTests {
 
 	@Test
 	public void testRandomVariableStochastic() throws InterruptedException {
-		RandomVariableInterface randomVariable2 = new RandomVariableCuda(0.0,
-				new double[] {-4.0, -2.0, 0.0, 2.0, 4.0} );
+		RandomVariableInterface randomVariable = new RandomVariableCuda(new float[] {-4.0f, -2.0f, 0.0f, 2.0f, 4.0f} );
 
 		// Perform some calculations
-		randomVariable2 = randomVariable2.add(4.0);
-		randomVariable2 = randomVariable2.div(2.0);
-		randomVariable2 = randomVariable2.mult(2.0);
-		randomVariable2 = randomVariable2.div(2.0);
+		randomVariable = randomVariable.add(4.0);
+		randomVariable = randomVariable.div(2.0);
+		randomVariable = randomVariable.mult(2.0);
+		randomVariable = randomVariable.div(2.0);
 		
 		// The random variable has average value 2.0
-		Assert.assertTrue(randomVariable2.getAverage() == 2.0);
+		double average = randomVariable.getAverage();
+		Assert.assertTrue(average == 2.0);
 
+		double[] result = randomVariable.getRealizations();
+		
 		// The random variable has variance value 2.0 = (4 + 1 + 0 + 1 + 4) / 5
-		Assert.assertTrue(randomVariable2.getVariance() == 2.0);
+		Assert.assertTrue(randomVariable.getVariance() == 2.0);
 		
 		// Multiply two random variables, this will expand the receiver to a stochastic one
-		RandomVariableInterface randomVariable = new RandomVariable(3.0);
-		randomVariable = randomVariable.mult(randomVariable2);
+		RandomVariableInterface randomVariable2 = new RandomVariable(3.0);
+		randomVariable2 = randomVariable2.mult(randomVariable);
 		
 		// The random variable has average value 6.0
-		Assert.assertTrue(randomVariable.getAverage() == 6.0);
+		Assert.assertTrue(randomVariable2.getAverage() == 6.0);
 
 		// The random variable has variance value 2 * 9
-		Assert.assertTrue(randomVariable.getVariance() == 2.0 * 9.0);
+		Assert.assertTrue(randomVariable2.getVariance() == 2.0 * 9.0);
 	}
 
 	@Test

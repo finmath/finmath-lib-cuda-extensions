@@ -60,7 +60,7 @@ public class BrownianMotionTests {
 		double	dt			= 0.1;
 		int		numberOfPaths = 1000000;
 
-		System.out.println("Test of performance of " + testCase + ".");
+		System.out.print("Test of performance of " + String.format("%-40s", testCase) + "\t");
 
 		// Create the time discretization
 		TimeDiscretizationInterface timeDiscretization = new TimeDiscretization(0.0, (int)(lastTime/dt), dt);
@@ -111,6 +111,6 @@ public class BrownianMotionTests {
 
 		long millisEnd = System.currentTimeMillis();
 
-		System.out.println("Test took " + (millisEnd-millisStart)/1000.0);
+		System.out.println("test took " + (millisEnd-millisStart)/1000.0 + " sec.");
 	}
 }

@@ -24,6 +24,7 @@ import net.finmath.montecarlo.BrownianMotionCudaWithHostRandomVariable;
 import net.finmath.montecarlo.BrownianMotionCudaWithRandomVariableCuda;
 import net.finmath.montecarlo.BrownianMotionInterface;
 import net.finmath.montecarlo.BrownianMotionJavaRandom;
+import net.finmath.montecarlo.RandomVariableCuda;
 import net.finmath.montecarlo.RandomVariableFactory;
 import net.finmath.montecarlo.assetderivativevaluation.products.EuropeanOption;
 import net.finmath.montecarlo.model.AbstractModel;
@@ -60,7 +61,7 @@ public class MonteCarloBlackScholesModelTest {
 	private final double	volatility     = 0.30;
 
 	// Process discretization properties
-	private final int		numberOfPaths		= 10000;
+	private final int		numberOfPaths		= 5000000;
 	private final int		numberOfTimeSteps	= 10;
 	private final double	deltaT				= 1.0;
 	
@@ -81,7 +82,6 @@ public class MonteCarloBlackScholesModelTest {
 
 	@Before
 	public void setUp() {
-		System.setProperty("net.finmath.montecarlo.process.ProcessEulerScheme.isUseMultiThreadding","false");
 		// Create a time discretizeion
 		TimeDiscretizationInterface timeDiscretization = new TimeDiscretization(0.0 /* initial */, numberOfTimeSteps, deltaT);
 
@@ -114,6 +114,11 @@ public class MonteCarloBlackScholesModelTest {
 		}
 	}
 
+	@Before
+	public void cleanUp() {
+		RandomVariableCuda.clean();
+	}
+	
 	@Test
 	public void testProductImplementation() throws CalculationException {
 		long millisStart = System.currentTimeMillis();

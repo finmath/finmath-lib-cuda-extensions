@@ -145,12 +145,12 @@ public class BrownianMotionJavaRandom implements BrownianMotionInterface, Serial
 		 * The inner loop goes over time and factors.
 		 * Since we want to generate independent streams (paths), the loop over path is the outer loop.
 		 */
-			for(int timeIndex=0; timeIndex<timeDiscretization.getNumberOfTimeSteps(); timeIndex++) {
-				double sqrtDeltaT = sqrtOfTimeStep[timeIndex];
-				// Generate uncorrelated Brownian increment
-				for(int factor=0; factor<numberOfFactors; factor++) {
-					double[] randomVariableValues = brownianIncrementsArray[timeIndex][factor];
-					for(int path=0; path<numberOfPaths; path++) {
+		for(int timeIndex=0; timeIndex<timeDiscretization.getNumberOfTimeSteps(); timeIndex++) {
+			double sqrtDeltaT = sqrtOfTimeStep[timeIndex];
+			// Generate uncorrelated Brownian increment
+			for(int factor=0; factor<numberOfFactors; factor++) {
+				double[] randomVariableValues = brownianIncrementsArray[timeIndex][factor];
+				for(int path=0; path<numberOfPaths; path++) {
 					double uniformIncrement = random.nextDouble();
 					randomVariableValues[path] = net.finmath.functions.NormalDistribution.inverseCumulativeDistribution(uniformIncrement) * sqrtDeltaT;
 				}				
