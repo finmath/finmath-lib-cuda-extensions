@@ -1,7 +1,7 @@
 # finmath lib cuda extensions
----
-*Enabling finmath lib with cuda via jcuda.*
----
+- - - -
+**Enabling finmath lib with cuda via jcuda.**
+- - - -
 The finmath lib cuda extension provide an implementation of the finmath lib interfaces `RandomVariableInterface` and `BrownianMotionInterface`` compatible with finmath lib 2.4.3 or later.
 
 Since objects of type `BrownianMotionInterface` are taking the role of a factory for objects of type `RandomVariableInterface`, injecting the `BrownianMotionCuda` will result in most finmath-lib models performing their calculations on the GPU - seamlessly.
@@ -25,6 +25,25 @@ or get the result vector
 double[] result = randomVariable.getRealizations();
 ```
 (note: the result is always double, since different implementation may support float or double on the device).
+
+## Installation
+Of course, you should have NVidia Cuda installed.
+
+In addition, the finmath-lib-cuda-extensions requires jcuda. To install jcuda you should try the  "mavenized" version of jcuda.  To obtain and build the mavenized version of jcuda:
+```
+git clone https://github.com/MysterionRise/mavenized-jcuda.git
+cd mavenized-jcuda
+mvn clean package
+cd ..
+```
+
+To obtain and build the finmath-lib-cuda-extensions then do
+```
+git clone https://github.com/cfries/finmath-lib-cuda-extensions.git
+cd finmath-lib-cuda-extensions
+mvn clean package
+```
+If everything goes well, you will see unit test  run. Note that some of the tests mail fail if the device (GPU) has not enough memory. 
 
 ## References
 * [finmath lib Project documentation](http://finmath.net/finmath-lib/)
