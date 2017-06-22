@@ -86,8 +86,13 @@
 			<scope>test</scope>
 		</dependency>
 		<dependency>
-			<groupId>org.mystic</groupId>
-			<artifactId>mavenized-jcuda</artifactId>
+			<groupId>org.jcuda</groupId>
+			<artifactId>jcuda</artifactId>
+			<version>0.8.0</version>
+		</dependency>
+		<dependency>
+			<groupId>org.jcuda</groupId>
+			<artifactId>jcurand</artifactId>
 			<version>0.8.0</version>
 		</dependency>
 	</dependencies>
