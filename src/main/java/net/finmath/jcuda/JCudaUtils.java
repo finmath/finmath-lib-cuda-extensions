@@ -19,7 +19,7 @@ public class JCudaUtils
      * compiled from the given file using NVCC. The name of the
      * PTX file is returned.
      *
-     * @param cuFileName The name of the .CU file
+     * @param cuFileURL The name of the .CU file
      * @return The name of the PTX file
      * @throws IOException If an I/O error occurs
      */
