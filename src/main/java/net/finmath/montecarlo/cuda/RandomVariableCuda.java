@@ -3,7 +3,7 @@
  *
  * Created on 09.02.2006
  */
-package net.finmath.montecarlo;
+package net.finmath.montecarlo.cuda;
 
 import static jcuda.driver.JCudaDriver.cuCtxCreate;
 import static jcuda.driver.JCudaDriver.cuCtxSynchronize;

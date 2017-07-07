@@ -9,7 +9,7 @@ import java.net.URL;
 /**
  * Adapted from JCuda examples: Reads a CUDA file, compiles it to a PTX file
  * using NVCC, loads the PTX file as a module and executes
- * the kernel function. <br />
+ * the kernel function.
  */
 public class JCudaUtils
 {

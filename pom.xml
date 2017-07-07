@@ -1,13 +1,30 @@
-<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
-	xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
+<?xml version="1.0" encoding="UTF-8"?>
+<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
 	<modelVersion>4.0.0</modelVersion>
+
+	<!-- For publishing to sonatype / central maven repo -->
+	<parent>
+		<groupId>org.sonatype.oss</groupId>
+		<artifactId>oss-parent</artifactId>
+		<version>7</version>
+	</parent>
 
 	<groupId>net.finmath</groupId>
 	<artifactId>finmath-lib-cuda-extension</artifactId>
 	<version>0.0.1-SNAPSHOT</version>
+	<packaging>jar</packaging>
 
-	<name>finmath-lib-cuda-extension</name>
-	<url>http://finmath.net</url>
+	<name>finmath-lib-cuda-extensions</name>
+	<description>
+		Enabling finmath-lib to perform Monte-Carlo simulations on the GPGPU using Cuda.
+	</description>
+	<url>http://www.finmath.net/finmath-lib</url>
+
+	<properties>
+		<project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
+		<src.main.dir>src/main/java</src.main.dir>
+		<src.test.dir>src/test/java</src.test.dir>
+	</properties>
 
 	<licenses>
 		<license>
@@ -26,12 +43,6 @@
 			<timezone>1</timezone>
 		</developer>
 	</developers>
-
-	<properties>
-		<project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
-		<src.main.dir>src/main/java</src.main.dir>
-		<src.test.dir>src/test/java</src.test.dir>
-	</properties>
 
 	<build>
 		<defaultGoal>clean install javadoc:javadoc</defaultGoal>
@@ -96,4 +107,16 @@
 			<version>0.8.0</version>
 		</dependency>
 	</dependencies>
+	
+	<issueManagement>
+		<system>GitHub</system>
+		<url>https://github.com/finmath/finmath-lib-cuda-extensions/issues</url>
+	</issueManagement>
+
+	<scm>
+		<url>https://github.com/finmath/finmath-lib-cuda-extensions</url>
+		<connection>scm:git:https://github.com/finmath/finmath-lib-cuda-extensions.git</connection>
+		<developerConnection>scm:git:https://github.com/finmath/finmath-lib-cuda-extensions.git</developerConnection>
+		<tag>HEAD</tag>
+	</scm>
 </project>

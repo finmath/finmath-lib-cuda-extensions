@@ -3,7 +3,7 @@
  *
  * Created on 09.02.2004
  */
-package net.finmath.montecarlo;
+package net.finmath.montecarlo.cuda.alternative;
 
 import static jcuda.jcurand.JCurand.curandCreateGenerator;
 import static jcuda.jcurand.JCurand.curandDestroyGenerator;
@@ -21,6 +21,10 @@ import jcuda.Sizeof;
 import jcuda.jcurand.JCurand;
 import jcuda.jcurand.curandGenerator;
 import jcuda.runtime.JCuda;
+import net.finmath.montecarlo.AbstractRandomVariableFactory;
+import net.finmath.montecarlo.BrownianMotionInterface;
+import net.finmath.montecarlo.RandomVariableFactory;
+import net.finmath.montecarlo.RandomVariableLowMemory;
 import net.finmath.stochastic.RandomVariableInterface;
 import net.finmath.time.TimeDiscretizationInterface;
 
