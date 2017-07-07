@@ -10,7 +10,7 @@
 	</parent>
 
 	<groupId>net.finmath</groupId>
-	<artifactId>finmath-lib-cuda-extension</artifactId>
+	<artifactId>finmath-lib-cuda-extensions</artifactId>
 	<version>0.0.1-SNAPSHOT</version>
 	<packaging>jar</packaging>
 
