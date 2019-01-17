@@ -1099,26 +1099,6 @@ public class RandomVariableCudaWithFinalizer implements RandomVariableInterface 
 		}
 	}
 
-	/* (non-Javadoc)
-	 * @see net.finmath.stochastic.RandomVariableInterface#barrier(net.finmath.stochastic.RandomVariableInterface, net.finmath.stochastic.RandomVariableInterface, net.finmath.stochastic.RandomVariableInterface)
-	 */
-	@Override
-	public RandomVariableInterface barrier(RandomVariableInterface trigger,
-			RandomVariableInterface valueIfTriggerNonNegative, RandomVariableInterface valueIfTriggerNegative) {
-		// TODO Auto-generated method stub
-		return null;
-	}
-
-	/* (non-Javadoc)
-	 * @see net.finmath.stochastic.RandomVariableInterface#barrier(net.finmath.stochastic.RandomVariableInterface, net.finmath.stochastic.RandomVariableInterface, double)
-	 */
-	@Override
-	public RandomVariableInterface barrier(RandomVariableInterface trigger,
-			RandomVariableInterface valueIfTriggerNonNegative, double valueIfTriggerNegative) {
-		// TODO Auto-generated method stub
-		return null;
-	}
-
 	@Override
 	public Double doubleValue() {
 		// TODO Auto-generated method stub
