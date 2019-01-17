@@ -24,8 +24,8 @@ import net.finmath.marketdata.model.curves.ForwardCurve;
 import net.finmath.marketdata.model.curves.ForwardCurveInterface;
 import net.finmath.montecarlo.BrownianMotionInterface;
 import net.finmath.montecarlo.BrownianMotionView;
+import net.finmath.montecarlo.interestrate.CalibrationItem;
 import net.finmath.montecarlo.interestrate.LIBORMarketModel;
-import net.finmath.montecarlo.interestrate.LIBORMarketModel.CalibrationItem;
 import net.finmath.montecarlo.interestrate.modelplugins.AbstractLIBORCovarianceModelParametric;
 import net.finmath.montecarlo.interestrate.modelplugins.BlendedLocalVolatilityModel;
 import net.finmath.montecarlo.interestrate.modelplugins.LIBORCovarianceModelExponentialForm5Param;
@@ -214,10 +214,10 @@ public class LIBORMarketModelCalibrationTest {
 		double deviationSum			= 0.0;
 		double deviationSquaredSum	= 0.0;
 		for (int i = 0; i < calibrationItems.size(); i++) {
-			AbstractLIBORMonteCarloProduct calibrationProduct = calibrationItems.get(i).calibrationProduct;
+			AbstractLIBORMonteCarloProduct calibrationProduct = calibrationItems.get(i).getProduct();
 			try {
 				double valueModel = calibrationProduct.getValue(simulationCalibrated);
-				double valueTarget = calibrationItems.get(i).calibrationTargetValue;
+				double valueTarget = calibrationItems.get(i).getTargetValue().getAverage();
 				double error = valueModel-valueTarget;
 				deviationSum += error;
 				deviationSquaredSum += error*error;

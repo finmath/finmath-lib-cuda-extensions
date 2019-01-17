@@ -22,7 +22,12 @@ import java.lang.ref.ReferenceQueue;
 import java.lang.ref.WeakReference;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.ExecutionException;
+import java.util.function.DoubleBinaryOperator;
+import java.util.function.DoubleUnaryOperator;
+import java.util.function.IntToDoubleFunction;
 import java.util.logging.Logger;
+import java.util.stream.DoubleStream;
 
 import jcuda.LogLevel;
 import jcuda.Pointer;
@@ -33,6 +38,8 @@ import jcuda.driver.CUdeviceptr;
 import jcuda.driver.CUfunction;
 import jcuda.driver.CUmodule;
 import jcuda.driver.JCudaDriver;
+import net.finmath.functions.DoubleTernaryOperator;
+import net.finmath.montecarlo.cuda.RandomVariableCuda;
 import net.finmath.stochastic.RandomVariableInterface;
 
 /**
@@ -94,6 +101,9 @@ public class RandomVariableCudaWithFinalizer implements RandomVariableInterface 
 	private final static CUfunction cuDiv;
 	private final static CUfunction accrue;
 	private final static CUfunction discount;
+	private final static CUfunction reducePartial;
+	
+	private final static int reduceGridSize = 1024;
 
 	// Initalize cuda
 	static {
@@ -162,6 +172,8 @@ public class RandomVariableCudaWithFinalizer implements RandomVariableInterface 
 		cuModuleGetFunction(accrue, module, "accrue");
 		discount = new CUfunction();
 		cuModuleGetFunction(accrue, module, "discount");
+		reducePartial = new CUfunction();
+		cuModuleGetFunction(reducePartial, module, "reducePartial");
 	}
 
 	public RandomVariableCudaWithFinalizer(double time, CUdeviceptr realizations, long size) {
@@ -274,19 +286,6 @@ public class RandomVariableCudaWithFinalizer implements RandomVariableInterface 
 		return arrayOfDouble;
 	}
 
-	/* (non-Javadoc)
-	 * @see net.finmath.stochastic.RandomVariableInterface#getMutableCopy()
-	 */
-	public RandomVariableCudaWithFinalizer getMutableCopy() {
-		return this;
-
-		//if(isDeterministic())	return new RandomVariable(time, valueIfNonStochastic);
-		//else					return new RandomVariable(time, realizations.clone());
-	}
-
-	/* (non-Javadoc)
-	 * @see net.finmath.stochastic.RandomVariableInterface#equals(net.finmath.montecarlo.RandomVariable)
-	 */
 	@Override
 	public boolean equals(RandomVariableInterface randomVariable) {
 		throw new UnsupportedOperationException();
@@ -310,12 +309,14 @@ public class RandomVariableCudaWithFinalizer implements RandomVariableInterface 
 	}
 
 	@Override
+	public int getTypePriority() {
+		return 20;
+	}
+
+	@Override
 	public double get(int pathOrState) {
-		throw new UnsupportedOperationException();
-		/*
 		if(isDeterministic())   return valueIfNonStochastic;
-		else               		return realizations[pathOrState];
-		 */
+		else               		throw new UnsupportedOperationException();
 	}
 
 	@Override
@@ -324,9 +325,6 @@ public class RandomVariableCudaWithFinalizer implements RandomVariableInterface 
 		else                     return (int)this.size;
 	}
 
-	/* (non-Javadoc)
-	 * @see net.finmath.stochastic.RandomVariableInterface#getMin()
-	 */
 	@Override
 	public double getMin() {
 		throw new UnsupportedOperationException();
@@ -339,9 +337,6 @@ public class RandomVariableCudaWithFinalizer implements RandomVariableInterface 
 		 */
 	}
 
-	/* (non-Javadoc)
-	 * @see net.finmath.stochastic.RandomVariableInterface#getMax()
-	 */
 	@Override
 	public double getMax() {
 		throw new UnsupportedOperationException();
@@ -354,29 +349,14 @@ public class RandomVariableCudaWithFinalizer implements RandomVariableInterface 
 		 */
 	}
 
-	/* (non-Javadoc)
-	 * @see net.finmath.stochastic.RandomVariableInterface#getAverage()
-	 */
+	@Override
 	public double getAverage() {
 		if(isDeterministic())	return valueIfNonStochastic;
 		if(size() == 0)			return Double.NaN;
 
-		double[] realizations = getRealizations();
-
-		double sum = 0.0;								// Running sum
-		double error = 0.0;								// Running error compensation
-		for(int i=0; i<realizations.length; i++)  {
-			double value = realizations[i] - error;		// Error corrected value
-			double newSum = sum + value;				// New sum
-			error = (newSum - sum) - value;				// New numerical error
-			sum	= newSum;
-		}
-		return sum/realizations.length;
+		return  reduce()/size();
 	}
 
-	/* (non-Javadoc)
-	 * @see net.finmath.stochastic.RandomVariableInterface#getAverage(net.finmath.stochastic.RandomVariableInterface)
-	 */
 	@Override
 	public double getAverage(RandomVariableInterface probabilities) {
 		throw new UnsupportedOperationException();
@@ -612,6 +592,17 @@ public class RandomVariableCudaWithFinalizer implements RandomVariableInterface 
 	@Override
 	public RandomVariableInterface cache() {
 		return this;
+		/*
+		final float[] values = new float[(int)size];
+		try {
+			deviceExecutor.submit(new Runnable() { public void run() {
+				cuCtxSynchronize();
+				cuMemcpyDtoH(Pointer.to(values), realizations, size * Sizeof.FLOAT);
+				cuCtxSynchronize();
+			}}).get();
+		} catch (InterruptedException | ExecutionException e) { throw new RuntimeException(e.getCause()); }
+		return new RandomVariableLowMemory(time, values);
+		*/
 	}
 
 	@Override
@@ -622,31 +613,12 @@ public class RandomVariableCudaWithFinalizer implements RandomVariableInterface 
 			return result;
 		}
 		else {
-			float[] result = new float[(int)size];
-			cuMemcpyDtoH(Pointer.to(result), realizations, size * Sizeof.FLOAT);
-			return getDoubleArray(result);
+			throw new UnsupportedOperationException();
 		}
 	}
 
-	/**
-	 * Returns the realizations as double array. If the random variable is deterministic, then it is expanded
-	 * to the given number of paths.
-	 *
-	 * @param numberOfPaths Number of paths.
-	 * @return The realization as double array.
-	 */
 	@Override
-	public double[] getRealizations(int numberOfPaths) {
-		throw new UnsupportedOperationException();
-		/*
-
-		if(!isDeterministic() && realizations.length != numberOfPaths) throw new RuntimeException("Inconsistent number of paths.");
-		return getDoubleArray(((RandomVariableCuda)expand(numberOfPaths)).realizations);
-		 */
-	}
-
-	@Override
-	public RandomVariableInterface apply(org.apache.commons.math3.analysis.UnivariateFunction function) {
+	public RandomVariableInterface apply(DoubleUnaryOperator function) {
 		throw new UnsupportedOperationException();
 		/*
 		if(isDeterministic()) {
@@ -659,6 +631,16 @@ public class RandomVariableCudaWithFinalizer implements RandomVariableInterface 
 			return new RandomVariableCuda(time, newRealizations);
 		}
 		 */
+	}
+
+	@Override
+	public RandomVariableInterface apply(DoubleBinaryOperator operator, RandomVariableInterface argument) {
+		throw new UnsupportedOperationException();
+	}
+
+	@Override
+	public RandomVariableInterface apply(DoubleTernaryOperator operator, RandomVariableInterface argument1, RandomVariableInterface argument2) {
+		throw new UnsupportedOperationException();
 	}
 
 	public RandomVariableInterface cap(double cap) {
@@ -1137,6 +1119,48 @@ public class RandomVariableCudaWithFinalizer implements RandomVariableInterface 
 		return null;
 	}
 
+	@Override
+	public Double doubleValue() {
+		// TODO Auto-generated method stub
+		return null;
+	}
+
+	@Override
+	public IntToDoubleFunction getOperator() {
+		// TODO Auto-generated method stub
+		return null;
+	}
+
+	@Override
+	public DoubleStream getRealizationsStream() {
+		// TODO Auto-generated method stub
+		return null;
+	}
+
+	@Override
+	public RandomVariableInterface average() {
+		// TODO Auto-generated method stub
+		return null;
+	}
+
+	@Override
+	public RandomVariableInterface bus(RandomVariableInterface randomVariable) {
+		// TODO Auto-generated method stub
+		return null;
+	}
+
+	@Override
+	public RandomVariableInterface vid(RandomVariableInterface randomVariable) {
+		// TODO Auto-generated method stub
+		return null;
+	}
+
+	@Override
+	public RandomVariableInterface choose(RandomVariableInterface valueIfTriggerNonNegative, RandomVariableInterface valueIfTriggerNegative) {
+		// TODO Auto-generated method stub
+		return null;
+	}
+
 	/* (non-Javadoc)
 	 * @see net.finmath.stochastic.RandomVariableInterface#addProduct(net.finmath.stochastic.RandomVariableInterface, double)
 	 */
@@ -1173,16 +1197,50 @@ public class RandomVariableCudaWithFinalizer implements RandomVariableInterface 
 		return null;
 	}
 
-	/* (non-Javadoc)
-	 * @see net.finmath.stochastic.RandomVariableInterface#isNaN()
-	 */
 	@Override
 	public RandomVariableInterface isNaN() {
 		// TODO Auto-generated method stub
 		return null;
 	}
 
+	/*
+	 * Cude specific implementations
+	 */
+	
+	private double reduce() {
+		if(this.isDeterministic()) return valueIfNonStochastic;
+
+		RandomVariableCudaWithFinalizer reduced = this;
+		while(reduced.size() > 1) reduced = reduced.reduceBySize(reduceGridSize);		
+		return reduced.getRealizations()[0];
+	}
+
+	private RandomVariableCudaWithFinalizer reduceBySize(int bySize) {
+			int blockSizeX = bySize;
+			int gridSizeX = (int)Math.ceil((double)size()/2 / blockSizeX);
+			CUdeviceptr reduceVector = getCUdeviceptr(gridSizeX);
+
+			callCudaFunction(reducePartial, new Pointer[] {
+					Pointer.to(new int[] { size() }),
+					Pointer.to(realizations),
+					Pointer.to(reduceVector)},
+					gridSizeX, blockSizeX, blockSizeX);
+
+			return new RandomVariableCudaWithFinalizer(0.0, reduceVector, gridSizeX);
+	}
+
 	private CUdeviceptr callCudaFunction(CUfunction function, Pointer[] arguments) {
+			// Allocate device output memory
+			CUdeviceptr result = getCUdeviceptr((long)size());
+			arguments[arguments.length-1] = Pointer.to(result);
+
+			int blockSizeX = 256;
+			int gridSizeX = (int)Math.ceil((double)size() / blockSizeX);
+			callCudaFunction(function, arguments, gridSizeX, blockSizeX, 0);
+			return result;
+	}
+
+	private CUdeviceptr callCudaFunction(final CUfunction function, Pointer[] arguments, final int gridSizeX, final int blockSizeX, final int sharedMemorySize) {
 		// Allocate device output memory
 		CUdeviceptr result = getCUdeviceptr((long)size());
 		arguments[arguments.length-1] = Pointer.to(result);
@@ -1192,12 +1250,10 @@ public class RandomVariableCudaWithFinalizer implements RandomVariableInterface 
 		Pointer kernelParameters = Pointer.to(arguments);
 
 		// Call the kernel function.
-		int blockSizeX = 256;
-		int gridSizeX = (int)Math.ceil((double)size() / blockSizeX);
 		cuLaunchKernel(function,
 				gridSizeX,  1, 1,      // Grid dimension
 				blockSizeX, 1, 1,      // Block dimension
-				0, null,               // Shared memory size and stream
+				sharedMemorySize, null,               // Shared memory size and stream
 				kernelParameters, null // Kernel- and extra parameters
 				);
 		cuCtxSynchronize();

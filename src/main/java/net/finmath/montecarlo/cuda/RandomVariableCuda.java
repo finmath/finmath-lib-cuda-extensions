@@ -25,7 +25,11 @@ import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
+import java.util.function.DoubleBinaryOperator;
+import java.util.function.DoubleUnaryOperator;
+import java.util.function.IntToDoubleFunction;
 import java.util.logging.Logger;
+import java.util.stream.DoubleStream;
 
 import jcuda.LogLevel;
 import jcuda.Pointer;
@@ -36,6 +40,7 @@ import jcuda.driver.CUdeviceptr;
 import jcuda.driver.CUfunction;
 import jcuda.driver.CUmodule;
 import jcuda.driver.JCudaDriver;
+import net.finmath.functions.DoubleTernaryOperator;
 import net.finmath.stochastic.RandomVariableInterface;
 
 /**
@@ -382,13 +387,6 @@ public class RandomVariableCuda implements RandomVariableInterface {
 		return arrayOfDouble;
 	}
 
-	/* (non-Javadoc)
-	 * @see net.finmath.stochastic.RandomVariableInterface#getMutableCopy()
-	 */
-	public RandomVariableCuda getMutableCopy() {
-		return this;
-	}
-
 	@Override
 	public boolean equals(RandomVariableInterface randomVariable) {
 		throw new UnsupportedOperationException();
@@ -412,6 +410,11 @@ public class RandomVariableCuda implements RandomVariableInterface {
 	}
 
 	@Override
+	public int getTypePriority() {
+		return 20;
+	}
+
+	@Override
 	public double get(int pathOrState) {
 		if(isDeterministic())   return valueIfNonStochastic;
 		else               		throw new UnsupportedOperationException();
@@ -423,9 +426,6 @@ public class RandomVariableCuda implements RandomVariableInterface {
 		else                     return (int)this.size;
 	}
 
-	/* (non-Javadoc)
-	 * @see net.finmath.stochastic.RandomVariableInterface#getMin()
-	 */
 	@Override
 	public double getMin() {
 		throw new UnsupportedOperationException();
@@ -438,9 +438,6 @@ public class RandomVariableCuda implements RandomVariableInterface {
 		 */
 	}
 
-	/* (non-Javadoc)
-	 * @see net.finmath.stochastic.RandomVariableInterface#getMax()
-	 */
 	@Override
 	public double getMax() {
 		throw new UnsupportedOperationException();
@@ -453,33 +450,14 @@ public class RandomVariableCuda implements RandomVariableInterface {
 		 */
 	}
 
-	/* (non-Javadoc)
-	 * @see net.finmath.stochastic.RandomVariableInterface#getAverage()
-	 */
+	@Override
 	public double getAverage() {
 		if(isDeterministic())	return valueIfNonStochastic;
 		if(size() == 0)			return Double.NaN;
 
-		if(true) {
-			return  reduce()/size();
-		}
-
-		double[] realizations = getRealizations();
-
-		double sum = 0.0;								// Running sum
-		double error = 0.0;								// Running error compensation
-		for(int i=0; i<realizations.length; i++)  {
-			double value = realizations[i] - error;		// Error corrected value
-			double newSum = sum + value;				// New sum
-			error = (newSum - sum) - value;				// New numerical error
-			sum	= newSum;
-		}
-		return sum/realizations.length;
+		return  reduce()/size();
 	}
 
-	/* (non-Javadoc)
-	 * @see net.finmath.stochastic.RandomVariableInterface#getAverage(net.finmath.stochastic.RandomVariableInterface)
-	 */
 	@Override
 	public double getAverage(RandomVariableInterface probabilities) {
 		throw new UnsupportedOperationException();
@@ -747,25 +725,8 @@ public class RandomVariableCuda implements RandomVariableInterface {
 		}
 	}
 
-	/**
-	 * Returns the realizations as double array. If the random variable is deterministic, then it is expanded
-	 * to the given number of paths.
-	 *
-	 * @param numberOfPaths Number of paths.
-	 * @return The realization as double array.
-	 */
 	@Override
-	public double[] getRealizations(int numberOfPaths) {
-		throw new UnsupportedOperationException();
-		/*
-
-		if(!isDeterministic() && realizations.length != numberOfPaths) throw new RuntimeException("Inconsistent number of paths.");
-		return getDoubleArray(((RandomVariableCuda)expand(numberOfPaths)).realizations);
-		 */
-	}
-
-	@Override
-	public RandomVariableInterface apply(org.apache.commons.math3.analysis.UnivariateFunction function) {
+	public RandomVariableInterface apply(DoubleUnaryOperator function) {
 		throw new UnsupportedOperationException();
 		/*
 		if(isDeterministic()) {
@@ -778,6 +739,16 @@ public class RandomVariableCuda implements RandomVariableInterface {
 			return new RandomVariableCuda(time, newRealizations);
 		}
 		 */
+	}
+
+	@Override
+	public RandomVariableInterface apply(DoubleBinaryOperator operator, RandomVariableInterface argument) {
+		throw new UnsupportedOperationException();
+	}
+
+	@Override
+	public RandomVariableInterface apply(DoubleTernaryOperator operator, RandomVariableInterface argument1, RandomVariableInterface argument2) {
+		throw new UnsupportedOperationException();
 	}
 
 	public RandomVariableInterface cap(double cap) {
@@ -1249,6 +1220,48 @@ public class RandomVariableCuda implements RandomVariableInterface {
 		return null;
 	}
 
+	@Override
+	public Double doubleValue() {
+		// TODO Auto-generated method stub
+		return null;
+	}
+
+	@Override
+	public IntToDoubleFunction getOperator() {
+		// TODO Auto-generated method stub
+		return null;
+	}
+
+	@Override
+	public DoubleStream getRealizationsStream() {
+		// TODO Auto-generated method stub
+		return null;
+	}
+
+	@Override
+	public RandomVariableInterface average() {
+		// TODO Auto-generated method stub
+		return null;
+	}
+
+	@Override
+	public RandomVariableInterface bus(RandomVariableInterface randomVariable) {
+		// TODO Auto-generated method stub
+		return null;
+	}
+
+	@Override
+	public RandomVariableInterface vid(RandomVariableInterface randomVariable) {
+		// TODO Auto-generated method stub
+		return null;
+	}
+
+	@Override
+	public RandomVariableInterface choose(RandomVariableInterface valueIfTriggerNonNegative, RandomVariableInterface valueIfTriggerNegative) {
+		// TODO Auto-generated method stub
+		return null;
+	}
+
 	/* (non-Javadoc)
 	 * @see net.finmath.stochastic.RandomVariableInterface#addProduct(net.finmath.stochastic.RandomVariableInterface, double)
 	 */
@@ -1334,6 +1347,10 @@ public class RandomVariableCuda implements RandomVariableInterface {
 		return null;
 	}
 
+	/*
+	 * Cude specific implementations
+	 */
+	
 	private double reduce() {
 		if(this.isDeterministic()) return valueIfNonStochastic;
 
