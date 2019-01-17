@@ -19,21 +19,21 @@ import net.finmath.time.TimeDiscretizationInterface;
  * <i>W = (W<sub>1</sub>,...,W<sub>n</sub>)</i> where <i>W<sub>i</sub></i> is
  * a Brownian motion and <i>W<sub>i</sub></i>, <i>W<sub>j</sub></i> are
  * independent for <i>i</i> not equal <i>j</i>.
- * 
+ *
  * For a correlated Brownian motion with see
  * {@link net.finmath.montecarlo.CorrelatedBrownianMotion}.
- * 
+ *
  * Here the dimension <i>n</i> is called factors since this Brownian motion is used to
  * generate multi-dimensional multi-factor Ito processes and there one might
  * use a different number of factors to generate Ito processes of different
- * dimension. 
+ * dimension.
  *
  * The quadruppel (time discretization, number of factors, number of paths, seed)
  * defines the state of an object of this class, i.e., BrownianMotion for which
  * there parameters agree, generate the same random numbers.
  *
  * The class is immutable and thread safe. It uses lazy initialization.
- * 
+ *
  * @author Christian Fries
  * @version 1.6
  */
@@ -54,12 +54,12 @@ public class BrownianMotionJavaRandom implements BrownianMotionInterface, Serial
 
 	/**
 	 * Construct a Brownian motion.
-	 * 
+	 *
 	 * The constructor allows to set the factory to be used for the construction of
 	 * random variables. This allows to generate Brownian increments represented
 	 * by different implementations of the RandomVariableInterface (e.g. the RandomVariableLowMemory internally
 	 * using float representations).
-	 * 
+	 *
 	 * @param timeDiscretization The time discretization used for the Brownian increments.
 	 * @param numberOfFactors Number of factors.
 	 * @param numberOfPaths Number of paths to simulate.
@@ -85,7 +85,7 @@ public class BrownianMotionJavaRandom implements BrownianMotionInterface, Serial
 
 	/**
 	 * Construct a Brownian motion.
-	 * 
+	 *
 	 * @param timeDiscretization The time discretization used for the Brownian increments.
 	 * @param numberOfFactors Number of factors.
 	 * @param numberOfPaths Number of paths to simulate.
@@ -140,11 +140,11 @@ public class BrownianMotionJavaRandom implements BrownianMotionInterface, Serial
 		double[] sqrtOfTimeStep = new double[timeDiscretization.getNumberOfTimeSteps()];
 		for(int timeIndex=0; timeIndex<sqrtOfTimeStep.length; timeIndex++) {
 			sqrtOfTimeStep[timeIndex] = Math.sqrt(timeDiscretization.getTimeStep(timeIndex));
-		}   
+		}
 
 		/*
 		 * Generate normal distributed independent increments.
-		 * 
+		 *
 		 * The inner loop goes over time and factors.
 		 * Since we want to generate independent streams (paths), the loop over path is the outer loop.
 		 */
@@ -156,7 +156,7 @@ public class BrownianMotionJavaRandom implements BrownianMotionInterface, Serial
 				for(int path=0; path<numberOfPaths; path++) {
 					double uniformIncrement = random.nextDouble();
 					randomVariableValues[path] = net.finmath.functions.NormalDistribution.inverseCumulativeDistribution(uniformIncrement) * sqrtDeltaT;
-				}				
+				}
 			}
 		}
 

@@ -22,7 +22,6 @@ import net.finmath.functions.AnalyticFormulas;
 import net.finmath.montecarlo.BrownianMotion;
 import net.finmath.montecarlo.BrownianMotionInterface;
 import net.finmath.montecarlo.RandomVariableFactory;
-import net.finmath.montecarlo.assetderivativevaluation.products.EuropeanOption;
 import net.finmath.montecarlo.cuda.RandomVariableCuda;
 import net.finmath.montecarlo.cuda.alternative.BrownianMotionCudaWithHostRandomVariable;
 import net.finmath.montecarlo.cuda.alternative.BrownianMotionCudaWithRandomVariableCuda;
@@ -44,10 +43,10 @@ public class MonteCarloBlackScholesModelTest {
 	@Parameters
 	public static Collection<Object[]> data() {
 		return Arrays.asList(new Object[][] {
-				{ "BrownianMotion" },							// Text case 1: Java implementation
-				{ "BrownianMotionJavaRandom" },					// Text case 2: Java implementation
-				{ "BrownianMotionCudaWithHostRandomVariable" },	// Text case 3: Java implementation
-				{ "BrownianMotionCudaWithRandomVariableCuda" }	// Text case 4: Java implementation			
+			{ "BrownianMotion" },							// Text case 1: Java implementation
+			{ "BrownianMotionJavaRandom" },					// Text case 2: Java implementation
+			{ "BrownianMotionCudaWithHostRandomVariable" },	// Text case 3: Java implementation
+			{ "BrownianMotionCudaWithRandomVariableCuda" }	// Text case 4: Java implementation
 		});
 	}
 
@@ -65,7 +64,7 @@ public class MonteCarloBlackScholesModelTest {
 	private final int		numberOfPaths		= 5000000;
 	private final int		numberOfTimeSteps	= 10;
 	private final double	deltaT				= 1.0;
-	
+
 	private final int		seed				= 31415;
 
 	// Product properties
@@ -119,7 +118,7 @@ public class MonteCarloBlackScholesModelTest {
 	public void cleanUp() {
 		RandomVariableCuda.clean();
 	}
-	
+
 	@Test
 	public void testProductImplementation() throws CalculationException {
 		long millisStart = System.currentTimeMillis();
@@ -138,11 +137,11 @@ public class MonteCarloBlackScholesModelTest {
 		 * Value a call option - directly
 		 */
 		TimeDiscretizationInterface timeDiscretization = brownian.getTimeDiscretization();
-		
+
 		RandomVariableInterface asset = process.getProcessValue(timeDiscretization.getTimeIndex(optionMaturity), assetIndex);
 		RandomVariableInterface numeraireAtPayment = model.getNumeraire(optionMaturity);
 		RandomVariableInterface numeraireAtEval = model.getNumeraire(0.0);
-		
+
 		RandomVariableInterface payoff = asset.sub(optionStrike).floor(0.0);
 		double value = payoff.div(numeraireAtPayment).mult(numeraireAtEval).getAverage();
 

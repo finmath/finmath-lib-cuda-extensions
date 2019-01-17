@@ -57,7 +57,7 @@ import net.finmath.stochastic.RandomVariableInterface;
  *
  * This implementation uses floats for the realizations (consuming less memory compared to using doubles). However,
  * the calculation of the average is performed using double precision.
- * 
+ *
  * @author Christian Fries
  * @version 1.8
  */
@@ -242,7 +242,7 @@ public class RandomVariableCuda implements RandomVariableInterface {
 		this(0.0, realisations);
 	}
 
-	
+
 	public static CUdeviceptr getCUdeviceptr(final long size) {
 		CUdeviceptr cuDevicePtr = null;
 		synchronized (vectorsInUseReferenceMap) {
@@ -292,9 +292,9 @@ public class RandomVariableCuda implements RandomVariableInterface {
 
 			// Still no pointer found, create new one
 			try {
-				cuDevicePtr = 
+				cuDevicePtr =
 						deviceExecutor.submit(new Callable<CUdeviceptr>() { public CUdeviceptr call() {
-							CUdeviceptr cuDevicePtr = 
+							CUdeviceptr cuDevicePtr =
 									new CUdeviceptr();
 							int succ = JCudaDriver.cuMemAlloc(cuDevicePtr, size * Sizeof.FLOAT);
 							if(succ != 0) {
@@ -342,7 +342,7 @@ public class RandomVariableCuda implements RandomVariableInterface {
 
 	/**
 	 * Create a vector on device and copy host vector to it.
-	 * 
+	 *
 	 * @param values Host vector.
 	 * @return Pointer to device vector.
 	 */
@@ -702,7 +702,7 @@ public class RandomVariableCuda implements RandomVariableInterface {
 			}}).get();
 		} catch (InterruptedException | ExecutionException e) { throw new RuntimeException(e.getCause()); }
 		return new RandomVariableLowMemory(time, values);
-		*/
+		 */
 	}
 
 	@Override
@@ -949,7 +949,7 @@ public class RandomVariableCuda implements RandomVariableInterface {
 			for(int i=0; i<newRealizations.length; i++) newRealizations[i]		 = Math.sin(realizations[i]);
 			return new RandomVariableCuda(time, newRealizations);
 		}
-		 */		
+		 */
 	}
 
 	public RandomVariableInterface cos() {
@@ -1330,12 +1330,12 @@ public class RandomVariableCuda implements RandomVariableInterface {
 	/*
 	 * Cude specific implementations
 	 */
-	
+
 	private double reduce() {
 		if(this.isDeterministic()) return valueIfNonStochastic;
 
 		RandomVariableCuda reduced = this;
-		while(reduced.size() > 1) reduced = reduced.reduceBySize(reduceGridSize);		
+		while(reduced.size() > 1) reduced = reduced.reduceBySize(reduceGridSize);
 		return reduced.getRealizations()[0];
 	}
 
@@ -1353,7 +1353,7 @@ public class RandomVariableCuda implements RandomVariableInterface {
 					gridSizeX, blockSizeX, blockSizeX);
 
 			return new RandomVariableCuda(0.0, reduceVector, gridSizeX);
-		}	
+		}
 	}
 
 	private CUdeviceptr callCudaFunction(CUfunction function, Pointer[] arguments) {

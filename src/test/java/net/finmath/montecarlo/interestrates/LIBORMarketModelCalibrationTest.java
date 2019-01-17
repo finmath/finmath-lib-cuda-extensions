@@ -37,7 +37,7 @@ import net.finmath.time.TimeDiscretization;
 
 /**
  * This class tests the LIBOR market model and products.
- * 
+ *
  * @author Christian Fries
  */
 public class LIBORMarketModelCalibrationTest {
@@ -78,7 +78,7 @@ public class LIBORMarketModelCalibrationTest {
 		 * use an analytic approximation formula, etc.
 		 */
 		SwaptionSimple swaptionMonteCarlo = new SwaptionSimple(swaprate, swapTenor, SwaptionSimple.ValueUnit.VOLATILITY);
-//		double targetValuePrice = AnalyticFormulas.blackModelSwaptionValue(swaprate, targetVolatility, fixingDates[0], swaprate, getSwapAnnuity(discountCurve, swapTenor));
+		//		double targetValuePrice = AnalyticFormulas.blackModelSwaptionValue(swaprate, targetVolatility, fixingDates[0], swaprate, getSwapAnnuity(discountCurve, swapTenor));
 		return new CalibrationProduct(swaptionMonteCarlo, targetVolatility, 1.0);
 	}
 
@@ -90,7 +90,7 @@ public class LIBORMarketModelCalibrationTest {
 		 */
 		System.out.println("Calibration to Swaptions:");
 
-		
+
 
 		double[] fixingTimes = new double[] {
 				0.0, 0.5, 1.0, 1.5, 2.0, 2.5, 3.0, 3.5, 4.0, 4.5, 5.0, 5.5, 6.0, 6.5, 7.0, 7.5, 8.0, 8.5, 9.0, 9.5, 10.0, 10.5, 11.0, 11.5, 12.0, 12.5, 13.0, 13.5, 14.0, 14.5, 15.0, 15.5, 16.0, 16.5, 17.0, 17.5, 18.0, 18.5, 19.0, 19.5, 20.0, 20.5, 21.0, 21.5, 22.0, 22.5, 23.0, 23.5, 24.0, 24.5, 25.0, 25.5, 26.0, 26.5, 27.0, 27.5, 28.0, 28.5, 29.0, 29.5, 30.0, 30.5, 31.0, 31.5, 32.0, 32.5, 33.0, 33.5, 34.0, 34.5, 35.0, 35.5, 36.0, 36.5, 37.0, 37.5, 38.0, 38.5, 39.0, 39.5, 40.0, 40.5, 41.0, 41.5, 42.0, 42.5, 43.0, 43.5, 44.0, 44.5, 45.0, 45.5, 46.0, 46.5, 47.0, 47.5, 48.0, 48.5, 49.0, 49.5, 50.0
@@ -112,7 +112,7 @@ public class LIBORMarketModelCalibrationTest {
 
 
 		DiscountCurveInterface discountCurve = new DiscountCurveFromForwardCurve(forwardCurve, liborPeriodLength);
-		
+
 		/*
 		 * Create a set of calibration products.
 		 */
@@ -132,7 +132,7 @@ public class LIBORMarketModelCalibrationTest {
 			calibrationProducts.add(createCalibrationItem(exerciseDate, swapPeriodLength, numberOfPeriods, moneyness, targetVolatility, forwardCurve, discountCurve));
 		}
 
-		
+
 		double[] atmOptionMaturities	= { 2.00, 3.00, 4.00, 5.00, 7.00, 10.00, 15.00, 20.00, 25.00, 30.00 };
 		double[] atmOptionVolatilities	= { 0.385, 0.351, 0.325, 0.308, 0.288, 0.279, 0.290, 0.272, 0.235, 0.192 };
 
@@ -144,7 +144,7 @@ public class LIBORMarketModelCalibrationTest {
 
 			calibrationProducts.add(createCalibrationItem(exerciseDate, swapPeriodLength, numberOfPeriods, moneyness, targetVolatility, forwardCurve, discountCurve));
 		}
-		
+
 		/*
 		 * Create a LIBOR Market Model
 		 */
@@ -163,13 +163,13 @@ public class LIBORMarketModelCalibrationTest {
 		TimeDiscretization timeDiscretization = new TimeDiscretization(0.0, (int) (lastTime / dt), dt);
 
 		/*
-		 * Create Brownian motions 
+		 * Create Brownian motions
 		 */
-//		BrownianMotionInterface brownianMotion = new net.finmath.montecarlo.BrownianMotion(timeDiscretization, numberOfFactors + 1, numberOfPaths, 31415 /* seed */);
+		//		BrownianMotionInterface brownianMotion = new net.finmath.montecarlo.BrownianMotion(timeDiscretization, numberOfFactors + 1, numberOfPaths, 31415 /* seed */);
 		BrownianMotionInterface brownianMotion = new net.finmath.montecarlo.cuda.alternative.BrownianMotionCudaWithRandomVariableCuda(timeDiscretization, numberOfFactors + 1, numberOfPaths, 31415 /* seed */);
 		BrownianMotionInterface brownianMotionView1 = new BrownianMotionView(brownianMotion, new Integer[] { 0, 1, 2, 3, 4 });
 		BrownianMotionInterface brownianMotionView2 = new BrownianMotionView(brownianMotion, new Integer[] { 0, 5 });
-		
+
 		// Create a covariance model
 		AbstractLIBORCovarianceModelParametric covarianceModelParametric = new LIBORCovarianceModelExponentialForm5Param(timeDiscretization, liborPeriodDiscretization, numberOfFactors, new double[] { 0.20, 0.05, 0.10, 0.05, 0.10} );
 		// Create blended local volatility model with fixed parameter 0.0 (that is "lognormal").
@@ -191,11 +191,11 @@ public class LIBORMarketModelCalibrationTest {
 		calibrationParameters.put("accuracyParameter", new Double(1E-8));
 		calibrationParameters.put("brownianMotion", brownianMotionView1);
 		properties.put("calibrationParameters", calibrationParameters);
-		
-		
+
+
 		LIBORMarketModel liborMarketModelCalibrated = new LIBORMarketModel(
 				liborPeriodDiscretization,
-				forwardCurve, null, covarianceModelStochasticParametric, calibrationProducts.toArray(new CalibrationProduct[0]), properties);	
+				forwardCurve, null, covarianceModelStochasticParametric, calibrationProducts.toArray(new CalibrationProduct[0]), properties);
 
 
 		/*
@@ -203,7 +203,7 @@ public class LIBORMarketModelCalibrationTest {
 		 */
 		System.out.println("\nCalibrated parameters are:");
 		double[] param = ((AbstractLIBORCovarianceModelParametric) liborMarketModelCalibrated.getCovarianceModel()).getParameter();
-//		((AbstractLIBORCovarianceModelParametric) liborMarketModelCalibrated.getCovarianceModel()).setParameter(param);
+		//		((AbstractLIBORCovarianceModelParametric) liborMarketModelCalibrated.getCovarianceModel()).setParameter(param);
 		for (double p : param) System.out.println(formatterParam.format(p));
 
 		ProcessEulerScheme process = new ProcessEulerScheme(brownianMotionView1);
@@ -231,7 +231,7 @@ public class LIBORMarketModelCalibrationTest {
 		System.out.println("Mean Deviation:" + formatterValue.format(averageDeviation));
 		System.out.println("RMS Error.....:" + formatterValue.format(Math.sqrt(deviationSquaredSum/calibrationProducts.size())));
 		System.out.println("__________________________________________________________________________________________\n");
-		
+
 		Assert.assertTrue(Math.abs(averageDeviation) < 1E-2);
 	}
 

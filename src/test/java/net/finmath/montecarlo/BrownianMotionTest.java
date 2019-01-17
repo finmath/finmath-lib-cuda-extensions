@@ -26,7 +26,7 @@ import net.finmath.time.TimeDiscretizationInterface;
 
 /**
  * @author Christian Fries
- * 
+ *
  */
 @RunWith(Parameterized.class)
 public class BrownianMotionTest {
@@ -34,10 +34,10 @@ public class BrownianMotionTest {
 	@Parameters
 	public static Collection<Object[]> data() {
 		return Arrays.asList(new Object[][] {
-				{ "BrownianMotion" },							// Text case 1: Java implementation
-				{ "BrownianMotionJavaRandom" },					// Text case 2: Java implementation
-				{ "BrownianMotionCudaWithHostRandomVariable" },	// Text case 3: Java implementation
-				{ "BrownianMotionCudaWithRandomVariableCuda" }	// Text case 4: Java implementation			
+			{ "BrownianMotion" },							// Text case 1: Java implementation
+			{ "BrownianMotionJavaRandom" },					// Text case 2: Java implementation
+			{ "BrownianMotionCudaWithHostRandomVariable" },	// Text case 3: Java implementation
+			{ "BrownianMotionCudaWithRandomVariableCuda" }	// Text case 4: Java implementation
 		});
 	}
 

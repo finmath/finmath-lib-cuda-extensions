@@ -33,21 +33,21 @@ import net.finmath.time.TimeDiscretizationInterface;
  * <i>W = (W<sub>1</sub>,...,W<sub>n</sub>)</i> where <i>W<sub>i</sub></i> is
  * a Brownian motion and <i>W<sub>i</sub></i>, <i>W<sub>j</sub></i> are
  * independent for <i>i</i> not equal <i>j</i>.
- * 
+ *
  * For a correlated Brownian motion with see
  * {@link net.finmath.montecarlo.CorrelatedBrownianMotion}.
- * 
+ *
  * Here the dimension <i>n</i> is called factors since this Brownian motion is used to
  * generate multi-dimensional multi-factor Ito processes and there one might
  * use a different number of factors to generate Ito processes of different
- * dimension. 
+ * dimension.
  *
  * The quadruppel (time discretization, number of factors, number of paths, seed)
  * defines the state of an object of this class, i.e., BrownianMotion for which
  * there parameters agree, generate the same random numbers.
  *
  * The class is immutable and thread safe. It uses lazy initialization.
- * 
+ *
  * @author Christian Fries
  * @version 1.6
  */
@@ -68,12 +68,12 @@ public class BrownianMotionCudaWithHostRandomVariable implements BrownianMotionI
 
 	/**
 	 * Construct a Brownian motion.
-	 * 
+	 *
 	 * The constructor allows to set the factory to be used for the construction of
 	 * random variables. This allows to generate Brownian increments represented
 	 * by different implementations of the RandomVariableInterface (e.g. the RandomVariableLowMemory internally
 	 * using float representations).
-	 * 
+	 *
 	 * @param timeDiscretization The time discretization used for the Brownian increments.
 	 * @param numberOfFactors Number of factors.
 	 * @param numberOfPaths Number of paths to simulate.
@@ -99,7 +99,7 @@ public class BrownianMotionCudaWithHostRandomVariable implements BrownianMotionI
 
 	/**
 	 * Construct a Brownian motion.
-	 * 
+	 *
 	 * @param timeDiscretization The time discretization used for the Brownian increments.
 	 * @param numberOfFactors Number of factors.
 	 * @param numberOfPaths Number of paths to simulate.
@@ -152,40 +152,40 @@ public class BrownianMotionCudaWithHostRandomVariable implements BrownianMotionI
 
 		curandGenerator generator = new curandGenerator();
 
-		// Allocate n floats on host 
+		// Allocate n floats on host
 		//        float hostData[] = new float[n];
 
-		// Allocate n floats on device 
+		// Allocate n floats on device
 		Pointer deviceData = new Pointer();
 		cudaMalloc(deviceData, n * Sizeof.FLOAT);
 
-		// Create pseudo-random number generator 
+		// Create pseudo-random number generator
 		curandCreateGenerator(generator, CURAND_RNG_PSEUDO_DEFAULT);
 
-		// Set seed 
+		// Set seed
 		curandSetPseudoRandomGeneratorSeed(generator, 1234);
 
 		// Allocate memory
-		float[][][] brownianIncrementsArray = new float[timeDiscretization.getNumberOfTimeSteps()][numberOfFactors][numberOfPaths];        
+		float[][][] brownianIncrementsArray = new float[timeDiscretization.getNumberOfTimeSteps()][numberOfFactors][numberOfPaths];
 
 		// Pre-calculate square roots of deltaT
 		for(int timeIndex=0; timeIndex<timeDiscretization.getNumberOfTimeSteps(); timeIndex++) {
 			float sqrtOfTimeStep = (float)Math.sqrt(timeDiscretization.getTimeStep(timeIndex));
 
-			// Generate n floats on device 
+			// Generate n floats on device
 			jcuda.jcurand.JCurand.curandGenerateNormal(generator, deviceData, n, 0.0f /* mean */, sqrtOfTimeStep /* stddev */);
 
 			int offset = 0;
 			for(int factor=0; factor<numberOfFactors; factor++) {
-				// Copy device memory to host 
-				cudaMemcpy(Pointer.to(brownianIncrementsArray[timeIndex][factor]), deviceData.withByteOffset(offset * Sizeof.FLOAT), 
+				// Copy device memory to host
+				cudaMemcpy(Pointer.to(brownianIncrementsArray[timeIndex][factor]), deviceData.withByteOffset(offset * Sizeof.FLOAT),
 						numberOfPaths * Sizeof.FLOAT, cudaMemcpyDeviceToHost);
 				offset += numberOfPaths;
-			}				
+			}
 		}
 
 
-		// Cleanup 
+		// Cleanup
 		curandDestroyGenerator(generator);
 		cudaFree(deviceData);
 

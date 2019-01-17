@@ -10,7 +10,6 @@ import static jcuda.driver.JCudaDriver.cuCtxSynchronize;
 import static jcuda.driver.JCudaDriver.cuDeviceGet;
 import static jcuda.driver.JCudaDriver.cuInit;
 import static jcuda.driver.JCudaDriver.cuLaunchKernel;
-import static jcuda.driver.JCudaDriver.cuMemcpyDtoH;
 import static jcuda.driver.JCudaDriver.cuModuleGetFunction;
 import static jcuda.driver.JCudaDriver.cuModuleLoad;
 
@@ -22,7 +21,6 @@ import java.lang.ref.ReferenceQueue;
 import java.lang.ref.WeakReference;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
-import java.util.concurrent.ExecutionException;
 import java.util.function.DoubleBinaryOperator;
 import java.util.function.DoubleUnaryOperator;
 import java.util.function.IntToDoubleFunction;
@@ -39,7 +37,6 @@ import jcuda.driver.CUfunction;
 import jcuda.driver.CUmodule;
 import jcuda.driver.JCudaDriver;
 import net.finmath.functions.DoubleTernaryOperator;
-import net.finmath.montecarlo.cuda.RandomVariableCuda;
 import net.finmath.stochastic.RandomVariableInterface;
 
 /**
@@ -56,7 +53,7 @@ import net.finmath.stochastic.RandomVariableInterface;
  *
  * This implementation uses floats for the realizations (consuming less memory compared to using doubles). However,
  * the calculation of the average is performed using double precision.
- * 
+ *
  * @author Christian Fries
  * @version 1.8
  */
@@ -102,7 +99,7 @@ public class RandomVariableCudaWithFinalizer implements RandomVariableInterface 
 	private final static CUfunction accrue;
 	private final static CUfunction discount;
 	private final static CUfunction reducePartial;
-	
+
 	private final static int reduceGridSize = 1024;
 
 	// Initalize cuda
@@ -255,7 +252,7 @@ public class RandomVariableCudaWithFinalizer implements RandomVariableInterface 
 
 	/**
 	 * Create a vector on device and copy host vector to it.
-	 * 
+	 *
 	 * @param values Host vector.
 	 * @return Pointer to device vector.
 	 */
@@ -602,7 +599,7 @@ public class RandomVariableCudaWithFinalizer implements RandomVariableInterface 
 			}}).get();
 		} catch (InterruptedException | ExecutionException e) { throw new RuntimeException(e.getCause()); }
 		return new RandomVariableLowMemory(time, values);
-		*/
+		 */
 	}
 
 	@Override
@@ -844,7 +841,7 @@ public class RandomVariableCudaWithFinalizer implements RandomVariableInterface 
 			for(int i=0; i<newRealizations.length; i++) newRealizations[i]		 = Math.sin(realizations[i]);
 			return new RandomVariableCuda(time, newRealizations);
 		}
-		 */		
+		 */
 	}
 
 	public RandomVariableInterface cos() {
@@ -1186,38 +1183,38 @@ public class RandomVariableCudaWithFinalizer implements RandomVariableInterface 
 	/*
 	 * Cude specific implementations
 	 */
-	
+
 	private double reduce() {
 		if(this.isDeterministic()) return valueIfNonStochastic;
 
 		RandomVariableCudaWithFinalizer reduced = this;
-		while(reduced.size() > 1) reduced = reduced.reduceBySize(reduceGridSize);		
+		while(reduced.size() > 1) reduced = reduced.reduceBySize(reduceGridSize);
 		return reduced.getRealizations()[0];
 	}
 
 	private RandomVariableCudaWithFinalizer reduceBySize(int bySize) {
-			int blockSizeX = bySize;
-			int gridSizeX = (int)Math.ceil((double)size()/2 / blockSizeX);
-			CUdeviceptr reduceVector = getCUdeviceptr(gridSizeX);
+		int blockSizeX = bySize;
+		int gridSizeX = (int)Math.ceil((double)size()/2 / blockSizeX);
+		CUdeviceptr reduceVector = getCUdeviceptr(gridSizeX);
 
-			callCudaFunction(reducePartial, new Pointer[] {
-					Pointer.to(new int[] { size() }),
-					Pointer.to(realizations),
-					Pointer.to(reduceVector)},
-					gridSizeX, blockSizeX, blockSizeX);
+		callCudaFunction(reducePartial, new Pointer[] {
+				Pointer.to(new int[] { size() }),
+				Pointer.to(realizations),
+				Pointer.to(reduceVector)},
+				gridSizeX, blockSizeX, blockSizeX);
 
-			return new RandomVariableCudaWithFinalizer(0.0, reduceVector, gridSizeX);
+		return new RandomVariableCudaWithFinalizer(0.0, reduceVector, gridSizeX);
 	}
 
 	private CUdeviceptr callCudaFunction(CUfunction function, Pointer[] arguments) {
-			// Allocate device output memory
-			CUdeviceptr result = getCUdeviceptr((long)size());
-			arguments[arguments.length-1] = Pointer.to(result);
+		// Allocate device output memory
+		CUdeviceptr result = getCUdeviceptr((long)size());
+		arguments[arguments.length-1] = Pointer.to(result);
 
-			int blockSizeX = 256;
-			int gridSizeX = (int)Math.ceil((double)size() / blockSizeX);
-			callCudaFunction(function, arguments, gridSizeX, blockSizeX, 0);
-			return result;
+		int blockSizeX = 256;
+		int gridSizeX = (int)Math.ceil((double)size() / blockSizeX);
+		callCudaFunction(function, arguments, gridSizeX, blockSizeX, 0);
+		return result;
 	}
 
 	private CUdeviceptr callCudaFunction(final CUfunction function, Pointer[] arguments, final int gridSizeX, final int blockSizeX, final int sharedMemorySize) {

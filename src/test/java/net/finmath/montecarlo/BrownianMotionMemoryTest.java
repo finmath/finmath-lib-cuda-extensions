@@ -7,15 +7,9 @@ package net.finmath.montecarlo;
 
 
 import java.text.DecimalFormat;
-import java.util.Arrays;
-import java.util.Collection;
 
 import org.junit.Assert;
-import org.junit.Before;
 import org.junit.Test;
-import org.junit.runner.RunWith;
-import org.junit.runners.Parameterized;
-import org.junit.runners.Parameterized.Parameters;
 
 import net.finmath.montecarlo.cuda.alternative.BrownianMotionCudaWithRandomVariableCuda;
 import net.finmath.stochastic.RandomVariableInterface;
@@ -24,7 +18,7 @@ import net.finmath.time.TimeDiscretizationInterface;
 
 /**
  * @author Christian Fries
- * 
+ *
  */
 public class BrownianMotionMemoryTest {
 
@@ -56,11 +50,11 @@ public class BrownianMotionMemoryTest {
 
 			// Test the quality of the Brownian motion
 			BrownianMotionInterface brownian = new BrownianMotionCudaWithRandomVariableCuda(
-						timeDiscretization,
-						1,
-						numberOfPaths,
-						seed
-						);
+					timeDiscretization,
+					1,
+					numberOfPaths,
+					seed
+					);
 
 			RandomVariableInterface brownianRealization = brownian.getBrownianIncrement(0, 0);
 			double mean		= brownianRealization.getAverage();
