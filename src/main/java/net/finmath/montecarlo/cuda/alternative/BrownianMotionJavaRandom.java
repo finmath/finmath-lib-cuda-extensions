@@ -12,7 +12,7 @@ import net.finmath.montecarlo.AbstractRandomVariableFactory;
 import net.finmath.montecarlo.BrownianMotion;
 import net.finmath.montecarlo.RandomVariableFactory;
 import net.finmath.stochastic.RandomVariable;
-import net.finmath.time.TimeDiscretizationInterface;
+import net.finmath.time.TimeDiscretization;
 
 /**
  * Implementation of a time-discrete n-dimensional Brownian motion
@@ -41,7 +41,7 @@ public class BrownianMotionJavaRandom implements BrownianMotion, Serializable {
 
 	private static final long serialVersionUID = -5430067621669213475L;
 
-	private final TimeDiscretizationInterface						timeDiscretization;
+	private final TimeDiscretization						timeDiscretization;
 
 	private final int			numberOfFactors;
 	private final int			numberOfPaths;
@@ -60,14 +60,14 @@ public class BrownianMotionJavaRandom implements BrownianMotion, Serializable {
 	 * by different implementations of the RandomVariable (e.g. the RandomVariableFromFloatArray internally
 	 * using float representations).
 	 *
-	 * @param timeDiscretization The time discretization used for the Brownian increments.
+	 * @param timeDiscretizationFromArray The time discretization used for the Brownian increments.
 	 * @param numberOfFactors Number of factors.
 	 * @param numberOfPaths Number of paths to simulate.
 	 * @param seed The seed of the random number generator.
 	 * @param randomVariableFactory Factory to be used to create random variable.
 	 */
 	public BrownianMotionJavaRandom(
-			TimeDiscretizationInterface timeDiscretization,
+			TimeDiscretization timeDiscretization,
 			int numberOfFactors,
 			int numberOfPaths,
 			int seed,
@@ -86,13 +86,13 @@ public class BrownianMotionJavaRandom implements BrownianMotion, Serializable {
 	/**
 	 * Construct a Brownian motion.
 	 *
-	 * @param timeDiscretization The time discretization used for the Brownian increments.
+	 * @param timeDiscretizationFromArray The time discretization used for the Brownian increments.
 	 * @param numberOfFactors Number of factors.
 	 * @param numberOfPaths Number of paths to simulate.
 	 * @param seed The seed of the random number generator.
 	 */
 	public BrownianMotionJavaRandom(
-			TimeDiscretizationInterface timeDiscretization,
+			TimeDiscretization timeDiscretization,
 			int numberOfFactors,
 			int numberOfPaths,
 			int seed) {
@@ -105,7 +105,7 @@ public class BrownianMotionJavaRandom implements BrownianMotion, Serializable {
 	}
 
 	@Override
-	public BrownianMotion getCloneWithModifiedTimeDiscretization(TimeDiscretizationInterface newTimeDiscretization) {
+	public BrownianMotion getCloneWithModifiedTimeDiscretization(TimeDiscretization newTimeDiscretization) {
 		/// @TODO This can be improved: a complete recreation of the Brownian motion wouldn't be necessary!
 		return new BrownianMotionJavaRandom(newTimeDiscretization, getNumberOfFactors(), getNumberOfPaths(), getSeed());
 	}
@@ -174,7 +174,7 @@ public class BrownianMotionJavaRandom implements BrownianMotion, Serializable {
 	}
 
 	@Override
-	public TimeDiscretizationInterface getTimeDiscretization() {
+	public TimeDiscretization getTimeDiscretization() {
 		return timeDiscretization;
 	}
 
@@ -202,7 +202,7 @@ public class BrownianMotionJavaRandom implements BrownianMotion, Serializable {
 
 	public String toString() {
 		return super.toString()
-				+ "\n" + "timeDiscretization: " + timeDiscretization.toString()
+				+ "\n" + "timeDiscretizationFromArray: " + timeDiscretization.toString()
 				+ "\n" + "numberOfPaths: " + numberOfPaths
 				+ "\n" + "numberOfFactors: " + numberOfFactors
 				+ "\n" + "seed: " + seed;

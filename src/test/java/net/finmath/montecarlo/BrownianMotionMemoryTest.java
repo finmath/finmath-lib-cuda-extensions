@@ -13,8 +13,8 @@ import org.junit.Test;
 
 import net.finmath.montecarlo.cuda.alternative.BrownianMotionCudaWithRandomVariableCuda;
 import net.finmath.stochastic.RandomVariable;
+import net.finmath.time.TimeDiscretizationFromArray;
 import net.finmath.time.TimeDiscretization;
-import net.finmath.time.TimeDiscretizationInterface;
 
 /**
  * @author Christian Fries
@@ -35,7 +35,7 @@ public class BrownianMotionMemoryTest {
 		double	dt			= 0.1;
 
 		// Create the time discretization
-		TimeDiscretizationInterface timeDiscretization = new TimeDiscretization(0.0, (int)(lastTime/dt), dt);
+		TimeDiscretization timeDiscretization = new TimeDiscretizationFromArray(0.0, (int)(lastTime/dt), dt);
 
 		long millisStart = System.currentTimeMillis();
 

@@ -33,7 +33,7 @@ import net.finmath.montecarlo.interestrate.modelplugins.LIBORCovarianceModelStoc
 import net.finmath.montecarlo.interestrate.products.AbstractLIBORMonteCarloProduct;
 import net.finmath.montecarlo.interestrate.products.SwaptionSimple;
 import net.finmath.montecarlo.process.ProcessEulerScheme;
-import net.finmath.time.TimeDiscretization;
+import net.finmath.time.TimeDiscretizationFromArray;
 
 /**
  * This class tests the LIBOR market model and products.
@@ -153,25 +153,25 @@ public class LIBORMarketModelCalibrationTest {
 		 * Create the libor tenor structure and the initial values
 		 */
 		double liborRateTimeHorzion	= 20.0;
-		TimeDiscretization liborPeriodDiscretization = new TimeDiscretization(0.0, (int) (liborRateTimeHorzion / liborPeriodLength), liborPeriodLength);
+		TimeDiscretizationFromArray liborPeriodDiscretization = new TimeDiscretizationFromArray(0.0, (int) (liborRateTimeHorzion / liborPeriodLength), liborPeriodLength);
 
 		/*
 		 * Create a simulation time discretization
 		 */
 		double lastTime	= 20.0;
 		double dt		= 0.5;
-		TimeDiscretization timeDiscretization = new TimeDiscretization(0.0, (int) (lastTime / dt), dt);
+		TimeDiscretizationFromArray timeDiscretizationFromArray = new TimeDiscretizationFromArray(0.0, (int) (lastTime / dt), dt);
 
 		/*
 		 * Create Brownian motions
 		 */
-		//		BrownianMotion brownianMotion = new net.finmath.montecarlo.BrownianMotionLazyInit(timeDiscretization, numberOfFactors + 1, numberOfPaths, 31415 /* seed */);
-		BrownianMotion brownianMotion = new net.finmath.montecarlo.cuda.alternative.BrownianMotionCudaWithRandomVariableCuda(timeDiscretization, numberOfFactors + 1, numberOfPaths, 31415 /* seed */);
+		//		BrownianMotion brownianMotion = new net.finmath.montecarlo.BrownianMotionLazyInit(timeDiscretizationFromArray, numberOfFactors + 1, numberOfPaths, 31415 /* seed */);
+		BrownianMotion brownianMotion = new net.finmath.montecarlo.cuda.alternative.BrownianMotionCudaWithRandomVariableCuda(timeDiscretizationFromArray, numberOfFactors + 1, numberOfPaths, 31415 /* seed */);
 		BrownianMotion brownianMotionView1 = new BrownianMotionView(brownianMotion, new Integer[] { 0, 1, 2, 3, 4 });
 		BrownianMotion brownianMotionView2 = new BrownianMotionView(brownianMotion, new Integer[] { 0, 5 });
 
 		// Create a covariance model
-		AbstractLIBORCovarianceModelParametric covarianceModelParametric = new LIBORCovarianceModelExponentialForm5Param(timeDiscretization, liborPeriodDiscretization, numberOfFactors, new double[] { 0.20, 0.05, 0.10, 0.05, 0.10} );
+		AbstractLIBORCovarianceModelParametric covarianceModelParametric = new LIBORCovarianceModelExponentialForm5Param(timeDiscretizationFromArray, liborPeriodDiscretization, numberOfFactors, new double[] { 0.20, 0.05, 0.10, 0.05, 0.10} );
 		// Create blended local volatility model with fixed parameter 0.0 (that is "lognormal").
 		AbstractLIBORCovarianceModelParametric covarianceModelBlended = new BlendedLocalVolatilityModel(covarianceModelParametric, 0.0, false);
 		// Create stochastic scaling (pass brownianMotionView2 to it)
@@ -236,6 +236,6 @@ public class LIBORMarketModelCalibrationTest {
 	}
 
 	private static double getParSwaprate(ForwardCurveInterface forwardCurve, DiscountCurveInterface discountCurve, double[] swapTenor) throws CalculationException {
-		return net.finmath.marketdata.products.Swap.getForwardSwapRate(new TimeDiscretization(swapTenor), new TimeDiscretization(swapTenor), forwardCurve, discountCurve);
+		return net.finmath.marketdata.products.Swap.getForwardSwapRate(new TimeDiscretizationFromArray(swapTenor), new TimeDiscretizationFromArray(swapTenor), forwardCurve, discountCurve);
 	}
 }

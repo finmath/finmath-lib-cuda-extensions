@@ -30,8 +30,8 @@ import net.finmath.montecarlo.model.AbstractModel;
 import net.finmath.montecarlo.process.AbstractProcess;
 import net.finmath.montecarlo.process.ProcessEulerScheme;
 import net.finmath.stochastic.RandomVariable;
+import net.finmath.time.TimeDiscretizationFromArray;
 import net.finmath.time.TimeDiscretization;
-import net.finmath.time.TimeDiscretizationInterface;
 
 /**
  * @author Christian Fries
@@ -83,7 +83,7 @@ public class MonteCarloBlackScholesModelTest {
 	@Before
 	public void setUp() {
 		// Create a time discretizeion
-		TimeDiscretizationInterface timeDiscretization = new TimeDiscretization(0.0 /* initial */, numberOfTimeSteps, deltaT);
+		TimeDiscretization timeDiscretization = new TimeDiscretizationFromArray(0.0 /* initial */, numberOfTimeSteps, deltaT);
 
 		switch(testCase) {
 		case "BrownianMotionLazyInit":
@@ -136,7 +136,7 @@ public class MonteCarloBlackScholesModelTest {
 		/*
 		 * Value a call option - directly
 		 */
-		TimeDiscretizationInterface timeDiscretization = brownian.getTimeDiscretization();
+		TimeDiscretization timeDiscretization = brownian.getTimeDiscretization();
 
 		RandomVariable asset = process.getProcessValue(timeDiscretization.getTimeIndex(optionMaturity), assetIndex);
 		RandomVariable numeraireAtPayment = model.getNumeraire(optionMaturity);
