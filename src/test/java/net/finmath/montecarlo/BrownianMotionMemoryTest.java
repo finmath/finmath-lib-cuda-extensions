@@ -12,7 +12,7 @@ import org.junit.Assert;
 import org.junit.Test;
 
 import net.finmath.montecarlo.cuda.alternative.BrownianMotionCudaWithRandomVariableCuda;
-import net.finmath.stochastic.RandomVariableInterface;
+import net.finmath.stochastic.RandomVariable;
 import net.finmath.time.TimeDiscretization;
 import net.finmath.time.TimeDiscretizationInterface;
 
@@ -49,14 +49,14 @@ public class BrownianMotionMemoryTest {
 			System.out.println("Number of paths = " + numberOfPaths + "\tDevice free memory: " + formatterPercent.format((double)free[0]/(total[0])) + ".");
 
 			// Test the quality of the Brownian motion
-			BrownianMotionInterface brownian = new BrownianMotionCudaWithRandomVariableCuda(
+			BrownianMotion brownian = new BrownianMotionCudaWithRandomVariableCuda(
 					timeDiscretization,
 					1,
 					numberOfPaths,
 					seed
 					);
 
-			RandomVariableInterface brownianRealization = brownian.getBrownianIncrement(0, 0);
+			RandomVariable brownianRealization = brownian.getBrownianIncrement(0, 0);
 			double mean		= brownianRealization.getAverage();
 			double variance	= brownianRealization.getVariance();
 

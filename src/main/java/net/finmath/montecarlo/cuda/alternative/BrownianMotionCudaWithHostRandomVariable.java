@@ -22,10 +22,10 @@ import jcuda.jcurand.JCurand;
 import jcuda.jcurand.curandGenerator;
 import jcuda.runtime.JCuda;
 import net.finmath.montecarlo.AbstractRandomVariableFactory;
-import net.finmath.montecarlo.BrownianMotionInterface;
+import net.finmath.montecarlo.BrownianMotion;
 import net.finmath.montecarlo.RandomVariableFactory;
-import net.finmath.montecarlo.RandomVariableLowMemory;
-import net.finmath.stochastic.RandomVariableInterface;
+import net.finmath.montecarlo.RandomVariableFromFloatArray;
+import net.finmath.stochastic.RandomVariable;
 import net.finmath.time.TimeDiscretizationInterface;
 
 /**
@@ -43,7 +43,7 @@ import net.finmath.time.TimeDiscretizationInterface;
  * dimension.
  *
  * The quadruppel (time discretization, number of factors, number of paths, seed)
- * defines the state of an object of this class, i.e., BrownianMotion for which
+ * defines the state of an object of this class, i.e., BrownianMotionLazyInit for which
  * there parameters agree, generate the same random numbers.
  *
  * The class is immutable and thread safe. It uses lazy initialization.
@@ -51,7 +51,7 @@ import net.finmath.time.TimeDiscretizationInterface;
  * @author Christian Fries
  * @version 1.6
  */
-public class BrownianMotionCudaWithHostRandomVariable implements BrownianMotionInterface, Serializable {
+public class BrownianMotionCudaWithHostRandomVariable implements BrownianMotion, Serializable {
 
 	private static final long serialVersionUID = -5430067621669213475L;
 
@@ -63,7 +63,7 @@ public class BrownianMotionCudaWithHostRandomVariable implements BrownianMotionI
 
 	private final AbstractRandomVariableFactory randomVariableFactory;
 
-	private transient	RandomVariableInterface[][]	brownianIncrements;
+	private transient	RandomVariable[][]	brownianIncrements;
 	private final		Object						brownianIncrementsLazyInitLock = new Object();
 
 	/**
@@ -71,7 +71,7 @@ public class BrownianMotionCudaWithHostRandomVariable implements BrownianMotionI
 	 *
 	 * The constructor allows to set the factory to be used for the construction of
 	 * random variables. This allows to generate Brownian increments represented
-	 * by different implementations of the RandomVariableInterface (e.g. the RandomVariableLowMemory internally
+	 * by different implementations of the RandomVariable (e.g. the RandomVariableFromFloatArray internally
 	 * using float representations).
 	 *
 	 * @param timeDiscretization The time discretization used for the Brownian increments.
@@ -114,18 +114,18 @@ public class BrownianMotionCudaWithHostRandomVariable implements BrownianMotionI
 	}
 
 	@Override
-	public BrownianMotionInterface getCloneWithModifiedSeed(int seed) {
+	public BrownianMotion getCloneWithModifiedSeed(int seed) {
 		return new BrownianMotionCudaWithHostRandomVariable(getTimeDiscretization(), getNumberOfFactors(), getNumberOfPaths(), seed);
 	}
 
 	@Override
-	public BrownianMotionInterface getCloneWithModifiedTimeDiscretization(TimeDiscretizationInterface newTimeDiscretization) {
+	public BrownianMotion getCloneWithModifiedTimeDiscretization(TimeDiscretizationInterface newTimeDiscretization) {
 		/// @TODO This can be improved: a complete recreation of the Brownian motion wouldn't be necessary!
 		return new BrownianMotionCudaWithHostRandomVariable(newTimeDiscretization, getNumberOfFactors(), getNumberOfPaths(), getSeed());
 	}
 
 	@Override
-	public RandomVariableInterface getBrownianIncrement(int timeIndex, int factor) {
+	public RandomVariable getBrownianIncrement(int timeIndex, int factor) {
 
 		// Thread safe lazy initialization
 		synchronized(brownianIncrementsLazyInitLock) {
@@ -189,14 +189,14 @@ public class BrownianMotionCudaWithHostRandomVariable implements BrownianMotionI
 		curandDestroyGenerator(generator);
 		cudaFree(deviceData);
 
-		// Allocate memory for RandomVariable wrapper objects.
-		brownianIncrements = new RandomVariableInterface[timeDiscretization.getNumberOfTimeSteps()][numberOfFactors];
+		// Allocate memory for RandomVariableFromDoubleArray wrapper objects.
+		brownianIncrements = new RandomVariable[timeDiscretization.getNumberOfTimeSteps()][numberOfFactors];
 
-		// Wrap the values in RandomVariable objects
+		// Wrap the values in RandomVariableFromDoubleArray objects
 		for(int timeIndex=0; timeIndex<timeDiscretization.getNumberOfTimeSteps(); timeIndex++) {
 			double time = timeDiscretization.getTime(timeIndex+1);
 			for(int factor=0; factor<numberOfFactors; factor++) {
-				brownianIncrements[timeIndex][factor] = new RandomVariableLowMemory(time, brownianIncrementsArray[timeIndex][factor]);
+				brownianIncrements[timeIndex][factor] = new RandomVariableFromFloatArray(time, brownianIncrementsArray[timeIndex][factor]);
 				//						randomVariableFactory.createRandomVariable(time, brownianIncrementsArray[timeIndex][factor]);
 			}
 		}
@@ -218,7 +218,7 @@ public class BrownianMotionCudaWithHostRandomVariable implements BrownianMotionI
 	}
 
 	@Override
-	public RandomVariableInterface getRandomVariableForConstant(double value) {
+	public RandomVariable getRandomVariableForConstant(double value) {
 		return randomVariableFactory.createRandomVariable(value);
 	}
 
@@ -253,7 +253,7 @@ public class BrownianMotionCudaWithHostRandomVariable implements BrownianMotionI
 	}
 
 	@Override
-	public RandomVariableInterface getIncrement(int timeIndex, int factor) {
+	public RandomVariable getIncrement(int timeIndex, int factor) {
 		return getBrownianIncrement(timeIndex, factor);
 	}
 

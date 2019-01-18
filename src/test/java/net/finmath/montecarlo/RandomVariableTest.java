@@ -9,13 +9,13 @@ import org.junit.Assert;
 import org.junit.Test;
 
 import net.finmath.montecarlo.cuda.RandomVariableCuda;
-import net.finmath.stochastic.RandomVariableInterface;
+import net.finmath.stochastic.RandomVariable;
 
 /**
- * Test cases for the class net.finmath.montecarlo.RandomVariable.
+ * Test cases for the class net.finmath.montecarlo.RandomVariableFromDoubleArray.
  *
  * @author Christian Fries
- * @see net.finmath.montecarlo.RandomVariable
+ * @see net.finmath.montecarlo.RandomVariableFromDoubleArray
  */
 public class RandomVariableTest {
 
@@ -23,7 +23,7 @@ public class RandomVariableTest {
 	public void testRandomVariableDeterministc() {
 
 		// Create a random variable with a constant
-		RandomVariableInterface randomVariable = new RandomVariableCuda(2.0);
+		RandomVariable randomVariable = new RandomVariableCuda(2.0);
 
 		// Perform some calculations
 		randomVariable = randomVariable.mult(2.0);
@@ -41,7 +41,7 @@ public class RandomVariableTest {
 
 	@Test
 	public void testRandomVariableStochastic() throws InterruptedException {
-		RandomVariableInterface randomVariable = new RandomVariableCuda(new float[] {-4.0f, -2.0f, 0.0f, 2.0f, 4.0f} );
+		RandomVariable randomVariable = new RandomVariableCuda(new float[] {-4.0f, -2.0f, 0.0f, 2.0f, 4.0f} );
 
 		// Perform some calculations
 		randomVariable = randomVariable.add(4.0);
@@ -59,7 +59,7 @@ public class RandomVariableTest {
 		Assert.assertTrue(randomVariable.getVariance() == 2.0);
 
 		// Multiply two random variables, this will expand the receiver to a stochastic one
-		RandomVariableInterface randomVariable2 = new RandomVariableCuda(3.0);
+		RandomVariable randomVariable2 = new RandomVariableCuda(3.0);
 		randomVariable2 = randomVariable2.mult(randomVariable);
 
 		// The random variable has average value 6.0
@@ -77,7 +77,7 @@ public class RandomVariableTest {
 			values[i] = (float)i;
 		}
 
-		RandomVariableInterface randomVariable = new RandomVariableCuda(0.0,values);
+		RandomVariable randomVariable = new RandomVariableCuda(0.0,values);
 
 		double average = randomVariable.getAverage();
 
@@ -88,9 +88,9 @@ public class RandomVariableTest {
 	public void testRandomVariableArithmeticSqrtPow() {
 
 		// Create a stochastic random variable
-		RandomVariableInterface randomVariable = new RandomVariableCuda(0.0, new double[] {3.0, 1.0, 0.0, 2.0, 4.0, 1.0/3.0} );
+		RandomVariable randomVariable = new RandomVariableCuda(0.0, new double[] {3.0, 1.0, 0.0, 2.0, 4.0, 1.0/3.0} );
 
-		RandomVariableInterface check = randomVariable.sqrt().sub(randomVariable.pow(0.5));
+		RandomVariable check = randomVariable.sqrt().sub(randomVariable.pow(0.5));
 
 		// The random variable is identical 0.0
 		Assert.assertTrue(check.getAverage() == 0.0);
@@ -101,10 +101,10 @@ public class RandomVariableTest {
 	public void testRandomVariableArithmeticSquaredPow() {
 
 		// Create a stochastic random variable
-		RandomVariableInterface randomVariable = new RandomVariableCuda(0.0,
+		RandomVariable randomVariable = new RandomVariableCuda(0.0,
 				new double[] {3.0, 1.0, 0.0, 2.0, 4.0, 1.0/3.0} );
 
-		RandomVariableInterface check = randomVariable.squared().sub(randomVariable.pow(2.0));
+		RandomVariable check = randomVariable.squared().sub(randomVariable.pow(2.0));
 
 		// The random variable is identical 0.0
 		Assert.assertTrue(check.getAverage() == 0.0);
@@ -115,7 +115,7 @@ public class RandomVariableTest {
 	public void testRandomVariableStandardDeviation() {
 
 		// Create a stochastic random variable
-		RandomVariableInterface randomVariable = new RandomVariableCuda(0.0,
+		RandomVariable randomVariable = new RandomVariableCuda(0.0,
 				new double[] {3.0, 1.0, 0.0, 2.0, 4.0, 1.0/3.0} );
 
 		double check = randomVariable.getStandardDeviation() - Math.sqrt(randomVariable.getVariance());

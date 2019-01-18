@@ -20,7 +20,7 @@ import org.junit.runners.Parameterized.Parameters;
 import net.finmath.montecarlo.cuda.alternative.BrownianMotionCudaWithHostRandomVariable;
 import net.finmath.montecarlo.cuda.alternative.BrownianMotionCudaWithRandomVariableCuda;
 import net.finmath.montecarlo.cuda.alternative.BrownianMotionJavaRandom;
-import net.finmath.stochastic.RandomVariableInterface;
+import net.finmath.stochastic.RandomVariable;
 import net.finmath.time.TimeDiscretization;
 import net.finmath.time.TimeDiscretizationInterface;
 
@@ -34,7 +34,7 @@ public class BrownianMotionTest {
 	@Parameters
 	public static Collection<Object[]> data() {
 		return Arrays.asList(new Object[][] {
-			{ "BrownianMotion" },							// Text case 1: Java implementation
+			{ "BrownianMotionLazyInit" },							// Text case 1: Java implementation
 			{ "BrownianMotionJavaRandom" },					// Text case 2: Java implementation
 			{ "BrownianMotionCudaWithHostRandomVariable" },	// Text case 3: Java implementation
 			{ "BrownianMotionCudaWithRandomVariableCuda" }	// Text case 4: Java implementation
@@ -74,12 +74,12 @@ public class BrownianMotionTest {
 			if(i%10 == 0) System.out.print(".");
 
 			// Test the quality of the Brownian motion
-			BrownianMotionInterface brownian;
+			BrownianMotion brownian;
 
 			switch(testCase) {
-			case "BrownianMotion":
+			case "BrownianMotionLazyInit":
 			default:
-				brownian = new BrownianMotion(timeDiscretization, 1, numberOfPaths, seed,
+				brownian = new BrownianMotionLazyInit(timeDiscretization, 1, numberOfPaths, seed,
 						new RandomVariableFactory(true));
 				break;
 			case "BrownianMotionJavaRandom":
@@ -104,7 +104,7 @@ public class BrownianMotionTest {
 				break;
 			}
 
-			RandomVariableInterface brownianRealization = brownian.getBrownianIncrement(0, 0);
+			RandomVariable brownianRealization = brownian.getBrownianIncrement(0, 0);
 			double mean		= brownianRealization.getAverage();
 			double variance	= brownianRealization.getVariance();
 

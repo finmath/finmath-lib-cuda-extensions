@@ -7,7 +7,7 @@
 package net.finmath.montecarlo.cuda;
 
 import net.finmath.montecarlo.AbstractRandomVariableFactory;
-import net.finmath.stochastic.RandomVariableInterface;
+import net.finmath.stochastic.RandomVariable;
 
 /**
  * @author Christian Fries
@@ -20,12 +20,12 @@ public class RandomVariableCudaFactory extends AbstractRandomVariableFactory {
 	}
 
 	@Override
-	public RandomVariableInterface createRandomVariable(double time, double value) {
+	public RandomVariable createRandomVariable(double time, double value) {
 		return new RandomVariableCuda(time, value);
 	}
 
 	@Override
-	public RandomVariableInterface createRandomVariable(double time, double[] values) {
+	public RandomVariable createRandomVariable(double time, double[] values) {
 		return new RandomVariableCuda(time, values);
 	}
 }

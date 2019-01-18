@@ -19,8 +19,8 @@ import org.junit.runners.Parameterized.Parameters;
 
 import net.finmath.exception.CalculationException;
 import net.finmath.functions.AnalyticFormulas;
+import net.finmath.montecarlo.BrownianMotionLazyInit;
 import net.finmath.montecarlo.BrownianMotion;
-import net.finmath.montecarlo.BrownianMotionInterface;
 import net.finmath.montecarlo.RandomVariableFactory;
 import net.finmath.montecarlo.cuda.RandomVariableCuda;
 import net.finmath.montecarlo.cuda.alternative.BrownianMotionCudaWithHostRandomVariable;
@@ -29,7 +29,7 @@ import net.finmath.montecarlo.cuda.alternative.BrownianMotionJavaRandom;
 import net.finmath.montecarlo.model.AbstractModel;
 import net.finmath.montecarlo.process.AbstractProcess;
 import net.finmath.montecarlo.process.ProcessEulerScheme;
-import net.finmath.stochastic.RandomVariableInterface;
+import net.finmath.stochastic.RandomVariable;
 import net.finmath.time.TimeDiscretization;
 import net.finmath.time.TimeDiscretizationInterface;
 
@@ -43,7 +43,7 @@ public class MonteCarloBlackScholesModelTest {
 	@Parameters
 	public static Collection<Object[]> data() {
 		return Arrays.asList(new Object[][] {
-			{ "BrownianMotion" },							// Text case 1: Java implementation
+			{ "BrownianMotionLazyInit" },							// Text case 1: Java implementation
 			{ "BrownianMotionJavaRandom" },					// Text case 2: Java implementation
 			{ "BrownianMotionCudaWithHostRandomVariable" },	// Text case 3: Java implementation
 			{ "BrownianMotionCudaWithRandomVariableCuda" }	// Text case 4: Java implementation
@@ -73,7 +73,7 @@ public class MonteCarloBlackScholesModelTest {
 	private final double	optionStrike = 1.05;
 
 	private String testCase;
-	private BrownianMotionInterface brownian;
+	private BrownianMotion brownian;
 
 	public MonteCarloBlackScholesModelTest(String testCase) {
 		this.testCase = testCase;
@@ -86,9 +86,9 @@ public class MonteCarloBlackScholesModelTest {
 		TimeDiscretizationInterface timeDiscretization = new TimeDiscretization(0.0 /* initial */, numberOfTimeSteps, deltaT);
 
 		switch(testCase) {
-		case "BrownianMotion":
+		case "BrownianMotionLazyInit":
 		default:
-			brownian = new BrownianMotion(timeDiscretization, 1, numberOfPaths, seed,
+			brownian = new BrownianMotionLazyInit(timeDiscretization, 1, numberOfPaths, seed,
 					new RandomVariableFactory(true));
 			break;
 		case "BrownianMotionJavaRandom":
@@ -138,11 +138,11 @@ public class MonteCarloBlackScholesModelTest {
 		 */
 		TimeDiscretizationInterface timeDiscretization = brownian.getTimeDiscretization();
 
-		RandomVariableInterface asset = process.getProcessValue(timeDiscretization.getTimeIndex(optionMaturity), assetIndex);
-		RandomVariableInterface numeraireAtPayment = model.getNumeraire(optionMaturity);
-		RandomVariableInterface numeraireAtEval = model.getNumeraire(0.0);
+		RandomVariable asset = process.getProcessValue(timeDiscretization.getTimeIndex(optionMaturity), assetIndex);
+		RandomVariable numeraireAtPayment = model.getNumeraire(optionMaturity);
+		RandomVariable numeraireAtEval = model.getNumeraire(0.0);
 
-		RandomVariableInterface payoff = asset.sub(optionStrike).floor(0.0);
+		RandomVariable payoff = asset.sub(optionStrike).floor(0.0);
 		double value = payoff.div(numeraireAtPayment).mult(numeraireAtEval).getAverage();
 
 		double valueAnalytic = AnalyticFormulas.blackScholesOptionValue(initialValue, riskFreeRate, volatility, optionMaturity, optionStrike);

@@ -37,10 +37,10 @@ import jcuda.driver.CUfunction;
 import jcuda.driver.CUmodule;
 import jcuda.driver.JCudaDriver;
 import net.finmath.functions.DoubleTernaryOperator;
-import net.finmath.stochastic.RandomVariableInterface;
+import net.finmath.stochastic.RandomVariable;
 
 /**
- * The class RandomVariable represents a random variable being the evaluation of a stochastic process
+ * The class RandomVariableFromDoubleArray represents a random variable being the evaluation of a stochastic process
  * at a certain time within a Monte-Carlo simulation.
  * It is thus essentially a vector of floating point numbers - the realizations - together with a double - the time.
  * The index of the vector represents path.
@@ -49,7 +49,7 @@ import net.finmath.stochastic.RandomVariableInterface;
  * optimized code.
  *
  * Accesses performed exclusively through the interface
- * <code>RandomVariableInterface</code> is thread safe (and does not mutate the class).
+ * <code>RandomVariable</code> is thread safe (and does not mutate the class).
  *
  * This implementation uses floats for the realizations (consuming less memory compared to using doubles). However,
  * the calculation of the average is performed using double precision.
@@ -57,7 +57,7 @@ import net.finmath.stochastic.RandomVariableInterface;
  * @author Christian Fries
  * @version 1.8
  */
-public class RandomVariableCudaWithFinalizer implements RandomVariableInterface {
+public class RandomVariableCudaWithFinalizer implements RandomVariable {
 
 	private static final long serialVersionUID = 7620120320663270600L;
 
@@ -284,7 +284,7 @@ public class RandomVariableCudaWithFinalizer implements RandomVariableInterface 
 	}
 
 	@Override
-	public boolean equals(RandomVariableInterface randomVariable) {
+	public boolean equals(RandomVariable randomVariable) {
 		throw new UnsupportedOperationException();
 		/*
 		if(this.time != randomVariable.getFiltrationTime()) return false;
@@ -355,7 +355,7 @@ public class RandomVariableCudaWithFinalizer implements RandomVariableInterface 
 	}
 
 	@Override
-	public double getAverage(RandomVariableInterface probabilities) {
+	public double getAverage(RandomVariable probabilities) {
 		throw new UnsupportedOperationException();
 		/*
 		if(isDeterministic())	return valueIfNonStochastic;
@@ -374,7 +374,7 @@ public class RandomVariableCudaWithFinalizer implements RandomVariableInterface 
 	}
 
 	/* (non-Javadoc)
-	 * @see net.finmath.stochastic.RandomVariableInterface#getVariance()
+	 * @see net.finmath.stochastic.RandomVariable#getVariance()
 	 */
 	@Override
 	public double getVariance() {
@@ -386,7 +386,7 @@ public class RandomVariableCudaWithFinalizer implements RandomVariableInterface 
 	}
 
 	@Override
-	public double getVariance(RandomVariableInterface probabilities) {
+	public double getVariance(RandomVariable probabilities) {
 		throw new UnsupportedOperationException();
 		/*
 		if(isDeterministic())	return 0.0;
@@ -428,7 +428,7 @@ public class RandomVariableCudaWithFinalizer implements RandomVariableInterface 
 	}
 
 	@Override
-	public double getStandardDeviation(RandomVariableInterface probabilities) {
+	public double getStandardDeviation(RandomVariable probabilities) {
 		if(isDeterministic())	return 0.0;
 		if(size() == 0)			return Double.NaN;
 
@@ -444,7 +444,7 @@ public class RandomVariableCudaWithFinalizer implements RandomVariableInterface 
 	}
 
 	@Override
-	public double getStandardError(RandomVariableInterface probabilities) {
+	public double getStandardError(RandomVariable probabilities) {
 		if(isDeterministic())	return 0.0;
 		if(size() == 0)			return Double.NaN;
 
@@ -468,7 +468,7 @@ public class RandomVariableCudaWithFinalizer implements RandomVariableInterface 
 	}
 
 	@Override
-	public double getQuantile(double quantile, RandomVariableInterface probabilities) {
+	public double getQuantile(double quantile, RandomVariable probabilities) {
 		if(isDeterministic())	return valueIfNonStochastic;
 		if(size() == 0)			return Double.NaN;
 
@@ -574,7 +574,7 @@ public class RandomVariableCudaWithFinalizer implements RandomVariableInterface 
 		return realizations == null;
 	}
 
-	public RandomVariableInterface expand(int numberOfPaths) {
+	public RandomVariable expand(int numberOfPaths) {
 		if(isDeterministic()) {
 			// Expand random variable to a vector of path values
 			float[] clone = new float[numberOfPaths];
@@ -587,7 +587,7 @@ public class RandomVariableCudaWithFinalizer implements RandomVariableInterface 
 	}
 
 	@Override
-	public RandomVariableInterface cache() {
+	public RandomVariable cache() {
 		return this;
 		/*
 		final float[] values = new float[(int)size];
@@ -598,7 +598,7 @@ public class RandomVariableCudaWithFinalizer implements RandomVariableInterface 
 				cuCtxSynchronize();
 			}}).get();
 		} catch (InterruptedException | ExecutionException e) { throw new RuntimeException(e.getCause()); }
-		return new RandomVariableLowMemory(time, values);
+		return new RandomVariableFromFloatArray(time, values);
 		 */
 	}
 
@@ -615,7 +615,7 @@ public class RandomVariableCudaWithFinalizer implements RandomVariableInterface 
 	}
 
 	@Override
-	public RandomVariableInterface apply(DoubleUnaryOperator function) {
+	public RandomVariable apply(DoubleUnaryOperator function) {
 		throw new UnsupportedOperationException();
 		/*
 		if(isDeterministic()) {
@@ -631,16 +631,16 @@ public class RandomVariableCudaWithFinalizer implements RandomVariableInterface 
 	}
 
 	@Override
-	public RandomVariableInterface apply(DoubleBinaryOperator operator, RandomVariableInterface argument) {
+	public RandomVariable apply(DoubleBinaryOperator operator, RandomVariable argument) {
 		throw new UnsupportedOperationException();
 	}
 
 	@Override
-	public RandomVariableInterface apply(DoubleTernaryOperator operator, RandomVariableInterface argument1, RandomVariableInterface argument2) {
+	public RandomVariable apply(DoubleTernaryOperator operator, RandomVariable argument1, RandomVariable argument2) {
 		throw new UnsupportedOperationException();
 	}
 
-	public RandomVariableInterface cap(double cap) {
+	public RandomVariable cap(double cap) {
 		if(isDeterministic()) {
 			double newValueIfNonStochastic = Math.min(valueIfNonStochastic,cap);
 			return new RandomVariableCudaWithFinalizer(time, newValueIfNonStochastic);
@@ -658,10 +658,10 @@ public class RandomVariableCudaWithFinalizer implements RandomVariableInterface 
 	}
 
 	/* (non-Javadoc)
-	 * @see net.finmath.stochastic.RandomVariableInterface#floor(double)
+	 * @see net.finmath.stochastic.RandomVariable#floor(double)
 	 */
 	@Override
-	public RandomVariableInterface floor(double floor) {
+	public RandomVariable floor(double floor) {
 		if(isDeterministic()) {
 			double newValueIfNonStochastic = Math.max(valueIfNonStochastic,floor);
 			return new RandomVariableCudaWithFinalizer(time, newValueIfNonStochastic);
@@ -679,7 +679,7 @@ public class RandomVariableCudaWithFinalizer implements RandomVariableInterface 
 	}
 
 	@Override
-	public RandomVariableInterface add(double value) {
+	public RandomVariable add(double value) {
 		if(isDeterministic()) {
 			double newValueIfNonStochastic = valueIfNonStochastic + value;
 			return new RandomVariableCudaWithFinalizer(time, newValueIfNonStochastic);
@@ -697,7 +697,7 @@ public class RandomVariableCudaWithFinalizer implements RandomVariableInterface 
 	}
 
 	@Override
-	public RandomVariableInterface sub(double value) {
+	public RandomVariable sub(double value) {
 		if(isDeterministic()) {
 			double newValueIfNonStochastic = valueIfNonStochastic - value;
 			return new RandomVariableCudaWithFinalizer(time, newValueIfNonStochastic);
@@ -715,7 +715,7 @@ public class RandomVariableCudaWithFinalizer implements RandomVariableInterface 
 	}
 
 	@Override
-	public RandomVariableInterface mult(double value) {
+	public RandomVariable mult(double value) {
 		if(isDeterministic()) {
 			double newValueIfNonStochastic = valueIfNonStochastic * value;
 			return new RandomVariableCudaWithFinalizer(time, newValueIfNonStochastic);
@@ -733,7 +733,7 @@ public class RandomVariableCudaWithFinalizer implements RandomVariableInterface 
 	}
 
 	@Override
-	public RandomVariableInterface div(double value) {
+	public RandomVariable div(double value) {
 		if(isDeterministic()) {
 			double newValueIfNonStochastic = valueIfNonStochastic / value;
 			return new RandomVariableCudaWithFinalizer(time, newValueIfNonStochastic);
@@ -750,7 +750,7 @@ public class RandomVariableCudaWithFinalizer implements RandomVariableInterface 
 	}
 
 	@Override
-	public RandomVariableInterface pow(double exponent) {
+	public RandomVariable pow(double exponent) {
 		if(isDeterministic()) {
 			double newValueIfNonStochastic = Math.pow(valueIfNonStochastic,exponent);
 			return new RandomVariableCudaWithFinalizer(time, newValueIfNonStochastic);
@@ -767,7 +767,7 @@ public class RandomVariableCudaWithFinalizer implements RandomVariableInterface 
 	}
 
 	@Override
-	public RandomVariableInterface squared() {
+	public RandomVariable squared() {
 		if(isDeterministic()) {
 			double newValueIfNonStochastic = valueIfNonStochastic * valueIfNonStochastic;
 			return new RandomVariableCudaWithFinalizer(time, newValueIfNonStochastic);
@@ -778,7 +778,7 @@ public class RandomVariableCudaWithFinalizer implements RandomVariableInterface 
 	}
 
 	@Override
-	public RandomVariableInterface sqrt() {
+	public RandomVariable sqrt() {
 		if(isDeterministic()) {
 			double newValueIfNonStochastic = Math.sqrt(valueIfNonStochastic);
 			return new RandomVariableCudaWithFinalizer(time, newValueIfNonStochastic);
@@ -795,7 +795,7 @@ public class RandomVariableCudaWithFinalizer implements RandomVariableInterface 
 	}
 
 	/* (non-Javadoc)
-	 * @see net.finmath.stochastic.RandomVariableInterface#exp()
+	 * @see net.finmath.stochastic.RandomVariable#exp()
 	 */
 	public RandomVariableCudaWithFinalizer exp() {
 		if(isDeterministic()) {
@@ -829,7 +829,7 @@ public class RandomVariableCudaWithFinalizer implements RandomVariableInterface 
 		}
 	}
 
-	public RandomVariableInterface sin() {
+	public RandomVariable sin() {
 		throw new UnsupportedOperationException();
 		/*
 		if(isDeterministic()) {
@@ -844,7 +844,7 @@ public class RandomVariableCudaWithFinalizer implements RandomVariableInterface 
 		 */
 	}
 
-	public RandomVariableInterface cos() {
+	public RandomVariable cos() {
 		throw new UnsupportedOperationException();
 		/*
 		if(isDeterministic()) {
@@ -859,7 +859,7 @@ public class RandomVariableCudaWithFinalizer implements RandomVariableInterface 
 		 */
 	}
 
-	public RandomVariableInterface add(RandomVariableInterface randomVariable) {
+	public RandomVariable add(RandomVariable randomVariable) {
 		// Set time of this random variable to maximum of time with respect to which measurability is known.
 		double newTime = Math.max(time, randomVariable.getFiltrationTime());
 
@@ -881,9 +881,9 @@ public class RandomVariableCudaWithFinalizer implements RandomVariableInterface 
 	}
 
 	/* (non-Javadoc)
-	 * @see net.finmath.stochastic.RandomVariableInterface#sub(net.finmath.stochastic.RandomVariableInterface)
+	 * @see net.finmath.stochastic.RandomVariable#sub(net.finmath.stochastic.RandomVariable)
 	 */
-	public RandomVariableInterface sub(RandomVariableInterface randomVariable) {
+	public RandomVariable sub(RandomVariable randomVariable) {
 		// Set time of this random variable to maximum of time with respect to which measurability is known.
 		double newTime = Math.max(time, randomVariable.getFiltrationTime());
 
@@ -909,9 +909,9 @@ public class RandomVariableCudaWithFinalizer implements RandomVariableInterface 
 	}
 
 	/* (non-Javadoc)
-	 * @see net.finmath.stochastic.RandomVariableInterface#mult(net.finmath.stochastic.RandomVariableInterface)
+	 * @see net.finmath.stochastic.RandomVariable#mult(net.finmath.stochastic.RandomVariable)
 	 */
-	public RandomVariableInterface mult(RandomVariableInterface randomVariable) {
+	public RandomVariable mult(RandomVariable randomVariable) {
 		// Set time of this random variable to maximum of time with respect to which measurability is known.
 		double newTime = Math.max(time, randomVariable.getFiltrationTime());
 
@@ -937,9 +937,9 @@ public class RandomVariableCudaWithFinalizer implements RandomVariableInterface 
 	}
 
 	/* (non-Javadoc)
-	 * @see net.finmath.stochastic.RandomVariableInterface#div(net.finmath.stochastic.RandomVariableInterface)
+	 * @see net.finmath.stochastic.RandomVariable#div(net.finmath.stochastic.RandomVariable)
 	 */
-	public RandomVariableInterface div(RandomVariableInterface randomVariable) {
+	public RandomVariable div(RandomVariable randomVariable) {
 		// Set time of this random variable to maximum of time with respect to which measurability is known.
 		double newTime = Math.max(time, randomVariable.getFiltrationTime());
 
@@ -964,7 +964,7 @@ public class RandomVariableCudaWithFinalizer implements RandomVariableInterface 
 		}
 	}
 
-	public RandomVariableInterface invert() {
+	public RandomVariable invert() {
 		if(isDeterministic()) {
 			double newValueIfNonStochastic = 1.0/valueIfNonStochastic;
 			return new RandomVariableCudaWithFinalizer(time, newValueIfNonStochastic);
@@ -980,7 +980,7 @@ public class RandomVariableCudaWithFinalizer implements RandomVariableInterface 
 		}
 	}
 
-	public RandomVariableInterface abs() {
+	public RandomVariable abs() {
 		if(isDeterministic()) {
 			double newValueIfNonStochastic = Math.abs(valueIfNonStochastic);
 			return new RandomVariableCudaWithFinalizer(time, newValueIfNonStochastic);
@@ -996,7 +996,7 @@ public class RandomVariableCudaWithFinalizer implements RandomVariableInterface 
 		}
 	}
 
-	public RandomVariableInterface cap(RandomVariableInterface randomVariable) {
+	public RandomVariable cap(RandomVariable randomVariable) {
 		// Set time of this random variable to maximum of time with respect to which measurability is known.
 		double newTime = Math.max(time, randomVariable.getFiltrationTime());
 
@@ -1017,7 +1017,7 @@ public class RandomVariableCudaWithFinalizer implements RandomVariableInterface 
 		}
 	}
 
-	public RandomVariableInterface floor(RandomVariableInterface randomVariable) {
+	public RandomVariable floor(RandomVariable randomVariable) {
 		// Set time of this random variable to maximum of time with respect to which measurability is known.
 		double newTime = Math.max(time, randomVariable.getFiltrationTime());
 
@@ -1039,7 +1039,7 @@ public class RandomVariableCudaWithFinalizer implements RandomVariableInterface 
 	}
 
 
-	public RandomVariableInterface accrue(RandomVariableInterface rate, double periodLength) {
+	public RandomVariable accrue(RandomVariable rate, double periodLength) {
 		// Set time of this random variable to maximum of time with respect to which measurability is known.
 		double newTime = Math.max(time, rate.getFiltrationTime());
 
@@ -1067,7 +1067,7 @@ public class RandomVariableCudaWithFinalizer implements RandomVariableInterface 
 		}
 	}
 
-	public RandomVariableInterface discount(RandomVariableInterface rate, double periodLength) {
+	public RandomVariable discount(RandomVariable rate, double periodLength) {
 		// Set time of this random variable to maximum of time with respect to which measurability is known.
 		double newTime = Math.max(time, rate.getFiltrationTime());
 
@@ -1115,67 +1115,67 @@ public class RandomVariableCudaWithFinalizer implements RandomVariableInterface 
 	}
 
 	@Override
-	public RandomVariableInterface average() {
+	public RandomVariable average() {
 		// TODO Auto-generated method stub
 		return null;
 	}
 
 	@Override
-	public RandomVariableInterface bus(RandomVariableInterface randomVariable) {
+	public RandomVariable bus(RandomVariable randomVariable) {
 		// TODO Auto-generated method stub
 		return null;
 	}
 
 	@Override
-	public RandomVariableInterface vid(RandomVariableInterface randomVariable) {
+	public RandomVariable vid(RandomVariable randomVariable) {
 		// TODO Auto-generated method stub
 		return null;
 	}
 
 	@Override
-	public RandomVariableInterface choose(RandomVariableInterface valueIfTriggerNonNegative, RandomVariableInterface valueIfTriggerNegative) {
-		// TODO Auto-generated method stub
-		return null;
-	}
-
-	/* (non-Javadoc)
-	 * @see net.finmath.stochastic.RandomVariableInterface#addProduct(net.finmath.stochastic.RandomVariableInterface, double)
-	 */
-	@Override
-	public RandomVariableInterface addProduct(RandomVariableInterface factor1, double factor2) {
+	public RandomVariable choose(RandomVariable valueIfTriggerNonNegative, RandomVariable valueIfTriggerNegative) {
 		// TODO Auto-generated method stub
 		return null;
 	}
 
 	/* (non-Javadoc)
-	 * @see net.finmath.stochastic.RandomVariableInterface#addProduct(net.finmath.stochastic.RandomVariableInterface, net.finmath.stochastic.RandomVariableInterface)
+	 * @see net.finmath.stochastic.RandomVariable#addProduct(net.finmath.stochastic.RandomVariable, double)
 	 */
 	@Override
-	public RandomVariableInterface addProduct(RandomVariableInterface factor1, RandomVariableInterface factor2) {
+	public RandomVariable addProduct(RandomVariable factor1, double factor2) {
 		// TODO Auto-generated method stub
 		return null;
 	}
 
 	/* (non-Javadoc)
-	 * @see net.finmath.stochastic.RandomVariableInterface#addRatio(net.finmath.stochastic.RandomVariableInterface, net.finmath.stochastic.RandomVariableInterface)
+	 * @see net.finmath.stochastic.RandomVariable#addProduct(net.finmath.stochastic.RandomVariable, net.finmath.stochastic.RandomVariable)
 	 */
 	@Override
-	public RandomVariableInterface addRatio(RandomVariableInterface numerator, RandomVariableInterface denominator) {
+	public RandomVariable addProduct(RandomVariable factor1, RandomVariable factor2) {
 		// TODO Auto-generated method stub
 		return null;
 	}
 
 	/* (non-Javadoc)
-	 * @see net.finmath.stochastic.RandomVariableInterface#subRatio(net.finmath.stochastic.RandomVariableInterface, net.finmath.stochastic.RandomVariableInterface)
+	 * @see net.finmath.stochastic.RandomVariable#addRatio(net.finmath.stochastic.RandomVariable, net.finmath.stochastic.RandomVariable)
 	 */
 	@Override
-	public RandomVariableInterface subRatio(RandomVariableInterface numerator, RandomVariableInterface denominator) {
+	public RandomVariable addRatio(RandomVariable numerator, RandomVariable denominator) {
+		// TODO Auto-generated method stub
+		return null;
+	}
+
+	/* (non-Javadoc)
+	 * @see net.finmath.stochastic.RandomVariable#subRatio(net.finmath.stochastic.RandomVariable, net.finmath.stochastic.RandomVariable)
+	 */
+	@Override
+	public RandomVariable subRatio(RandomVariable numerator, RandomVariable denominator) {
 		// TODO Auto-generated method stub
 		return null;
 	}
 
 	@Override
-	public RandomVariableInterface isNaN() {
+	public RandomVariable isNaN() {
 		// TODO Auto-generated method stub
 		return null;
 	}
