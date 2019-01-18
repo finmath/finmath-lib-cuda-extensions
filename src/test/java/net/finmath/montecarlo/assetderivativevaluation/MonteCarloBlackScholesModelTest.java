@@ -26,9 +26,9 @@ import net.finmath.montecarlo.cuda.RandomVariableCuda;
 import net.finmath.montecarlo.cuda.alternative.BrownianMotionCudaWithHostRandomVariable;
 import net.finmath.montecarlo.cuda.alternative.BrownianMotionCudaWithRandomVariableCuda;
 import net.finmath.montecarlo.cuda.alternative.BrownianMotionJavaRandom;
-import net.finmath.montecarlo.model.AbstractModel;
-import net.finmath.montecarlo.process.AbstractProcess;
-import net.finmath.montecarlo.process.ProcessEulerScheme;
+import net.finmath.montecarlo.model.AbstractProcessModel;
+import net.finmath.montecarlo.process.MonteCarloProcessFromProcessModel;
+import net.finmath.montecarlo.process.EulerSchemeFromProcessModel;
 import net.finmath.stochastic.RandomVariable;
 import net.finmath.time.TimeDiscretizationFromArray;
 import net.finmath.time.TimeDiscretization;
@@ -124,10 +124,10 @@ public class MonteCarloBlackScholesModelTest {
 		long millisStart = System.currentTimeMillis();
 
 		// Create a model
-		AbstractModel model = new BlackScholesModel(initialValue, riskFreeRate, volatility);
+		AbstractProcessModel model = new BlackScholesModel(initialValue, riskFreeRate, volatility);
 
 		// Create a corresponding MC process
-		AbstractProcess process = new ProcessEulerScheme(brownian);
+		MonteCarloProcessFromProcessModel process = new EulerSchemeFromProcessModel(brownian);
 
 		// Link model and process for delegation
 		process.setModel(model);
