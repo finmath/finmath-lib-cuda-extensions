@@ -18,10 +18,10 @@ import org.junit.Assert;
 import org.junit.Test;
 
 import net.finmath.exception.CalculationException;
+import net.finmath.marketdata.model.curves.DiscountCurve;
 import net.finmath.marketdata.model.curves.DiscountCurveFromForwardCurve;
-import net.finmath.marketdata.model.curves.DiscountCurveInterface;
 import net.finmath.marketdata.model.curves.ForwardCurve;
-import net.finmath.marketdata.model.curves.ForwardCurveInterface;
+import net.finmath.marketdata.model.curves.ForwardCurveInterpolation;
 import net.finmath.montecarlo.BrownianMotion;
 import net.finmath.montecarlo.BrownianMotionView;
 import net.finmath.montecarlo.interestrate.CalibrationProduct;
@@ -52,7 +52,7 @@ public class LIBORMarketModelCalibrationTest {
 	public LIBORMarketModelCalibrationTest() throws CalculationException {
 	}
 
-	private CalibrationProduct createCalibrationItem(double exerciseDate, double swapPeriodLength, int numberOfPeriods, double moneyness, double targetVolatility, ForwardCurveInterface forwardCurve, DiscountCurveInterface discountCurve) throws CalculationException {
+	private CalibrationProduct createCalibrationItem(double exerciseDate, double swapPeriodLength, int numberOfPeriods, double moneyness, double targetVolatility, ForwardCurve forwardCurve, DiscountCurve discountCurve) throws CalculationException {
 
 		double[]	fixingDates			= new double[numberOfPeriods];
 		double[]	paymentDates		= new double[numberOfPeriods];
@@ -103,7 +103,7 @@ public class LIBORMarketModelCalibrationTest {
 		double liborPeriodLength = 0.5;
 
 		// Create the forward curve (initial value of the LIBOR market model)
-		ForwardCurve forwardCurve = ForwardCurve.createForwardCurveFromForwards(
+		ForwardCurve forwardCurve = ForwardCurveInterpolation.createForwardCurveFromForwards(
 				"forwardCurve"		/* name of the curve */,
 				fixingTimes			/* fixings of the forward */,
 				forwardRates		/* forwards */,
@@ -111,7 +111,7 @@ public class LIBORMarketModelCalibrationTest {
 				);
 
 
-		DiscountCurveInterface discountCurve = new DiscountCurveFromForwardCurve(forwardCurve, liborPeriodLength);
+		DiscountCurve discountCurve = new DiscountCurveFromForwardCurve(forwardCurve, liborPeriodLength);
 
 		/*
 		 * Create a set of calibration products.
@@ -235,7 +235,7 @@ public class LIBORMarketModelCalibrationTest {
 		Assert.assertTrue(Math.abs(averageDeviation) < 1E-2);
 	}
 
-	private static double getParSwaprate(ForwardCurveInterface forwardCurve, DiscountCurveInterface discountCurve, double[] swapTenor) throws CalculationException {
+	private static double getParSwaprate(ForwardCurve forwardCurve, DiscountCurve discountCurve, double[] swapTenor) throws CalculationException {
 		return net.finmath.marketdata.products.Swap.getForwardSwapRate(new TimeDiscretizationFromArray(swapTenor), new TimeDiscretizationFromArray(swapTenor), forwardCurve, discountCurve);
 	}
 }
