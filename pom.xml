@@ -69,14 +69,13 @@
 		</resources>
 	</build>
 	<dependencies>
-		<!--
+
 		<dependency>
 			<groupId>net.finmath</groupId>
 			<artifactId>finmath-lib</artifactId>
-			<version>2.4.2</version>
-			<classifier>java6</classifier>
+			<version>4.0.1</version>
 		</dependency>
- 		-->
+
  		<dependency>
 			<groupId>org.apache.commons</groupId>
 			<artifactId>commons-math3</artifactId>
