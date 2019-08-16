@@ -73,7 +73,7 @@
 		<dependency>
 			<groupId>net.finmath</groupId>
 			<artifactId>finmath-lib</artifactId>
-			<version>4.0.1</version>
+			<version>4.0.12</version>
 		</dependency>
 
  		<dependency>
@@ -100,12 +100,12 @@
 		<dependency>
 			<groupId>org.jcuda</groupId>
 			<artifactId>jcuda</artifactId>
-			<version>0.8.0</version>
+			<version>10.1.0</version>
 		</dependency>
 		<dependency>
 			<groupId>org.jcuda</groupId>
 			<artifactId>jcurand</artifactId>
-			<version>0.8.0</version>
+			<version>10.1.0</version>
 		</dependency>
 	</dependencies>
 	
