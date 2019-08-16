@@ -2,25 +2,25 @@
 - - - -
 **Enabling finmath lib with cuda via jcuda.**
 - - - -
-The finmath lib cuda extension provide an implementation of the finmath lib interfaces `RandomVariableInterface` and `BrownianMotionInterface`` compatible with finmath lib 2.4.3 or later.
+The finmath lib cuda extensions provide an Cuda implementation of the finmath lib interfaces `RandomVariable` and `BrownianMotion`` compatible with finmath lib 4.0.12 or later.
 
-Since objects of type `BrownianMotionInterface` are taking the role of a factory for objects of type `RandomVariableInterface`, injecting the `BrownianMotionCuda` will result in most finmath-lib models performing their calculations on the GPU - seamlessly.
+Since objects of type `BrownianMotion` are taking the role of a factory for objects of type `RandomVariable`, injecting the `BrownianMotionCuda` will result in most finmath-lib models performing their calculations on the GPU - seamlessly.
 
 ## Example
-Create a vector of floats on the device
+Create a vector of floats on the GPU device
 ```
 RandomVariableInterface randomVariable = new RandomVariableCuda(new float[] {-4.0f, -2.0f, 0.0f, 2.0f, 4.0f} );
 ```
-perform some calculations (still on the gpu device)
+perform some calculations (still on the GPU device)
 ```
 randomVariable = randomVariable.add(4.0);
 randomVariable = randomVariable.div(2.0);
 ```
-perform a reduction on the device
+perform a reduction on the GPU device
 ```
 double average = randomVariable.getAverage();
 ```
-or get the result vector
+or get the result vector (to the host)
 ```
 double[] result = randomVariable.getRealizations();
 ```
@@ -51,7 +51,43 @@ If you do not have a machine with NVidia Cuda 10.0 at hand, you may try out the 
 * Check that you have cuda 10.0 (e.g. use `nvcc --version`)
 * Try finmath-lib-cuda-extensions as described in the previous section.
 
+## Performance
+
+### Unit test for random number generation:
+
+```
+Running net.finmath.montecarlo.BrownianMotionTest
+Test of performance of BrownianMotionLazyInit                  	..........test took 49.057 sec.
+Test of performance of BrownianMotionJavaRandom                	..........test took 65.558 sec.
+Test of performance of BrownianMotionCudaWithHostRandomVariable	..........test took 4.633 sec.
+Test of performance of BrownianMotionCudaWithRandomVariableCuda	..........test took 2.325 sec.
+```
+
+### Unit test for Monte-Carlo simulation
+
+```
+Running net.finmath.montecarlo.assetderivativevaluation.MonteCarloBlackScholesModelTest
+BrownianMotionLazyInit
+   value Monte-Carlo =  0.1898	 value analytic    =  0.1899	 calculation time =  4.00 sec.
+
+BrownianMotionJavaRandom
+   value Monte-Carlo =  0.1901	 value analytic    =  0.1899	 calculation time =  5.19 sec.
+
+BrownianMotionCudaWithHostRandomVariable
+   value Monte-Carlo =  0.1898	 value analytic    =  0.1899	 calculation time =  2.50 sec.
+
+BrownianMotionCudaWithRandomVariableCuda
+   value Monte-Carlo =  0.1898	 value analytic    =  0.1899	 calculation time =  0.09 sec.
+```
+
+Remark:
+* `BrownianMotionLazyInit`: Calculation on CPU, using Mersenne Twister.
+* `BrownianMotionJavaRandom`: Calculation on CPU, using Java random number generator (LCG).
+* `BrownianMotionCudaWithHostRandomVariable`: Calculation on CPU and GPU: Random number generator on GPU, Simulation on CPU.
+* `BrownianMotionCudaWithRandomVariableCuda`: Calculation on GPU: Random number generator on GPU, Simulation on GPU.
+
 ## References
+
 * [finmath lib Project documentation](http://finmath.net/finmath-lib/)
 provides the documentation of the library api.
 * [finmath lib API documentation](http://finmath.net/finmath-lib/apidocs/)
