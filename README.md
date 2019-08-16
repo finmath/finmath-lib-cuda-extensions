@@ -1,10 +1,14 @@
 # finmath lib cuda extensions
-- - - -
-**Enabling finmath lib with cuda via jcuda.**
-- - - -
-The finmath lib cuda extensions provide an Cuda implementation of the finmath lib interfaces `RandomVariable` and `BrownianMotion`` compatible with finmath lib 4.0.12 or later.
 
-Since objects of type `BrownianMotion` are taking the role of a factory for objects of type `RandomVariable`, injecting the `BrownianMotionCuda` will result in most finmath-lib models performing their calculations on the GPU - seamlessly.
+- - - -
+** Enabling finmath lib with cuda via jcuda. - Running finmath lib models on a GPU **
+- - - -
+
+The finmath lib cuda extensions provide an Cuda implementation of the finmath lib interfaces `RandomVariable` and `BrownianMotion` compatible with finmath lib 4.0.12 or later.
+
+A `RandomVariableCudaFactory` is provided, which can be inject in any finmath lib model using a random variable factory to construct `RandomVariable` objects. Objects created from this factory or from objects created from this factory perfrom their calculation on the GPU.
+
+In addition, objects of type `BrownianMotion` are also taking the role of a factory for objects of type `RandomVariable`. Thus, injecting the `BrownianMotionCuda` into classes consuming a `BrownianMotion` will result in most finmath-lib models performing their calculations on the GPU - seamlessly.
 
 ## Example
 Create a vector of floats on the GPU device
