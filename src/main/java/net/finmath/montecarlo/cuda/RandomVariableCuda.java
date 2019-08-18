@@ -460,26 +460,9 @@ public class RandomVariableCuda implements RandomVariable {
 
 	@Override
 	public double getAverage(RandomVariable probabilities) {
-		throw new UnsupportedOperationException();
-		/*
-		if(isDeterministic())	return valueIfNonStochastic;
-		if(size() == 0)			return Double.NaN;
-
-		double sum = 0.0;
-		double error = 0.0;														// Running error compensation
-		for(int i=0; i<realizations.length; i++)  {
-			double value = ((double)realizations[i]) * ((double)probabilities.get(i)) - error;		// Error corrected value
-			double newSum = sum + value;				// New sum
-			error = (newSum - sum) - value;				// New numerical error
-			sum	= newSum;
-		}
-		return sum / realizations.length;
-		 */
+		return this.mult(probabilities).getAverage();
 	}
 
-	/* (non-Javadoc)
-	 * @see net.finmath.stochastic.RandomVariable#getVariance()
-	 */
 	@Override
 	public double getVariance() {
 		if(isDeterministic())	return 0.0;
@@ -491,28 +474,8 @@ public class RandomVariableCuda implements RandomVariable {
 
 	@Override
 	public double getVariance(RandomVariable probabilities) {
-		throw new UnsupportedOperationException();
-		/*
-		if(isDeterministic())	return 0.0;
-		if(size() == 0)			return Double.NaN;
-
-		double sum			= 0.0;
-		double sumOfSquared = 0.0;
-		double errorOfSum			= 0.0;
-		double errorOfSumSquared	= 0.0;
-		for(int i=0; i<realizations.length; i++) {
-			double value	= realizations[i] * probabilities.get(i) - errorOfSum;
-			double newSum	= sum + value;
-			errorOfSum		= (newSum - sum) - value;
-			sum				= newSum;
-
-			double valueSquared		= realizations[i] * realizations[i] * probabilities.get(i) - errorOfSumSquared;
-			double newSumOfSquared	= sumOfSquared + valueSquared;
-			errorOfSumSquared		= (newSumOfSquared-sumOfSquared) - valueSquared;
-			sumOfSquared			= newSumOfSquared;
-		}
-		return (sumOfSquared - sum*sum)/realizations.length;
-		 */
+		double average = getAverage(probabilities);
+		return this.squared().sub(average*average).getAverage(probabilities);
 	}
 
 	@Override
@@ -1226,14 +1189,12 @@ public class RandomVariableCuda implements RandomVariable {
 
 	@Override
 	public RandomVariable bus(RandomVariable randomVariable) {
-		// TODO Auto-generated method stub
-		return null;
+		return randomVariable.sub(this);
 	}
 
 	@Override
 	public RandomVariable vid(RandomVariable randomVariable) {
-		// TODO Auto-generated method stub
-		return null;
+		return randomVariable.div(this);
 	}
 
 	@Override
@@ -1242,9 +1203,6 @@ public class RandomVariableCuda implements RandomVariable {
 		return null;
 	}
 
-	/* (non-Javadoc)
-	 * @see net.finmath.stochastic.RandomVariable#addProduct(net.finmath.stochastic.RandomVariable, double)
-	 */
 	@Override
 	public RandomVariable addProduct(RandomVariable factor1, double factor2) {
 		// Set time of this random variable to maximum of time with respect to which measurability is known.
@@ -1268,9 +1226,6 @@ public class RandomVariableCuda implements RandomVariable {
 		}
 	}
 
-	/* (non-Javadoc)
-	 * @see net.finmath.stochastic.RandomVariable#addProduct(net.finmath.stochastic.RandomVariable, net.finmath.stochastic.RandomVariable)
-	 */
 	@Override
 	public RandomVariable addProduct(RandomVariable factor1, RandomVariable factor2) {
 		// Set time of this random variable to maximum of time with respect to which measurability is known.
