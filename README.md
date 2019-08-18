@@ -6,11 +6,15 @@
 
 The finmath lib cuda extensions provide an Cuda implementation of the finmath lib interfaces `RandomVariable` and `BrownianMotion` compatible with finmath lib 4.0.12 or later.
 
-A `RandomVariableCudaFactory` is provided, which can be inject in any finmath lib model using a random variable factory to construct `RandomVariable` objects. Objects created from this factory or from objects created from this factory perfrom their calculation on the GPU.
+A `RandomVariableCudaFactory` is provided, which can be inject in any finmath lib model using a random variable factory to construct `RandomVariable` objects. Objects created from this factory or from objects created from this factory perform their calculation on the GPU.
 
-In addition, objects of type `BrownianMotion` are also taking the role of a factory for objects of type `RandomVariable`. Thus, injecting the `BrownianMotionCuda` into classes consuming a `BrownianMotion` will result in most finmath-lib models performing their calculations on the GPU - seamlessly.
+The `RandomVariableCudaFactory` can be combined with AAD wrappers, to allow algorithmic differentiation together with calculations performed on the GPU.
+
+In addition, objects of type `BrownianMotion` are also taking the role of a factory for objects of type `RandomVariable`. Thus, injecting the `BrownianMotionCuda` into classes consuming a `BrownianMotion` will result in finmath-lib models performing their calculations on the GPU - seamlessly.
+
 
 ## Example
+
 Create a vector of floats on the GPU device
 ```
 RandomVariableInterface randomVariable = new RandomVariableCuda(new float[] {-4.0f, -2.0f, 0.0f, 2.0f, 4.0f} );
@@ -101,6 +105,7 @@ cover some selected topics with demo spreadsheets and uml diagrams.
 Some topics come with additional documentations (technical papers).
 
 ## License
+
 The code of "finmath lib", "finmath experiments" and "finmath lib cuda extensions" (packages
 `net.finmath.*`) are distributed under the [Apache License version
 2.0](http://www.apache.org/licenses/LICENSE-2.0.html), unless otherwise explicitly stated.
