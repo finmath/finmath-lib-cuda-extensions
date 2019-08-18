@@ -261,10 +261,12 @@ public class RandomVariableCuda implements RandomVariable {
 
 			float deviceFreeMemPercentage = getDeviceFreeMemPercentage();
 			// No pointer found, try GC if we are above a critical level
-			if(reference == null && deviceFreeMemPercentage < vectorsRecyclerPercentageFreeToStartGC) try {
-				System.gc();
-				reference = vectorsToRecycleReferenceQueue.remove(1);
-			} catch (IllegalArgumentException | InterruptedException e) {}
+			if(reference == null && deviceFreeMemPercentage < vectorsRecyclerPercentageFreeToStartGC) {
+				try {
+					System.gc();
+					reference = vectorsToRecycleReferenceQueue.remove(1);
+				} catch (IllegalArgumentException | InterruptedException e) {}
+			}
 
 			// Wait for GC
 			if(reference == null && deviceFreeMemPercentage < vectorsRecyclerPercentageFreeToWaitForGC) {
@@ -274,14 +276,18 @@ public class RandomVariableCuda implements RandomVariable {
 				 */
 				System.gc();
 				long timeOut = 1;
-				while(reference == null && timeOut < vectorsRecyclerMaxTimeOutMillis) try {
-					//					System.err.println("Wait" + timeOut);
-					reference = vectorsToRecycleReferenceQueue.remove(timeOut);
-					timeOut *= 10;
-				} catch (IllegalArgumentException | InterruptedException e) {}
+				while(reference == null && timeOut < vectorsRecyclerMaxTimeOutMillis) {
+					try {
+						//					System.err.println("Wait" + timeOut);
+						reference = vectorsToRecycleReferenceQueue.remove(timeOut);
+						timeOut *= 10;
+					} catch (IllegalArgumentException | InterruptedException e) {}
+				}
 
 				// Still no pointer found for requested size, consider cleaning all (also other sizes)
-				if(reference == null) clean();
+				if(reference == null) {
+					clean();
+				}
 			}
 
 			if(reference != null) {
@@ -378,13 +384,17 @@ public class RandomVariableCuda implements RandomVariable {
 
 	private static float[] getFloatArray(double[] arrayOfDouble) {
 		float[] arrayOfFloat = new float[arrayOfDouble.length];
-		for(int i=0; i<arrayOfDouble.length; i++) arrayOfFloat[i] = (float)arrayOfDouble[i];
+		for(int i=0; i<arrayOfDouble.length; i++) {
+			arrayOfFloat[i] = (float)arrayOfDouble[i];
+		}
 		return arrayOfFloat;
 	}
 
 	private static double[] getDoubleArray(float[] arrayOfFloat) {
 		double[] arrayOfDouble = new double[arrayOfFloat.length];
-		for(int i=0; i<arrayOfFloat.length; i++) arrayOfDouble[i] = arrayOfFloat[i];
+		for(int i=0; i<arrayOfFloat.length; i++) {
+			arrayOfDouble[i] = arrayOfFloat[i];
+		}
 		return arrayOfDouble;
 	}
 
@@ -843,10 +853,8 @@ public class RandomVariableCuda implements RandomVariable {
 		if(isDeterministic()) {
 			double newValueIfNonStochastic = valueIfNonStochastic * valueIfNonStochastic;
 			return new RandomVariableCuda(time, newValueIfNonStochastic);
-		}
-		else {
+		} else
 			return this.mult(this);
-		}
 	}
 
 	@Override
@@ -961,9 +969,8 @@ public class RandomVariableCuda implements RandomVariable {
 			double newValueIfNonStochastic = valueIfNonStochastic - randomVariable.get(0);
 			return new RandomVariableCuda(newTime, newValueIfNonStochastic);
 		}
-		else if(isDeterministic()) {
+		else if(isDeterministic())
 			return randomVariable.mult(-1.0).add(valueIfNonStochastic);
-		}
 		else {
 			CUdeviceptr result = callCudaFunction(sub, new Pointer[] {
 					Pointer.to(new int[] { size() }),
@@ -984,12 +991,10 @@ public class RandomVariableCuda implements RandomVariable {
 			double newValueIfNonStochastic = valueIfNonStochastic * randomVariable.get(0);
 			return new RandomVariableCuda(newTime, newValueIfNonStochastic);
 		}
-		else if(!isDeterministic() && randomVariable.isDeterministic()) {
+		else if(!isDeterministic() && randomVariable.isDeterministic())
 			return this.mult(randomVariable.get(0));
-		}
-		else if(isDeterministic() && !randomVariable.isDeterministic()) {
+		else if(isDeterministic() && !randomVariable.isDeterministic())
 			return randomVariable.mult(this.valueIfNonStochastic);
-		}
 		else {
 			CUdeviceptr result = callCudaFunction(mult, new Pointer[] {
 					Pointer.to(new int[] { size() }),
@@ -1013,13 +1018,11 @@ public class RandomVariableCuda implements RandomVariable {
 			double newValueIfNonStochastic = valueIfNonStochastic / randomVariable.get(0);
 			return new RandomVariableCuda(newTime, newValueIfNonStochastic);
 		}
-		else if(isDeterministic()) {
+		else if(isDeterministic())
 			// @TODO Write a kernel to be faster
 			return randomVariable.div(valueIfNonStochastic).invert();
-		}
-		else if(randomVariable.isDeterministic()) {
+		else if(randomVariable.isDeterministic())
 			return this.div(randomVariable.get(0));
-		}
 		else {
 			CUdeviceptr result = callCudaFunction(cuDiv, new Pointer[] {
 					Pointer.to(new int[] { size() }),
@@ -1115,9 +1118,8 @@ public class RandomVariableCuda implements RandomVariable {
 			double newValueIfNonStochastic = valueIfNonStochastic * (1 + rate.get(0) * periodLength);
 			return new RandomVariableCuda(newTime, newValueIfNonStochastic);
 		}
-		else if(isDeterministic() && !rate.isDeterministic()) {
+		else if(isDeterministic() && !rate.isDeterministic())
 			return rate.mult(periodLength*valueIfNonStochastic).add(valueIfNonStochastic);
-		}
 		else if(!isDeterministic() && rate.isDeterministic()) {
 			double rateValue = rate.get(0);
 			return this.mult((1 + rateValue * periodLength));
@@ -1209,9 +1211,8 @@ public class RandomVariableCuda implements RandomVariable {
 		// Set time of this random variable to maximum of time with respect to which measurability is known.
 		double newTime = Math.max(time, factor1.getFiltrationTime());
 
-		if(this.isDeterministic() && factor1.isDeterministic()) {
+		if(this.isDeterministic() && factor1.isDeterministic())
 			return new RandomVariableCuda(newTime, valueIfNonStochastic + factor1.get(0) * factor2);
-		}
 		else if(!isDeterministic() && !factor1.isDeterministic()) {
 			CUdeviceptr result = callCudaFunction(addProduct_vs, new Pointer[] {
 					Pointer.to(new int[] { size() }),
@@ -1221,10 +1222,8 @@ public class RandomVariableCuda implements RandomVariable {
 					new Pointer()}
 					);
 			return new RandomVariableCuda(newTime, result, size());
-		}
-		else {
+		} else
 			return this.add(factor1.mult(factor2));
-		}
 	}
 
 	@Override
@@ -1232,15 +1231,12 @@ public class RandomVariableCuda implements RandomVariable {
 		// Set time of this random variable to maximum of time with respect to which measurability is known.
 		double newTime = Math.max(Math.max(time, factor1.getFiltrationTime()), factor2.getFiltrationTime());
 
-		if(factor1.isDeterministic() && factor2.isDeterministic()) {
+		if(factor1.isDeterministic() && factor2.isDeterministic())
 			return add(factor1.get(0) * factor2.get(0));
-		}
-		else if(factor2.isDeterministic()) {
+		else if(factor2.isDeterministic())
 			return this.addProduct(factor1, factor2.get(0));
-		}
-		else if(factor1.isDeterministic()) {
+		else if(factor1.isDeterministic())
 			return this.addProduct(factor2, factor1.get(0));
-		}
 		else if(!isDeterministic() && !factor1.isDeterministic() && !factor2.isDeterministic()) {
 			CUdeviceptr result = callCudaFunction(addProduct, new Pointer[] {
 					Pointer.to(new int[] { size() }),
@@ -1250,10 +1246,8 @@ public class RandomVariableCuda implements RandomVariable {
 					new Pointer()}
 					);
 			return new RandomVariableCuda(newTime, result, size());
-		}
-		else {
+		} else
 			return this.add(factor1.mult(factor2));
-		}
 	}
 
 	/* (non-Javadoc)
@@ -1291,7 +1285,9 @@ public class RandomVariableCuda implements RandomVariable {
 		if(this.isDeterministic()) return valueIfNonStochastic;
 
 		RandomVariableCuda reduced = this;
-		while(reduced.size() > 1) reduced = reduced.reduceBySize(reduceGridSize);
+		while(reduced.size() > 1) {
+			reduced = reduced.reduceBySize(reduceGridSize);
+		}
 		return reduced.getRealizations()[0];
 	}
 

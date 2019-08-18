@@ -21,8 +21,8 @@ import net.finmath.montecarlo.cuda.alternative.BrownianMotionCudaWithHostRandomV
 import net.finmath.montecarlo.cuda.alternative.BrownianMotionCudaWithRandomVariableCuda;
 import net.finmath.montecarlo.cuda.alternative.BrownianMotionJavaRandom;
 import net.finmath.stochastic.RandomVariable;
-import net.finmath.time.TimeDiscretizationFromArray;
 import net.finmath.time.TimeDiscretization;
+import net.finmath.time.TimeDiscretizationFromArray;
 
 /**
  * @author Christian Fries
@@ -71,7 +71,9 @@ public class BrownianMotionTest {
 		long millisStart = System.currentTimeMillis();
 
 		for(int i=0; i<100; i++) {
-			if(i%10 == 0) System.out.print(".");
+			if(i%10 == 0) {
+				System.out.print(".");
+			}
 
 			// Test the quality of the Brownian motion
 			BrownianMotion brownian;

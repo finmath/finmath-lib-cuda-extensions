@@ -129,7 +129,9 @@ public class BrownianMotionCudaWithHostRandomVariable implements BrownianMotion,
 
 		// Thread safe lazy initialization
 		synchronized(brownianIncrementsLazyInitLock) {
-			if(brownianIncrements == null) doGenerateBrownianMotion();
+			if(brownianIncrements == null) {
+				doGenerateBrownianMotion();
+			}
 		}
 
 		/*

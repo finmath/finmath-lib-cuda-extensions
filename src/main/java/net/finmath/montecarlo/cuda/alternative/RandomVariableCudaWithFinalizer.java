@@ -266,20 +266,26 @@ public class RandomVariableCudaWithFinalizer implements RandomVariable {
 	@Override
 	protected void finalize() throws Throwable {
 		System.out.println("Finalizing " + realizations);
-		if(realizations != null) JCudaDriver.cuMemFree(realizations);
+		if(realizations != null) {
+			JCudaDriver.cuMemFree(realizations);
+		}
 		super.finalize();
 	}
 
 
 	private static float[] getFloatArray(double[] arrayOfDouble) {
 		float[] arrayOfFloat = new float[arrayOfDouble.length];
-		for(int i=0; i<arrayOfDouble.length; i++) arrayOfFloat[i] = (float)arrayOfDouble[i];
+		for(int i=0; i<arrayOfDouble.length; i++) {
+			arrayOfFloat[i] = (float)arrayOfDouble[i];
+		}
 		return arrayOfFloat;
 	}
 
 	private static double[] getDoubleArray(float[] arrayOfFloat) {
 		double[] arrayOfDouble = new double[arrayOfFloat.length];
-		for(int i=0; i<arrayOfFloat.length; i++) arrayOfDouble[i] = arrayOfFloat[i];
+		for(int i=0; i<arrayOfFloat.length; i++) {
+			arrayOfDouble[i] = arrayOfFloat[i];
+		}
 		return arrayOfDouble;
 	}
 
@@ -608,10 +614,8 @@ public class RandomVariableCudaWithFinalizer implements RandomVariable {
 			double[] result = new double[1];
 			result[0] = get(0);
 			return result;
-		}
-		else {
+		} else
 			throw new UnsupportedOperationException();
-		}
 	}
 
 	@Override
@@ -771,10 +775,8 @@ public class RandomVariableCudaWithFinalizer implements RandomVariable {
 		if(isDeterministic()) {
 			double newValueIfNonStochastic = valueIfNonStochastic * valueIfNonStochastic;
 			return new RandomVariableCudaWithFinalizer(time, newValueIfNonStochastic);
-		}
-		else {
+		} else
 			return this.mult(this);
-		}
 	}
 
 	@Override
@@ -893,7 +895,9 @@ public class RandomVariableCudaWithFinalizer implements RandomVariable {
 		}
 		else if(isDeterministic()) {
 			double[] newRealizations = new double[Math.max(size(), randomVariable.size())];
-			for(int i=0; i<newRealizations.length; i++) newRealizations[i]		 = valueIfNonStochastic - randomVariable.get(i);
+			for(int i=0; i<newRealizations.length; i++) {
+				newRealizations[i]		 = valueIfNonStochastic - randomVariable.get(i);
+			}
 			return new RandomVariableCudaWithFinalizer(newTime, newRealizations);
 		}
 		else {
@@ -921,7 +925,9 @@ public class RandomVariableCudaWithFinalizer implements RandomVariable {
 		}
 		else if(isDeterministic()) {
 			float[] newRealizations = new float[Math.max(size(), randomVariable.size())];
-			for(int i=0; i<newRealizations.length; i++) newRealizations[i]		 = (float) (valueIfNonStochastic * randomVariable.get(i));
+			for(int i=0; i<newRealizations.length; i++) {
+				newRealizations[i]		 = (float) (valueIfNonStochastic * randomVariable.get(i));
+			}
 			return new RandomVariableCudaWithFinalizer(newTime, newRealizations);
 		}
 		else {
@@ -949,7 +955,9 @@ public class RandomVariableCudaWithFinalizer implements RandomVariable {
 		}
 		else if(isDeterministic()) {
 			double[] newRealizations = new double[Math.max(size(), randomVariable.size())];
-			for(int i=0; i<newRealizations.length; i++) newRealizations[i]		 = valueIfNonStochastic / randomVariable.get(i);
+			for(int i=0; i<newRealizations.length; i++) {
+				newRealizations[i]		 = valueIfNonStochastic / randomVariable.get(i);
+			}
 			return new RandomVariableCudaWithFinalizer(newTime, newRealizations);
 		}
 		else {
@@ -1047,9 +1055,8 @@ public class RandomVariableCudaWithFinalizer implements RandomVariable {
 			double newValueIfNonStochastic = valueIfNonStochastic * (1 + rate.get(0) * periodLength);
 			return new RandomVariableCudaWithFinalizer(newTime, newValueIfNonStochastic);
 		}
-		else if(isDeterministic() && !rate.isDeterministic()) {
+		else if(isDeterministic() && !rate.isDeterministic())
 			return rate.mult(periodLength*valueIfNonStochastic).add(valueIfNonStochastic);
-		}
 		else if(!isDeterministic() && rate.isDeterministic()) {
 			double rateValue = rate.get(0);
 			return this.mult((1 + rateValue * periodLength));
@@ -1188,7 +1195,9 @@ public class RandomVariableCudaWithFinalizer implements RandomVariable {
 		if(this.isDeterministic()) return valueIfNonStochastic;
 
 		RandomVariableCudaWithFinalizer reduced = this;
-		while(reduced.size() > 1) reduced = reduced.reduceBySize(reduceGridSize);
+		while(reduced.size() > 1) {
+			reduced = reduced.reduceBySize(reduceGridSize);
+		}
 		return reduced.getRealizations()[0];
 	}
 
@@ -1257,15 +1266,11 @@ public class RandomVariableCudaWithFinalizer implements RandomVariable {
 		String ptxFileName = cuFileName.substring(0, endIndex+1)+"ptx";
 		File ptxFile = new File(ptxFileName);
 		if (ptxFile.exists())
-		{
 			return ptxFileName;
-		}
 
 		File cuFile = new File(cuFileName);
 		if (!cuFile.exists())
-		{
 			throw new IOException("Input file not found: "+cuFileName);
-		}
 		String modelString = "-m"+System.getProperty("sun.arch.data.model");
 		String command =
 				"nvcc " + modelString + " -ptx "+

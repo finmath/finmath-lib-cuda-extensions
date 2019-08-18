@@ -115,7 +115,9 @@ public class BrownianMotionJavaRandom implements BrownianMotion, Serializable {
 
 		// Thread safe lazy initialization
 		synchronized(brownianIncrementsLazyInitLock) {
-			if(brownianIncrements == null) doGenerateBrownianMotion();
+			if(brownianIncrements == null) {
+				doGenerateBrownianMotion();
+			}
 		}
 
 		/*

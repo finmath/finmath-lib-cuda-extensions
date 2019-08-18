@@ -25,7 +25,7 @@ public class JCudaUtils
 	 * @param cuFileURL The name of the .CU file
 	 * @return The name of the PTX file
 	 * @throws IOException If an I/O error occurs
-	 * @throws URISyntaxException 
+	 * @throws URISyntaxException
 	 */
 	public static String preparePtxFile(URL cuFileURL) throws IOException, URISyntaxException
 	{
@@ -38,15 +38,11 @@ public class JCudaUtils
 		String ptxFileName = cuFileName.substring(0, endIndex+1)+"ptx";
 		File ptxFile = new File(ptxFileName);
 		if (ptxFile.exists())
-		{
 			return ptxFileName;
-		}
 
 		File cuFile = new File(cuFileName);
 		if (!cuFile.exists())
-		{
 			throw new IOException("Input file not found: "+cuFileName);
-		}
 
 		/*
 		 * Check for 64 bit or 32 bit
