@@ -4,7 +4,10 @@ import java.io.ByteArrayOutputStream;
 import java.io.File;
 import java.io.IOException;
 import java.io.InputStream;
+import java.net.URISyntaxException;
 import java.net.URL;
+import java.nio.file.Paths;
+import java.util.Arrays;
 
 /**
  * Adapted from JCuda examples: Reads a CUDA file, compiles it to a PTX file
@@ -22,10 +25,11 @@ public class JCudaUtils
 	 * @param cuFileURL The name of the .CU file
 	 * @return The name of the PTX file
 	 * @throws IOException If an I/O error occurs
+	 * @throws URISyntaxException 
 	 */
-	public static String preparePtxFile(URL cuFileURL) throws IOException
+	public static String preparePtxFile(URL cuFileURL) throws IOException, URISyntaxException
 	{
-		String cuFileName = cuFileURL.getFile();
+		String cuFileName = Paths.get(cuFileURL.toURI()).toFile().getAbsolutePath();
 		int endIndex = cuFileName.lastIndexOf('.');
 		if (endIndex == -1)
 		{
@@ -43,12 +47,23 @@ public class JCudaUtils
 		{
 			throw new IOException("Input file not found: "+cuFileName);
 		}
-		String modelString = "-m"+System.getProperty("sun.arch.data.model");
-		String command =
-				"nvcc " + modelString + " -ptx "+
-						cuFile.getPath()+" -o "+ptxFileName;
 
-		System.out.println("Executing\n"+command);
+		/*
+		 * Check for 64 bit or 32 bit
+		 */
+		String modelString = "-m"+System.getProperty("sun.arch.data.model");
+
+		String[] command = {
+				"nvcc",
+				modelString,
+				"-ptx",
+				cuFile.getPath(),
+				"-o",
+				ptxFileName };
+
+		//		String command = "nvcc " + modelString + " -ptx " + "" + cuFile.getPath() + " -o " + ptxFileName;
+
+		System.out.println("Executing\n"+Arrays.toString(command));
 		Process process = Runtime.getRuntime().exec(command);
 
 		String errorMessage =
