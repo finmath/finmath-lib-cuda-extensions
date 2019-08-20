@@ -44,10 +44,10 @@ public class MonteCarloBlackScholesModelTest {
 	@Parameters
 	public static Collection<Object[]> data() {
 		return Arrays.asList(new Object[][] {
-			{ "BrownianMotionLazyInit" },							// Text case 1: Java implementation
-			{ "BrownianMotionJavaRandom" },					// Text case 2: Java implementation
-			{ "BrownianMotionCudaWithHostRandomVariable" },	// Text case 3: Java implementation
-			{ "BrownianMotionCudaWithRandomVariableCuda" }	// Text case 4: Java implementation
+			{ "BrownianMotionLazyInit" },					// Text case 1: Java implementation using MersenneTwister
+			{ "BrownianMotionJavaRandom" },					// Text case 2: Java implementation using Java LCG
+			{ "BrownianMotionCudaWithHostRandomVariable" },	// Text case 3: Java implementation using Cuda LCG with Host RandomVariable
+			{ "BrownianMotionCudaWithRandomVariableCuda" }	// Text case 4: Java implementation using Cuda LCG with Cuda RandomVariable
 		});
 	}
 
@@ -62,8 +62,8 @@ public class MonteCarloBlackScholesModelTest {
 	private final double	volatility     = 0.30;
 
 	// Process discretization properties
-	private final int		numberOfPaths		= 5000000;
-	private final int		numberOfTimeSteps	= 10;
+	private final int		numberOfPaths		= 1000000;
+	private final int		numberOfTimeSteps	= 100;
 	private final double	deltaT				= 1.0;
 
 	private final int		seed				= 31415;
