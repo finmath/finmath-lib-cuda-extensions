@@ -41,6 +41,16 @@ __global__ void subScalar(int n, float *a, float b, float *result)
 }
 
 extern "C"
+__global__ void busScalar(int n, float *a, float b, float *result)
+{
+    int i = blockIdx.x * blockDim.x + threadIdx.x;
+    if (i<n)
+    {
+        result[i] = -a[i] + b;
+    }
+}
+
+extern "C"
 __global__ void multScalar(int n, float *a, float b, float *result)
 {
     int i = blockIdx.x * blockDim.x + threadIdx.x;
@@ -58,6 +68,17 @@ __global__ void divScalar(int n, float *a, float b, float *result)
     if (i<n)
     {
         result[i] = a[i] / b;
+    }
+
+}
+
+extern "C"
+__global__ void vidScalar(int n, float *a, float b, float *result)
+{
+    int i = blockIdx.x * blockDim.x + threadIdx.x;
+    if (i<n)
+    {
+        result[i] = b / a[i];
     }
 
 }
