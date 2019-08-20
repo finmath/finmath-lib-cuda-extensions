@@ -58,9 +58,9 @@ public class LIBORMarketModelCalibrationTest {
 		});
 	}
 
-	private final int numberOfPaths		= 5000;
+	private final int numberOfPaths		= 100000;
 	private final int numberOfFactors	= 5;
-	private static final int maxIterations = 29;
+	private static final int maxIterations = 50;
 
 	private static final DecimalFormat formatterReal2		= new DecimalFormat(" 0.00");
 	private static final DecimalFormat formatterValue		= new DecimalFormat(" ##0.000%;-##0.000%", new DecimalFormatSymbols(Locale.ENGLISH));
@@ -210,9 +210,9 @@ public class LIBORMarketModelCalibrationTest {
 		// Create a covariance model
 		AbstractLIBORCovarianceModelParametric covarianceModelParametric = new LIBORCovarianceModelExponentialForm5Param(timeDiscretizationFromArray, liborPeriodDiscretization, numberOfFactors, new double[] { 0.20, 0.05, 0.10, 0.05, 0.10} );
 		// Create blended local volatility model with fixed parameter 0.0 (that is "lognormal").
-		AbstractLIBORCovarianceModelParametric covarianceModelBlended = new BlendedLocalVolatilityModel(covarianceModelParametric, 0.0, false);
+		AbstractLIBORCovarianceModelParametric covarianceModelBlended = new BlendedLocalVolatilityModel(covarianceModelParametric, forwardCurve, 0.2, true);
 		// Create stochastic scaling (pass brownianMotionView2 to it)
-		AbstractLIBORCovarianceModelParametric covarianceModelStochasticParametric = new LIBORCovarianceModelStochasticVolatility(covarianceModelBlended, brownianMotionView2, 0.01, -0.30, true);
+		AbstractLIBORCovarianceModelParametric covarianceModelStochasticParametric = new LIBORCovarianceModelStochasticVolatility(covarianceModelBlended, brownianMotionView2, 0.15, -0.70, true);
 
 		// Set model properties
 		Map<String, Object> properties = new HashMap<String, Object>();
@@ -225,7 +225,7 @@ public class LIBORMarketModelCalibrationTest {
 
 		// Set calibration properties (should use our brownianMotion for calibration - needed to have to right correlation).
 		Map<String, Object> calibrationParameters = new HashMap<String, Object>();
-		calibrationParameters.put("accuracyParameter", new Double(1E-8));
+		calibrationParameters.put("accuracyParameter", new Double(1E-12));
 		calibrationParameters.put("brownianMotion", brownianMotionView1);
 		calibrationParameters.put("maxIterations", maxIterations);
 		properties.put("calibrationParameters", calibrationParameters);
