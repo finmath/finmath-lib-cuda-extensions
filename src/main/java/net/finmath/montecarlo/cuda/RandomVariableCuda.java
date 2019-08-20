@@ -255,7 +255,7 @@ public class RandomVariableCuda implements RandomVariable {
 			Reference<? extends RandomVariableCuda> reference = vectorsToRecycleReferenceQueue.poll();
 			if(reference != null) {
 				cuDevicePtr = vectorsInUseReferenceMap.remove(reference);
-				logger.fine("Recycling device pointer " + cuDevicePtr + " from " + reference);
+				logger.finest("Recycling device pointer " + cuDevicePtr + " from " + reference);
 				return cuDevicePtr;
 			}
 
@@ -291,7 +291,7 @@ public class RandomVariableCuda implements RandomVariable {
 			}
 
 			if(reference != null) {
-				logger.fine("Recycling device pointer " + cuDevicePtr + " from " + reference);
+				logger.finest("Recycling device pointer " + cuDevicePtr + " from " + reference);
 				cuDevicePtr = vectorsInUseReferenceMap.remove(reference);
 			}
 
@@ -306,7 +306,7 @@ public class RandomVariableCuda implements RandomVariable {
 							int succ = JCudaDriver.cuMemAlloc(cuDevicePtr, size * Sizeof.FLOAT);
 							if(succ != 0) {
 								cuDevicePtr = null;
-								logger.finest("Failed creating device vector "+ cuDevicePtr + " with size=" + size);
+								logger.warning("Failed creating device vector "+ cuDevicePtr + " with size=" + size);
 							}
 							else {
 								logger.finest("Creating device vector "+ cuDevicePtr + " with size=" + size);
@@ -372,7 +372,7 @@ public class RandomVariableCuda implements RandomVariable {
 			Reference<? extends RandomVariableCuda> reference;
 			while((reference = vectorsToRecycleReferenceQueue.poll()) != null) {
 				final CUdeviceptr cuDevicePtr = vectorsInUseReferenceMap.remove(reference);
-				logger.fine("Freeing device pointer " + cuDevicePtr + " from " + reference);
+				logger.finest("Freeing device pointer " + cuDevicePtr + " from " + reference);
 				try {
 					deviceExecutor.submit(new Runnable() { public void run() {
 						JCudaDriver.cuMemFree(cuDevicePtr);
