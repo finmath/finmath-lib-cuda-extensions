@@ -58,7 +58,7 @@ public class BrownianMotionTest {
 	@Test
 	public void testBrownianMotion() {
 		// The parameters
-		int		seed		= 53252;
+		int		seed		= 1234;//53252;
 		double	lastTime	= 1;
 		double	dt			= 0.1;
 		int		numberOfPaths = 1000000;
