@@ -1328,15 +1328,20 @@ public class RandomVariableCuda implements RandomVariable {
 			final Pointer kernelParameters = Pointer.to(arguments);
 
 			// Call the kernel function.
-			deviceExecutor.submit(new Runnable() { public void run() {
-				cuCtxSynchronize();
-				cuLaunchKernel(function,
-						gridSizeX,  1, 1,      // Grid dimension
-						blockSizeX, 1, 1,      // Block dimension
-						sharedMemorySize * Sizeof.FLOAT, null,               // Shared memory size and stream
-						kernelParameters, null // Kernel- and extra parameters
-						);
-			}});
+			try {
+				deviceExecutor.submit(new Runnable() { public void run() {
+					cuCtxSynchronize();
+					cuLaunchKernel(function,
+							gridSizeX,  1, 1,      // Grid dimension
+							blockSizeX, 1, 1,      // Block dimension
+							sharedMemorySize * Sizeof.FLOAT, null,               // Shared memory size and stream
+							kernelParameters, null // Kernel- and extra parameters
+							);
+				}}).get();
+			} catch (InterruptedException | ExecutionException e) {
+				// TODO Auto-generated catch block
+				e.printStackTrace();
+			}
 		}
 	}
 }
