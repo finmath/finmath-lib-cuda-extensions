@@ -155,14 +155,26 @@ public class RandomVariableTest {
 		System.out.println("Testing add.");
 		test.accept(x -> x.add(x));
 
+		System.out.println("Testing add scalar.");
+		test.accept(x -> x.add(3.1415));
+
 		System.out.println("Testing sub.");
 		test.accept(x -> x.sub(x));
+
+		System.out.println("Testing sub scalar.");
+		test.accept(x -> x.sub(3.1415));
 
 		System.out.println("Testing mult.");
 		test.accept(x -> x.mult(x));
 
-		System.out.println("Testing sub.");
-		test.accept(x -> x.sub(x));
+		System.out.println("Testing mult scalar.");
+		test.accept(x -> x.mult(3.1415));
+
+		System.out.println("Testing div.");
+		test.accept(x -> x.div(x));
+
+		System.out.println("Testing div scalar.");
+		test.accept(x -> x.div(3.1415));
 
 		System.out.println("Testing exp.");
 		test.accept(x -> x.exp());
