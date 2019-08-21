@@ -7,6 +7,7 @@ package net.finmath.montecarlo;
 
 import java.util.Arrays;
 import java.util.Random;
+import java.util.function.BiFunction;
 import java.util.function.Function;
 
 import org.junit.Assert;
@@ -138,27 +139,39 @@ public class RandomVariableTest {
 		AbstractRandomVariableFactory[] rvf = { new RandomVariableFactory(false), new RandomVariableCudaFactory() };
 		
 
+
+		BiFunction<AbstractRandomVariableFactory, Function<RandomVariable,RandomVariable>, Integer> test = (rf, f) -> {
+			RandomVariable x= rf.createRandomVariable(0.0, realizations);
+			double[] xr = f.apply(x).getRealizations();
+			return Arrays.hashCode(xr);
+		};
+		
 		System.out.println("Testing squared.");
 
-		Function<AbstractRandomVariableFactory, Integer> f = rf -> {
-			RandomVariable x= rf.createRandomVariable(0.0, realizations);
-			x.squared();
-			double[] xr = x.getRealizations();
-			return Arrays.hashCode(xr);
-		};
+		Function<RandomVariable, RandomVariable> f1 = x -> x.squared();
 		
-		Assert.assertEquals("1", f.apply(rvf[0]) , f.apply(rvf[1]));
+		Assert.assertEquals("1", test.apply(rvf[0],f1) , test.apply(rvf[1],f1));
 
+		
 		System.out.println("Testing add.");
 
-		Function<AbstractRandomVariableFactory, Integer> f2 = rf -> {
-			RandomVariable x= rf.createRandomVariable(0.0, realizations);
-			x.add(x);
-			double[] xr = x.getRealizations();
-			return Arrays.hashCode(xr);
-		};
+		Function<RandomVariable, RandomVariable> f2 = x -> x.add(x);
+
+		Assert.assertEquals("1", test.apply(rvf[0],f2) , test.apply(rvf[1],f2));
+
+
+		System.out.println("Testing add product");
+
+		Function<RandomVariable, RandomVariable> f3 = x -> x.addProduct(x,x);
+
+		Assert.assertEquals("1", test.apply(rvf[0],f3) , test.apply(rvf[1],f3));
+
 		
-		Assert.assertEquals("1", f2.apply(rvf[0]) , f2.apply(rvf[1]));
+		System.out.println("Testing add product scalar");
+
+		Function<RandomVariable, RandomVariable> f4 = x -> x.addProduct(x,17.0);
+
+		Assert.assertEquals("1", test.apply(rvf[0],f4) , test.apply(rvf[1],f4));
 
 	}
 }
