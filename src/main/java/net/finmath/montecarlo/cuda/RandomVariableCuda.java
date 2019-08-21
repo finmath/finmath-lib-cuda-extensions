@@ -878,9 +878,6 @@ public class RandomVariableCuda implements RandomVariable {
 		}
 	}
 
-	/* (non-Javadoc)
-	 * @see net.finmath.stochastic.RandomVariable#exp()
-	 */
 	public RandomVariableCuda exp() {
 		if(isDeterministic()) {
 			double newValueIfNonStochastic = Math.exp(valueIfNonStochastic);
