@@ -146,7 +146,7 @@ public class RandomVariableTest {
 		};
 
 		Consumer<Function<RandomVariable,RandomVariable>> test = f -> {
-			if( hash.apply(rvf[0],f) != hash.apply(rvf[1],f)) {
+			if( hash.apply(rvf[0],f).intValue() != hash.apply(rvf[1],f).intValue() ) {
 				RandomVariable x1 = rvf[0].createRandomVariable(0.0, realizations);
 				double[] xr1 = f.apply(x1).getRealizations();
 				RandomVariable x2 = rvf[1].createRandomVariable(0.0, realizations);
