@@ -131,7 +131,7 @@ __global__ void cuLog(int n, float *a, float *result)
     int i = blockIdx.x * blockDim.x + threadIdx.x;
     if (i<n)
     {
-        result[i] = log(a[i]);
+        result[i] = (float)log((double)a[i]);
     }
 }
 
