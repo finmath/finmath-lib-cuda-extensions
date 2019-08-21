@@ -906,7 +906,7 @@ public class RandomVariableFromFloatArray implements RandomVariable {
 		else {
 			float[] newRealizations = new float[realizations.length];
 			for(int i=0; i<newRealizations.length; i++) {
-				newRealizations[i]		 = (float)Math.exp(realizations[i]);
+				newRealizations[i]		 = (float)FastMath.exp(realizations[i]);
 			}
 			return new RandomVariableFromFloatArray(time, newRealizations);
 		}
