@@ -30,6 +30,7 @@ import net.finmath.montecarlo.AbstractRandomVariableFactory;
 import net.finmath.montecarlo.BrownianMotion;
 import net.finmath.montecarlo.BrownianMotionView;
 import net.finmath.montecarlo.RandomVariableFactory;
+import net.finmath.montecarlo.RandomVariableFloatFactory;
 import net.finmath.montecarlo.cuda.RandomVariableCudaFactory;
 import net.finmath.montecarlo.interestrate.CalibrationProduct;
 import net.finmath.montecarlo.interestrate.models.LIBORMarketModelFromCovarianceModel;
@@ -53,7 +54,7 @@ public class LIBORMarketModelCalibrationTest {
 	@Parameters
 	public static Collection<Object[]> data() {
 		return Arrays.asList(new Object[][] {
-//			{ ProcessingUnit.CPU },
+			{ ProcessingUnit.CPU },
 			{ ProcessingUnit.GPU },
 		});
 	}
@@ -192,7 +193,7 @@ public class LIBORMarketModelCalibrationTest {
 		BrownianMotion brownianMotion;
 		switch(processingUnit) {
 		case CPU:
-			randomVariableFactory = new RandomVariableFactory(false);
+			randomVariableFactory = new RandomVariableFloatFactory();
 //			brownianMotion = new net.finmath.montecarlo.cuda.alternative.BrownianMotionCudaWithRandomVariableCuda(timeDiscretizationFromArray, numberOfFactors + 1, numberOfPaths, 31415 /* seed */);
 			brownianMotion = new net.finmath.montecarlo.BrownianMotionLazyInit(timeDiscretizationFromArray, numberOfFactors + 1, numberOfPaths, 31415 /* seed */, randomVariableFactory);
 			break;

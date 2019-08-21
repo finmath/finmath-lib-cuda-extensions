@@ -113,7 +113,6 @@ __global__ void cuSqrt(int n, float *a, float *result)
     {
         result[i] = sqrt(a[i]);
     }
-
 }
 
 extern "C"
@@ -124,7 +123,6 @@ __global__ void cuExp(int n, float *a, float *result)
     {
         result[i] = (float)exp((double)a[i]);
     }
-
 }
 
 extern "C"
