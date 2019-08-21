@@ -122,7 +122,7 @@ __global__ void cuExp(int n, float *a, float *result)
     int i = blockIdx.x * blockDim.x + threadIdx.x;
     if (i<n)
     {
-        result[i] = expf(a[i]);
+        result[i] = (float)exp((double)a[i]);
     }
 
 }
