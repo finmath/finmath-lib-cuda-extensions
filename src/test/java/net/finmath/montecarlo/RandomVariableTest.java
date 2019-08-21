@@ -147,7 +147,7 @@ public class RandomVariableTest {
 
 		Consumer<Function<RandomVariable,RandomVariable>> test = f -> {
 			if( hash.apply(rvf[0],f).intValue() != hash.apply(rvf[1],f).intValue() ) {
-				System.out.println("failed.");
+				System.out.println(" - failed.");
 				/*
 				RandomVariable x1 = rvf[0].createRandomVariable(0.0, realizations);
 				double[] xr1 = f.apply(x1).getRealizations();
@@ -158,7 +158,7 @@ public class RandomVariableTest {
 				*/
 			}
 			else {
-				System.out.println("ok.");
+				System.out.println(" - ok.");
 			}
 			// Assert.assertEquals("test", hash.apply(rvf[0],f) , hash.apply(rvf[1],f));			
 		};
