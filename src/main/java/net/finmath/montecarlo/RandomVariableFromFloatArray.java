@@ -1368,7 +1368,7 @@ public class RandomVariableFromFloatArray implements RandomVariable {
 		else {
 			float[] newRealizations = new float[Math.max(size(), factor1.size())];
 			for(int i=0; i<newRealizations.length; i++) {
-				newRealizations[i]		 = realizations[i] + (float)factor1.get(i) * (float)factor2;
+				newRealizations[i]		 = (float)(realizations[i] + factor1.get(i) * factor2);
 			}
 			return new RandomVariableFromFloatArray(newTime, newRealizations);
 		}
