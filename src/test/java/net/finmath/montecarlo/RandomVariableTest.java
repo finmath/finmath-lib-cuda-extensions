@@ -5,10 +5,15 @@
  */
 package net.finmath.montecarlo;
 
+import java.util.Arrays;
+import java.util.Random;
+import java.util.function.Function;
+
 import org.junit.Assert;
 import org.junit.Test;
 
 import net.finmath.montecarlo.cuda.RandomVariableCuda;
+import net.finmath.montecarlo.cuda.RandomVariableCudaFactory;
 import net.finmath.stochastic.RandomVariable;
 
 /**
@@ -120,5 +125,27 @@ public class RandomVariableTest {
 
 		double check = randomVariable.getStandardDeviation() - Math.sqrt(randomVariable.getVariance());
 		Assert.assertTrue(check == 0.0);
+	}
+
+	@Test
+	public void testRandomVariableCuda() throws InterruptedException {
+		int numberOfPath = 100000;
+		final double[] realizations = new double[numberOfPath];
+		
+		Random random = new Random(314145);
+		for(int i=0; i<numberOfPath; i++) realizations[i]= random.nextDouble();
+
+		AbstractRandomVariableFactory[] rvf = { new RandomVariableFactory(false), new RandomVariableCudaFactory() };
+		
+		Function<AbstractRandomVariableFactory, Integer> f = rf -> {
+			RandomVariable x= rf.createRandomVariable(0.0, realizations);
+			x.squared();
+			double[] xr = x.getRealizations();
+			return Arrays.hashCode(xr);
+		};
+		
+		System.out.println("Testing squared.");
+		Assert.assertEquals("1", f.apply(rvf[0]) , f.apply(rvf[0]));
+
 	}
 }
