@@ -138,7 +138,7 @@ public class RandomVariableCuda implements RandomVariable {
 				// Initialize the driver and create a context for the first device.
 				cuInit(0);
 				cuDeviceGet(device, 0);
-				cuCtxCreate(context, 0, device);
+				cuCtxCreate(context, jcuda.driver.CUctx_flags.CU_CTX_SCHED_BLOCKING_SYNC, device);
 
 				// Load the ptx file.
 				cuModuleLoad(module, ptxFileName2);
@@ -360,6 +360,7 @@ public class RandomVariableCuda implements RandomVariable {
 
 			try {
 				deviceExecutor.submit(new Runnable() { public void run() {
+					cuCtxSynchronize();
 					JCudaDriver.cuMemcpyHtoD(cuDevicePtr, Pointer.to(values), (long)values.length * Sizeof.FLOAT);
 				}}).get();
 			} catch (InterruptedException | ExecutionException e) { throw new RuntimeException(e.getCause()); }
