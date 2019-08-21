@@ -137,6 +137,9 @@ public class RandomVariableTest {
 
 		AbstractRandomVariableFactory[] rvf = { new RandomVariableFactory(false), new RandomVariableCudaFactory() };
 		
+
+		System.out.println("Testing squared.");
+
 		Function<AbstractRandomVariableFactory, Integer> f = rf -> {
 			RandomVariable x= rf.createRandomVariable(0.0, realizations);
 			x.squared();
@@ -144,8 +147,18 @@ public class RandomVariableTest {
 			return Arrays.hashCode(xr);
 		};
 		
-		System.out.println("Testing squared.");
-		Assert.assertEquals("1", f.apply(rvf[0]) , f.apply(rvf[0]));
+		Assert.assertEquals("1", f.apply(rvf[0]) , f.apply(rvf[1]));
+
+		System.out.println("Testing add.");
+
+		Function<AbstractRandomVariableFactory, Integer> f2 = rf -> {
+			RandomVariable x= rf.createRandomVariable(0.0, realizations);
+			x.add(x);
+			double[] xr = x.getRealizations();
+			return Arrays.hashCode(xr);
+		};
+		
+		Assert.assertEquals("1", f2.apply(rvf[0]) , f2.apply(rvf[1]));
 
 	}
 }
