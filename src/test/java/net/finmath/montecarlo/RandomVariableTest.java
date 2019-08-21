@@ -176,34 +176,34 @@ public class RandomVariableTest {
 		test.accept(x -> x.mult(x));
 
 		System.out.println("Testing mult scalar.");
-		test.accept(x -> x.mult(3.1415));
+		test.accept(x -> x.mult(3.1415f));
 
 		System.out.println("Testing div.");
 		test.accept(x -> x.div(x));
 
 		System.out.println("Testing div scalar.");
-		test.accept(x -> x.div(3.1415));
+		test.accept(x -> x.div(3.1415f));
 
 		System.out.println("Testing exp.");
 		test.accept(x -> x.exp());
 
 		System.out.println("Testing cap.");
-		test.accept(x -> x.cap(x.sub(1.0)));
+		test.accept(x -> x.cap(x.sub(1.0f)));
 
 		System.out.println("Testing floor.");
-		test.accept(x -> x.floor(x.add(1.0)));
+		test.accept(x -> x.floor(x.add(1.0f)));
 
 		System.out.println("Testing accrue.");
-		test.accept(x -> x.accrue(x, 2.0));
+		test.accept(x -> x.accrue(x, 2.0f));
 
 		System.out.println("Testing discount.");
-		test.accept(x -> x.discount(x, 2.0));
+		test.accept(x -> x.discount(x, 2.0f));
 
 		System.out.println("Testing add product");
 		test.accept(x -> x.addProduct(x,x));
 		
 		System.out.println("Testing add product scalar");
-		test.accept(x -> x.addProduct(x,17.0));
+		test.accept(x -> x.addProduct(x, 17.0f));
 
 		System.out.println("Testing add sum product");
 		test.accept(x -> x.addSumProduct(new RandomVariable[] { x , x }, new RandomVariable[] { x , x }));
