@@ -42,6 +42,7 @@ import jcuda.driver.CUfunction;
 import jcuda.driver.CUmodule;
 import jcuda.driver.JCudaDriver;
 import net.finmath.functions.DoubleTernaryOperator;
+import net.finmath.montecarlo.RandomVariableFromDoubleArray;
 import net.finmath.stochastic.RandomVariable;
 
 /**
@@ -466,7 +467,9 @@ public class RandomVariableCuda implements RandomVariable {
 		if(isDeterministic())	return valueIfNonStochastic;
 		if(size() == 0)			return Double.NaN;
 
-		return  reduce()/size();
+		// Deterministic reduce:
+		return (new RandomVariableFromDoubleArray(getFiltrationTime(), getRealizations())).getAverage();
+//		return  reduce()/size();
 	}
 
 	@Override
