@@ -906,7 +906,7 @@ public class RandomVariableFromFloatArray implements RandomVariable {
 		else {
 			float[] newRealizations = new float[realizations.length];
 			for(int i=0; i<newRealizations.length; i++) {
-				newRealizations[i]		 = (float)Math.exp(realizations[i]);
+				newRealizations[i]		 = (float)StrictMath.exp(realizations[i]);
 			}
 			return new RandomVariableFromFloatArray(time, newRealizations);
 		}
@@ -1353,7 +1353,7 @@ public class RandomVariableFromFloatArray implements RandomVariable {
 		else if(isDeterministic() && !factor1.isDeterministic()) {
 			float[] newRealizations = new float[Math.max(size(), factor1.size())];
 			for(int i=0; i<newRealizations.length; i++) {
-				newRealizations[i]		 = valueIfNonStochastic + (float)factor1.get(i) * (float)factor2;
+				newRealizations[i]		 = (float) (valueIfNonStochastic + factor1.get(i) * factor2);
 			}
 			return new RandomVariableFromFloatArray(newTime, newRealizations);
 		}
@@ -1361,7 +1361,7 @@ public class RandomVariableFromFloatArray implements RandomVariable {
 			float factor1Value = (float)factor1.get(0);
 			float[] newRealizations = new float[Math.max(size(), factor1.size())];
 			for(int i=0; i<newRealizations.length; i++) {
-				newRealizations[i]		 = realizations[i] + factor1Value * (float)factor2;
+				newRealizations[i]		 = (float) (realizations[i] + factor1Value * factor2);
 			}
 			return new RandomVariableFromFloatArray(newTime, newRealizations);
 		}
@@ -1391,21 +1391,21 @@ public class RandomVariableFromFloatArray implements RandomVariable {
 		else if(isDeterministic() && !factor1.isDeterministic() && !factor2.isDeterministic()) {
 			float[] newRealizations = new float[Math.max(size(), factor1.size())];
 			for(int i=0; i<newRealizations.length; i++) {
-				newRealizations[i]		 = valueIfNonStochastic + (float)factor1.get(i) * (float)factor2.get(i);
+				newRealizations[i]		 = (float) (valueIfNonStochastic + factor1.get(i) * factor2.get(i));
 			}
 			return new RandomVariableFromFloatArray(newTime, newRealizations);
 		}
 		else if(!isDeterministic() && !factor1.isDeterministic() && !factor2.isDeterministic()) {
 			float[] newRealizations = new float[Math.max(size(), factor1.size())];
 			for(int i=0; i<newRealizations.length; i++) {
-				newRealizations[i]		 = realizations[i] + (float)factor1.get(i) * (float)factor2.get(i);
+				newRealizations[i]		 = (float) (realizations[i] + factor1.get(i) * factor2.get(i));
 			}
 			return new RandomVariableFromFloatArray(newTime, newRealizations);
 		}
 		else {
 			float[] newRealizations = new float[Math.max(Math.max(size(), factor1.size()), factor2.size())];
 			for(int i=0; i<newRealizations.length; i++) {
-				newRealizations[i]		 = (float)get(i) + (float)factor1.get(i) * (float)factor2.get(i);
+				newRealizations[i]		 = (float) (get(i) + factor1.get(i) * factor2.get(i));
 			}
 			return new RandomVariableFromFloatArray(newTime, newRealizations);
 		}
