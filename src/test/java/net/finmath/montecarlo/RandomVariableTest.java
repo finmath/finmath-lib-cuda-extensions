@@ -8,6 +8,7 @@ package net.finmath.montecarlo;
 import java.util.Arrays;
 import java.util.Random;
 import java.util.function.BiFunction;
+import java.util.function.Consumer;
 import java.util.function.Function;
 
 import org.junit.Assert;
@@ -137,41 +138,56 @@ public class RandomVariableTest {
 		for(int i=0; i<numberOfPath; i++) realizations[i]= random.nextDouble();
 
 		AbstractRandomVariableFactory[] rvf = { new RandomVariableFactory(false), new RandomVariableCudaFactory() };
-		
 
-
-		BiFunction<AbstractRandomVariableFactory, Function<RandomVariable,RandomVariable>, Integer> test = (rf, f) -> {
+		BiFunction<AbstractRandomVariableFactory, Function<RandomVariable,RandomVariable>, Integer> hash = (rf, f) -> {
 			RandomVariable x= rf.createRandomVariable(0.0, realizations);
 			double[] xr = f.apply(x).getRealizations();
 			return Arrays.hashCode(xr);
 		};
+
+		Consumer<Function<RandomVariable,RandomVariable>> test = f -> {
+			Assert.assertEquals("test", hash.apply(rvf[0],f) , hash.apply(rvf[1],f));			
+		};
 		
 		System.out.println("Testing squared.");
-
-		Function<RandomVariable, RandomVariable> f1 = x -> x.squared();
-		
-		Assert.assertEquals("1", test.apply(rvf[0],f1) , test.apply(rvf[1],f1));
-
-		
+		test.accept(x -> x.squared());
+				
 		System.out.println("Testing add.");
+		test.accept(x -> x.add(x));
 
-		Function<RandomVariable, RandomVariable> f2 = x -> x.add(x);
+		System.out.println("Testing sub.");
+		test.accept(x -> x.sub(x));
 
-		Assert.assertEquals("1", test.apply(rvf[0],f2) , test.apply(rvf[1],f2));
+		System.out.println("Testing mult.");
+		test.accept(x -> x.mult(x));
 
+		System.out.println("Testing sub.");
+		test.accept(x -> x.sub(x));
+
+		System.out.println("Testing exp.");
+		test.accept(x -> x.exp());
+
+		System.out.println("Testing cap.");
+		test.accept(x -> x.cap(x.sub(1.0)));
+
+		System.out.println("Testing floor.");
+		test.accept(x -> x.floor(x.add(1.0)));
+
+		System.out.println("Testing accrue.");
+		test.accept(x -> x.accrue(x, 2.0));
+
+		System.out.println("Testing discount.");
+		test.accept(x -> x.discount(x, 2.0));
 
 		System.out.println("Testing add product");
-
-		Function<RandomVariable, RandomVariable> f3 = x -> x.addProduct(x,x);
-
-		Assert.assertEquals("1", test.apply(rvf[0],f3) , test.apply(rvf[1],f3));
-
+		test.accept(x -> x.addProduct(x,x));
 		
 		System.out.println("Testing add product scalar");
+		test.accept(x -> x.addProduct(x,17.0));
 
-		Function<RandomVariable, RandomVariable> f4 = x -> x.addProduct(x,17.0);
-
-		Assert.assertEquals("1", test.apply(rvf[0],f4) , test.apply(rvf[1],f4));
-
+		System.out.println("Testing add sum product");
+		test.accept(x -> x.addSumProduct(new RandomVariable[] { x , x }, new RandomVariable[] { x , x }));
+		
 	}
+	
 }
