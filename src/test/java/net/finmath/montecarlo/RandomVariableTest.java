@@ -147,71 +147,74 @@ public class RandomVariableTest {
 
 		Consumer<Function<RandomVariable,RandomVariable>> test = f -> {
 			if( hash.apply(rvf[0],f).intValue() != hash.apply(rvf[1],f).intValue() ) {
-				System.out.print("failed.");
+				System.out.println("failed.");
 				/*
 				RandomVariable x1 = rvf[0].createRandomVariable(0.0, realizations);
 				double[] xr1 = f.apply(x1).getRealizations();
 				RandomVariable x2 = rvf[1].createRandomVariable(0.0, realizations);
 				double[] xr2 = f.apply(x2).getRealizations();
-				System.out.println(Arrays.toString(xr1));
-				System.out.println(Arrays.toString(xr2));
+				System.out.print(Arrays.toString(xr1));
+				System.out.print(Arrays.toString(xr2));
 				*/
 			}
 			else {
-				System.out.print("ok.");
+				System.out.println("ok.");
 			}
 			// Assert.assertEquals("test", hash.apply(rvf[0],f) , hash.apply(rvf[1],f));			
 		};
 		
-		System.out.println("Testing squared.");
+		System.out.print("Testing squared.");
 		test.accept(x -> x.squared());
 				
-		System.out.println("Testing add.");
+		System.out.print("Testing add.");
 		test.accept(x -> x.add(x));
 
-		System.out.println("Testing add scalar.");
+		System.out.print("Testing add scalar.");
 		test.accept(x -> x.add(3.1415f));
 
-		System.out.println("Testing sub.");
+		System.out.print("Testing sub.");
 		test.accept(x -> x.sub(x));
 
-		System.out.println("Testing sub scalar.");
+		System.out.print("Testing sub scalar.");
 		test.accept(x -> x.sub(3.1415f));
 
-		System.out.println("Testing mult.");
+		System.out.print("Testing mult.");
 		test.accept(x -> x.mult(x));
 
-		System.out.println("Testing mult scalar.");
+		System.out.print("Testing mult scalar.");
 		test.accept(x -> x.mult(3.1415f));
 
-		System.out.println("Testing div.");
+		System.out.print("Testing div.");
 		test.accept(x -> x.div(x));
 
-		System.out.println("Testing div scalar.");
+		System.out.print("Testing div scalar.");
 		test.accept(x -> x.div(3.1415f));
 
-		System.out.println("Testing exp.");
+		System.out.print("Testing exp.");
 		test.accept(x -> x.exp());
 
-		System.out.println("Testing cap.");
+		System.out.print("Testing sqrt.");
+		test.accept(x -> x.sqrt());
+
+		System.out.print("Testing cap.");
 		test.accept(x -> x.cap(x.sub(1.0f)));
 
-		System.out.println("Testing floor.");
+		System.out.print("Testing floor.");
 		test.accept(x -> x.floor(x.add(1.0f)));
 
-		System.out.println("Testing accrue.");
+		System.out.print("Testing accrue.");
 		test.accept(x -> x.accrue(x, 2.0f));
 
-		System.out.println("Testing discount.");
+		System.out.print("Testing discount.");
 		test.accept(x -> x.discount(x, 2.0f));
 
-		System.out.println("Testing add product");
+		System.out.print("Testing add product");
 		test.accept(x -> x.addProduct(x,x));
 		
-		System.out.println("Testing add product scalar");
+		System.out.print("Testing add product scalar");
 		test.accept(x -> x.addProduct(x, 17.0f));
 
-		System.out.println("Testing add sum product");
+		System.out.print("Testing add sum product");
 		test.accept(x -> x.addSumProduct(new RandomVariable[] { x , x }, new RandomVariable[] { x , x }));
 		
 	}
