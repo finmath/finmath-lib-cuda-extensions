@@ -1351,9 +1351,9 @@ public class RandomVariableFromFloatArray implements RandomVariable {
 			return new RandomVariableFromFloatArray(newTime, newValueIfNonStochastic);
 		}
 		else if(isDeterministic() && !factor1.isDeterministic()) {
-			double[] newRealizations = new double[Math.max(size(), factor1.size())];
+			float[] newRealizations = new float[Math.max(size(), factor1.size())];
 			for(int i=0; i<newRealizations.length; i++) {
-				newRealizations[i]		 = valueIfNonStochastic + factor1.get(i) * factor2;
+				newRealizations[i]		 = valueIfNonStochastic + (float)factor1.get(i) * (float)factor2;
 			}
 			return new RandomVariableFromFloatArray(newTime, newRealizations);
 		}
