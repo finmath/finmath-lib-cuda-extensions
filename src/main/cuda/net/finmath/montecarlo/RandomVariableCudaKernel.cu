@@ -236,7 +236,10 @@ __global__ void discount(int n, float *a, float *b, float p, float *result)
     int i = blockIdx.x * blockDim.x + threadIdx.x;
     if (i<n)
     {
-        result[i] = a[i] / (1.0f + b[i] * p);
+        // We force to avoid fma
+        float prod = b[i] * p;
+        float fma = (1.0f + prod);
+        result[i] = a[i] / fma;
     }
 }
 

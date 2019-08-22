@@ -17,6 +17,7 @@ import org.junit.Test;
 import net.finmath.montecarlo.cuda.RandomVariableCuda;
 import net.finmath.montecarlo.cuda.RandomVariableCudaFactory;
 import net.finmath.stochastic.RandomVariable;
+import net.finmath.stochastic.Scalar;
 
 /**
  * Test cases for the class net.finmath.montecarlo.RandomVariableFromDoubleArray.
@@ -134,7 +135,7 @@ public class RandomVariableTest {
 		int numberOfPath = 100000;
 		final double[] realizations = new double[numberOfPath];
 		
-		Random random = new Random(314145);
+		Random random = new Random();
 		for(int i=0; i<numberOfPath; i++) realizations[i]= random.nextDouble();
 
 		AbstractRandomVariableFactory[] rvf = { new RandomVariableFactory(false), new RandomVariableCudaFactory() };
@@ -160,7 +161,7 @@ public class RandomVariableTest {
 			else {
 				System.out.println(" - ok.");
 			}
-			// Assert.assertEquals("test", hash.apply(rvf[0],f) , hash.apply(rvf[1],f));			
+			Assert.assertEquals("test", hash.apply(rvf[0],f) , hash.apply(rvf[1],f));			
 		};
 		
 		System.out.print("Testing squared.");
@@ -169,54 +170,97 @@ public class RandomVariableTest {
 		System.out.print("Testing add.");
 		test.accept(x -> x.add(x));
 
+		System.out.print("Testing cap.");
+		test.accept(x -> x.cap(1.0/3.0));
+
+		System.out.print("Testing floor.");
+		test.accept(x -> x.floor(1.0/3.0));
+
 		System.out.print("Testing add scalar.");
-		test.accept(x -> x.add(3.1415f));
+		test.accept(x -> x.add(3.1415));
+
+		System.out.print("Testing add scalar.");
+		test.accept(x -> x.add(1.0/3.0));
 
 		System.out.print("Testing sub.");
 		test.accept(x -> x.sub(x));
 
+		System.out.print("Testing bus.");
+		test.accept(x -> x.bus(x.div(2.0)));
+
 		System.out.print("Testing sub scalar.");
-		test.accept(x -> x.sub(3.1415f));
+		test.accept(x -> x.sub(3.1415));
 
 		System.out.print("Testing mult.");
 		test.accept(x -> x.mult(x));
 
 		System.out.print("Testing mult scalar.");
-		test.accept(x -> x.mult(3.1415f));
+		test.accept(x -> x.mult(3.1415));
+
+		System.out.print("Testing mult scalar.");
+		test.accept(x -> x.mult(1.0/3.0));
 
 		System.out.print("Testing div.");
 		test.accept(x -> x.div(x));
 
+		System.out.print("Testing vid.");
+		test.accept(x -> x.add(1.0).vid(x));
+
 		System.out.print("Testing div scalar.");
-		test.accept(x -> x.div(3.1415f));
+		test.accept(x -> x.div(3.1415));
+
+		System.out.print("Testing div scalar.");
+		test.accept(x -> x.div(1.0/3.0));
 
 		System.out.print("Testing exp.");
 		test.accept(x -> x.exp());
 
-		System.out.print("Testing sqrt.");
-		test.accept(x -> x.sqrt());
+		System.out.print("Testing log.");
+		test.accept(x -> x.log());
+
+		System.out.print("Testing invert.");
+		test.accept(x -> x.invert());
+
+		System.out.print("Testing abs.");
+		test.accept(x -> x.abs());
 
 		System.out.print("Testing cap.");
-		test.accept(x -> x.cap(x.sub(1.0f)));
+		test.accept(x -> x.cap(x.sub(1.0)));
 
 		System.out.print("Testing floor.");
-		test.accept(x -> x.floor(x.add(1.0f)));
+		test.accept(x -> x.floor(x.add(1.0)));
+
+		System.out.print("Testing cap.");
+		test.accept(x -> x.cap(1.0/3.0));
+
+		System.out.print("Testing floor.");
+		test.accept(x -> x.floor(1.0/3.0));
 
 		System.out.print("Testing accrue.");
-		test.accept(x -> x.accrue(x, 2.0f));
+		test.accept(x -> x.accrue(x, 2.0));
+
+		System.out.print("Testing accrue.");
+		test.accept(x -> x.accrue(x, 1.0/3.0));
 
 		System.out.print("Testing discount.");
-		test.accept(x -> x.discount(x, 2.0f));
+		test.accept(x -> x.discount(x, 2.0));
+
+		System.out.print("Testing discount.");
+		test.accept(x -> x.discount(x, 1.0/3.0));
 
 		System.out.print("Testing add product");
 		test.accept(x -> x.addProduct(x,x));
 		
 		System.out.print("Testing add product scalar");
-		test.accept(x -> x.addProduct(x, 17.0f));
+		test.accept(x -> x.addProduct(x, 17.0));
+
+		System.out.print("Testing add product scalar");
+		test.accept(x -> x.addProduct(x, 1.0/3.0));
 
 		System.out.print("Testing add sum product");
 		test.accept(x -> x.addSumProduct(new RandomVariable[] { x , x }, new RandomVariable[] { x , x }));
-		
-	}
-	
+
+		System.out.print("Testing getAverage");
+		test.accept(x -> new Scalar(x.getAverage()));
+	}	
 }
