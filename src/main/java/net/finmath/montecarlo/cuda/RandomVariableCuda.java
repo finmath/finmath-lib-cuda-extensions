@@ -43,6 +43,7 @@ import jcuda.driver.CUmodule;
 import jcuda.driver.JCudaDriver;
 import net.finmath.functions.DoubleTernaryOperator;
 import net.finmath.montecarlo.RandomVariableFromDoubleArray;
+import net.finmath.montecarlo.RandomVariableFromFloatArray;
 import net.finmath.stochastic.RandomVariable;
 
 /**
@@ -94,8 +95,10 @@ public class RandomVariableCuda implements RandomVariable {
 	private final static CUfunction floorByScalar = new CUfunction();
 	private final static CUfunction addScalar = new CUfunction();
 	private final static CUfunction subScalar = new CUfunction();
+	private final static CUfunction busScalar = new CUfunction();
 	private final static CUfunction multScalar = new CUfunction();
 	private final static CUfunction divScalar = new CUfunction();
+	private final static CUfunction vidScalar = new CUfunction();
 	private final static CUfunction cuPow = new CUfunction();
 	private final static CUfunction cuSqrt = new CUfunction();
 	private final static CUfunction cuExp = new CUfunction();
@@ -111,7 +114,7 @@ public class RandomVariableCuda implements RandomVariable {
 	private final static CUfunction accrue = new CUfunction();
 	private final static CUfunction discount = new CUfunction();
 	private final static CUfunction addProduct = new CUfunction();
-	private final static CUfunction addProduct_vs = new CUfunction();
+	private final static CUfunction addProduct_vs = new CUfunction();		// add the product of a vector and a scalar
 	private final static CUfunction reducePartial = new CUfunction();
 
 	private final static int reduceGridSize = 1024;
@@ -314,14 +317,24 @@ public class RandomVariableCuda implements RandomVariable {
 							}
 							return cuDevicePtr;
 						}}).get();
-			} catch (InterruptedException | ExecutionException e) { throw new RuntimeException(e.getCause()); }
+			} catch (InterruptedException | ExecutionException e) {
+				System.out.println("Failed to allocate device vector with size=" + size);
+				throw new RuntimeException(e.getCause());
+			}
 
-			if(cuDevicePtr == null) throw new OutOfMemoryError("Failed to allocate device vector with size=" + size);
+			if(cuDevicePtr == null) {
+				System.out.println("Failed to allocate device vector with size=" + size);
+				throw new OutOfMemoryError("Failed to allocate device vector with size=" + size);
+			}
 
 			return cuDevicePtr;
 		}
 	}
 
+	private static RandomVariableCuda2 getRandomVariableCuda(RandomVariable randomVariable) {
+		if(randomVariable instanceof RandomVariableCuda2) return (RandomVariableCuda2)randomVariable;
+		else return new RandomVariableCuda2(randomVariable.getFiltrationTime(), randomVariable.getRealizations());
+	}
 	/**
 	 * @return
 	 */
@@ -469,7 +482,7 @@ public class RandomVariableCuda implements RandomVariable {
 		if(size() == 0)			return Double.NaN;
 
 		// Deterministic reduce:
-		return (new RandomVariableFromDoubleArray(getFiltrationTime(), getRealizations())).getAverage();
+		return (new RandomVariableFromFloatArray(getFiltrationTime(), getRealizations())).getAverage();
 //		return  reduce()/size();
 	}
 
