@@ -262,5 +262,9 @@ public class RandomVariableTest {
 
 		System.out.print("Testing getAverage");
 		test.accept(x -> new Scalar(x.getAverage()));
+
+                System.out.print("Testing getAverage");
+                test.accept(x -> new Scalar(x.getAverage(x)));
+
 	}	
 }
