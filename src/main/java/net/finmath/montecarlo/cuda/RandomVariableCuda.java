@@ -42,7 +42,6 @@ import jcuda.driver.CUfunction;
 import jcuda.driver.CUmodule;
 import jcuda.driver.JCudaDriver;
 import net.finmath.functions.DoubleTernaryOperator;
-import net.finmath.montecarlo.RandomVariableFromDoubleArray;
 import net.finmath.montecarlo.RandomVariableFromFloatArray;
 import net.finmath.stochastic.RandomVariable;
 
@@ -80,8 +79,8 @@ public class RandomVariableCuda implements RandomVariable {
 	// @TODO: Support slices with different sizes! Handler need to check for size
 	private final static Map<Integer, ReferenceQueue<RandomVariableCuda>>		vectorsToRecycleReferenceQueueMap	= new ConcurrentHashMap<Integer, ReferenceQueue<RandomVariableCuda>>();
 	private final static Map<WeakReference<RandomVariableCuda>, CUdeviceptr>	vectorsInUseReferenceMap			= new ConcurrentHashMap<WeakReference<RandomVariableCuda>, CUdeviceptr>();
-	private final static float	vectorsRecyclerPercentageFreeToStartGC		= 0.10f;		// should be set by monitoring GPU mem
-	private final static float	vectorsRecyclerPercentageFreeToWaitForGC	= 0.05f;		// should be set by monitoring GPU mem
+	private final static float	vectorsRecyclerPercentageFreeToStartGC		= 0.05f;		// should be set by monitoring GPU mem
+	private final static float	vectorsRecyclerPercentageFreeToWaitForGC	= 0.02f;		// should be set by monitoring GPU mem
 	private final static long	vectorsRecyclerMaxTimeOutMillis			= 100;
 
 	private final static Logger logger = Logger.getLogger("net.finmath");
@@ -283,7 +282,6 @@ public class RandomVariableCuda implements RandomVariable {
 				long timeOut = 1;
 				while(reference == null && timeOut < vectorsRecyclerMaxTimeOutMillis) {
 					try {
-						//					System.err.println("Wait" + timeOut);
 						reference = vectorsToRecycleReferenceQueue.remove(timeOut);
 						timeOut *= 10;
 					} catch (IllegalArgumentException | InterruptedException e) {}
@@ -370,15 +368,18 @@ public class RandomVariableCuda implements RandomVariable {
 	 * @return Pointer to device vector.
 	 */
 	private CUdeviceptr createCUdeviceptr(final float[] values) {
-		synchronized (vectorsInUseReferenceMap) {
+//		synchronized (vectorsInUseReferenceMap)
+		{
 			final CUdeviceptr cuDevicePtr = createCUdeviceptr((long)values.length);
-
+			JCudaDriver.cuMemcpyHtoD(cuDevicePtr, Pointer.to(values), (long)values.length * Sizeof.FLOAT);
+/*
 			try {
 				deviceExecutor.submit(new Runnable() { public void run() {
-					cuCtxSynchronize();
+//					cuCtxSynchronize();
 					JCudaDriver.cuMemcpyHtoD(cuDevicePtr, Pointer.to(values), (long)values.length * Sizeof.FLOAT);
 				}}).get();
 			} catch (InterruptedException | ExecutionException e) { throw new RuntimeException(e.getCause()); }
+*/
 			return cuDevicePtr;
 		}
 	}
@@ -483,8 +484,17 @@ public class RandomVariableCuda implements RandomVariable {
 		if(isDeterministic())	return valueIfNonStochastic;
 		if(size() == 0)			return Double.NaN;
 
-		// Deterministic reduce:
-		return (new RandomVariableFromFloatArray(getFiltrationTime(), getRealizations())).getAverage();
+		// TODO: Use kernel
+		final float[] realizationsOnHostMemory = new float[(int)size];
+		try {
+			deviceExecutor.submit(new Runnable() { public void run() {
+				cuCtxSynchronize();
+				cuMemcpyDtoH(Pointer.to(realizationsOnHostMemory), realizations, size * Sizeof.FLOAT);
+				cuCtxSynchronize();
+			}}).get();
+		} catch (InterruptedException | ExecutionException e) { throw new RuntimeException(e.getCause()); }
+
+		return (new RandomVariableFromFloatArray(getFiltrationTime(), realizationsOnHostMemory)).getAverage();
 //		return  reduce()/size();
 	}
 
@@ -1181,17 +1191,12 @@ public class RandomVariableCuda implements RandomVariable {
 		// Set time of this random variable to maximum of time with respect to which measurability is known.
 		double newTime = Math.max(time, rate.getFiltrationTime());
 
-		if(isDeterministic() && rate.isDeterministic()) {
-			double newValueIfNonStochastic = valueIfNonStochastic / (1 + rate.get(0) * periodLength);
-			return new RandomVariableCuda(newTime, newValueIfNonStochastic);
+		if(rate.isDeterministic()) {
+			return this.div(1.0 + rate.doubleValue() * periodLength);
 		}
 		else if(isDeterministic() && !rate.isDeterministic()) {
 			if(valueIfNonStochastic == 0) return this;
 			return ((RandomVariableCuda)getRandomVariableCuda(rate.mult(periodLength).add(1.0)).vid(valueIfNonStochastic));
-		}
-		else if(!isDeterministic() && rate.isDeterministic()) {
-			double rateValue = rate.get(0);
-			return this.div((1.0 + rateValue * periodLength));
 		}
 		else {
 			CUdeviceptr result = callCudaFunction(discount, new Pointer[] {
@@ -1289,18 +1294,12 @@ public class RandomVariableCuda implements RandomVariable {
 			return this.add(factor1.mult(factor2));
 	}
 
-	/* (non-Javadoc)
-	 * @see net.finmath.stochastic.RandomVariable#addRatio(net.finmath.stochastic.RandomVariable, net.finmath.stochastic.RandomVariable)
-	 */
 	@Override
 	public RandomVariable addRatio(RandomVariable numerator, RandomVariable denominator) {
 		// TODO Implement a kernel here
 		return this.add(numerator.div(denominator));
 	}
 
-	/* (non-Javadoc)
-	 * @see net.finmath.stochastic.RandomVariable#subRatio(net.finmath.stochastic.RandomVariable, net.finmath.stochastic.RandomVariable)
-	 */
 	@Override
 	public RandomVariable subRatio(RandomVariable numerator, RandomVariable denominator) {
 		// TODO Implement a kernel here

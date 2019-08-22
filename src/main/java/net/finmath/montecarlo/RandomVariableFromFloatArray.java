@@ -1240,22 +1240,13 @@ public class RandomVariableFromFloatArray implements RandomVariable {
 		// Set time of this random variable to maximum of time with respect to which measurability is known.
 		double newTime = Math.max(time, rate.getFiltrationTime());
 
-		if(isDeterministic() && rate.isDeterministic()) {
-			double newValueIfNonStochastic = valueIfNonStochastic / (1.0 + rate.doubleValue() * periodLength);
-			return new RandomVariableFromFloatArray(newTime, newValueIfNonStochastic);
+		if(rate.isDeterministic()) {
+			return this.div(1.0 + rate.doubleValue() * periodLength);
 		}
 		else if(isDeterministic() && !rate.isDeterministic()) {
 			float[] newRealizations = new float[Math.max(size(), rate.size())];
 			for(int i=0; i<newRealizations.length; i++) {
 				newRealizations[i]		 = (float)valueIfNonStochastic / (1.0f + (float)rate.get(i) * (float)periodLength);
-			}
-			return new RandomVariableFromFloatArray(newTime, newRealizations);
-		}
-		else if(!isDeterministic() && rate.isDeterministic()) {
-			float rateValue = (float)rate.get(0);
-			float[] newRealizations = new float[Math.max(size(), rate.size())];
-			for(int i=0; i<newRealizations.length; i++) {
-				newRealizations[i]		 = realizations[i] / (float)(1.0f + (float)rateValue * (float)periodLength);
 			}
 			return new RandomVariableFromFloatArray(newTime, newRealizations);
 		}

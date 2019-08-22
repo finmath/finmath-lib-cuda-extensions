@@ -132,187 +132,167 @@ public class RandomVariableTest {
 
 	@Test
 	public void testRandomVariableCuda() throws InterruptedException {
-		int numberOfPath = 100000;
-		final double[] realizations = new double[numberOfPath];
 
 		Random random = new Random();
-		for(int i=0; i<numberOfPath; i++) realizations[i]= random.nextDouble();
 
-		AbstractRandomVariableFactory[] rvf = { new RandomVariableFloatFactory(), new RandomVariableCudaFactory() };
+		for(int testRun=0; testRun<10; testRun++) {
+			int numberOfPath = 100000;
+			final double[] realizations = new double[numberOfPath];
+			for(int i=0; i<numberOfPath; i++) realizations[i]= random.nextDouble();
 
-		BiFunction<AbstractRandomVariableFactory, Function<RandomVariable,RandomVariable>, Integer> hash = (rf, f) -> {
-			RandomVariable x= rf.createRandomVariable(0.0, realizations);
-			double[] xr = f.apply(x).getRealizations();
-			return Arrays.hashCode(xr);
-		};
+			AbstractRandomVariableFactory[] rvf = { new RandomVariableFloatFactory(), new RandomVariableCudaFactory() };
 
-		Consumer<Function<RandomVariable,RandomVariable>> test1 = f -> {
-			if( hash.apply(rvf[0],f).intValue() != hash.apply(rvf[1],f).intValue() ) {
-				System.out.println(" - failed.");
-				/*
-				RandomVariable x1 = rvf[0].createRandomVariable(0.0, realizations);
-				double[] xr1 = f.apply(x1).getRealizations();
-				RandomVariable x2 = rvf[1].createRandomVariable(0.0, realizations);
-				double[] xr2 = f.apply(x2).getRealizations();
-				System.out.print(Arrays.toString(xr1));
-				System.out.print(Arrays.toString(xr2));
-				 */
-			}
-			else {
-				System.out.println(" - ok.");
-			}
-			Assert.assertEquals("test", hash.apply(rvf[0],f) , hash.apply(rvf[1],f));			
-		};
+			BiFunction<AbstractRandomVariableFactory, BiFunction<RandomVariable,RandomVariable,RandomVariable>, Integer> hash = (rf, f) -> {
+				RandomVariable x = rf.createRandomVariable(0.0, realizations);
+				RandomVariable y = rf.createRandomVariable(0.0, realizations[0]);
+				double[] xr = f.apply(x,y).getRealizations();
+				return Arrays.hashCode(xr);
+			};
 
-		BiFunction<AbstractRandomVariableFactory, BiFunction<RandomVariable,RandomVariable,RandomVariable>, Integer> hash2 = (rf, f) -> {
-			RandomVariable x = rf.createRandomVariable(0.0, realizations);
-			RandomVariable y = rf.createRandomVariable(0.0, realizations[0]);
-			double[] xr = f.apply(x,y).getRealizations();
-			return Arrays.hashCode(xr);
-		};
+			Consumer<BiFunction<RandomVariable,RandomVariable,RandomVariable>> test = f -> {
+				if( hash.apply(rvf[0],f).intValue() != hash.apply(rvf[1],f).intValue() ) {
+					System.out.println(" - failed.");
+				}
+				else {
+					System.out.println(" - ok.");
+				}
+				Assert.assertEquals("test", hash.apply(rvf[0],f) , hash.apply(rvf[1],f));			
+			};
 
-		Consumer<BiFunction<RandomVariable,RandomVariable,RandomVariable>> test2 = f -> {
-			if( hash2.apply(rvf[0],f).intValue() != hash2.apply(rvf[1],f).intValue() ) {
-				System.out.println(" - failed.");
-			}
-			else {
-				System.out.println(" - ok.");
-			}
-			Assert.assertEquals("test", hash2.apply(rvf[0],f) , hash2.apply(rvf[1],f));			
-		};
+			System.out.print("Testing squared.");
+			test.accept((x,y) -> x.squared());
 
-		System.out.print("Testing squared.");
-		test2.accept((x,y) -> x.squared());
+			System.out.print("Testing squared.");
+			test.accept((x,y) -> y.squared());
 
-		System.out.print("Testing squared.");
-		test2.accept((x,y) -> y.squared());
+			System.out.print("Testing add scalar.");
+			test.accept((x,y) -> x.add(1.0/3.0));
+			test.accept((x,y) -> y.add(1.0/3.0));
 
-		System.out.print("Testing add scalar.");
-		test2.accept((x,y) -> x.add(1.0/3.0));
-		test2.accept((x,y) -> y.add(1.0/3.0));
+			System.out.print("Testing add.");
+			test.accept((x,y) -> x.add(x));
+			test.accept((x,y) -> x.add(y));
+			test.accept((x,y) -> y.add(x));
+			test.accept((x,y) -> y.add(y));
 
-		System.out.print("Testing add.");
-		test2.accept((x,y) -> x.add(x));
-		test2.accept((x,y) -> x.add(y));
-		test2.accept((x,y) -> y.add(x));
-		test2.accept((x,y) -> y.add(y));
+			System.out.print("Testing sub.");
+			test.accept((x,y) -> x.sub(x));
+			test.accept((x,y) -> x.sub(y));
+			test.accept((x,y) -> y.sub(x));
+			test.accept((x,y) -> y.sub(y));
 
-		System.out.print("Testing sub.");
-		test2.accept((x,y) -> x.sub(x));
-		test2.accept((x,y) -> x.sub(y));
-		test2.accept((x,y) -> y.sub(x));
-		test2.accept((x,y) -> y.sub(y));
+			System.out.print("Testing bus.");
+			test.accept((x,y) -> x.bus(x));
+			test.accept((x,y) -> x.bus(y));
+			test.accept((x,y) -> y.bus(x));
+			test.accept((x,y) -> y.bus(y));
 
-		System.out.print("Testing bus.");
-		test2.accept((x,y) -> x.bus(x));
-		test2.accept((x,y) -> x.bus(y));
-		test2.accept((x,y) -> y.bus(x));
-		test2.accept((x,y) -> y.bus(y));
+			System.out.print("Testing cap.");
+			test.accept((x,y) -> x.cap(1.0/3.0));
+			test.accept((x,y) -> y.cap(1.0/3.0));
+			test.accept((x,y) -> x.cap(x.sub(1/3)));
+			test.accept((x,y) -> y.cap(x.sub(1/3)));
+			test.accept((x,y) -> y.cap(y.sub(1/3)));
 
-		System.out.print("Testing cap.");
-		test2.accept((x,y) -> x.cap(1.0/3.0));
-		test2.accept((x,y) -> y.cap(1.0/3.0));
-		test2.accept((x,y) -> x.cap(x.sub(1/3)));
-		test2.accept((x,y) -> y.cap(x.sub(1/3)));
-		test2.accept((x,y) -> y.cap(y.sub(1/3)));
+			System.out.print("Testing floor.");
+			test.accept((x,y) -> x.floor(1.0/3.0));
+			test.accept((x,y) -> y.floor(1.0/3.0));
+			test.accept((x,y) -> x.floor(x.add(1/3)));
+			test.accept((x,y) -> y.floor(x.add(1/3)));
+			test.accept((x,y) -> y.floor(y.add(1/3)));
 
-		System.out.print("Testing floor.");
-		test2.accept((x,y) -> x.floor(1.0/3.0));
-		test2.accept((x,y) -> y.floor(1.0/3.0));
-		test2.accept((x,y) -> x.floor(x.add(1/3)));
-		test2.accept((x,y) -> y.floor(x.add(1/3)));
-		test2.accept((x,y) -> y.floor(y.add(1/3)));
+			System.out.print("Testing mult.");
+			test.accept((x,y) -> x.mult(x));
+			test.accept((x,y) -> x.mult(y));
+			test.accept((x,y) -> y.mult(x));
+			test.accept((x,y) -> y.mult(y));
 
-		System.out.print("Testing mult.");
-		test2.accept((x,y) -> x.mult(x));
-		test2.accept((x,y) -> x.mult(y));
-		test2.accept((x,y) -> y.mult(x));
-		test2.accept((x,y) -> y.mult(y));
+			System.out.print("Testing mult scalar.");
+			test.accept((x,y) -> x.mult(3.1415));
+			test.accept((x,y) -> x.mult(1.0/3.0));
+			test.accept((x,y) -> y.mult(3.1415));
+			test.accept((x,y) -> y.mult(1.0/3.0));
 
-		System.out.print("Testing mult scalar.");
-		test2.accept((x,y) -> x.mult(3.1415));
-		test2.accept((x,y) -> x.mult(1.0/3.0));
-		test2.accept((x,y) -> y.mult(3.1415));
-		test2.accept((x,y) -> y.mult(1.0/3.0));
+			System.out.print("Testing div.");
+			test.accept((x,y) -> x.div(x));
+			test.accept((x,y) -> x.div(y));
+			test.accept((x,y) -> y.div(x));
+			test.accept((x,y) -> y.div(y));
 
-		System.out.print("Testing div.");
-		test2.accept((x,y) -> x.div(x));
-		test2.accept((x,y) -> x.div(y));
-		test2.accept((x,y) -> y.div(x));
-		test2.accept((x,y) -> y.div(y));
+			System.out.print("Testing div scalar.");
+			test.accept((x,y) -> x.div(3.1415));
+			test.accept((x,y) -> x.div(1.0/3.0));
+			test.accept((x,y) -> y.div(3.1415));
+			test.accept((x,y) -> y.div(1.0/3.0));
 
-		System.out.print("Testing div scalar.");
-		test2.accept((x,y) -> x.div(3.1415));
-		test2.accept((x,y) -> x.div(1.0/3.0));
-		test2.accept((x,y) -> y.div(3.1415));
-		test2.accept((x,y) -> y.div(1.0/3.0));
+			System.out.print("Testing vid.");
+			test.accept((x,y) -> x.vid(x));
+			test.accept((x,y) -> x.vid(y));
+			test.accept((x,y) -> y.vid(x));
+			test.accept((x,y) -> y.vid(y));
 
-		System.out.print("Testing vid.");
-		test2.accept((x,y) -> x.vid(x));
-		test2.accept((x,y) -> x.vid(y));
-		test2.accept((x,y) -> y.vid(x));
-		test2.accept((x,y) -> y.vid(y));
+			System.out.print("Testing exp.");
+			test.accept((x,y) -> x.exp());
+			test.accept((x,y) -> y.exp());
 
-		System.out.print("Testing exp.");
-		test2.accept((x,y) -> x.exp());
-		test2.accept((x,y) -> y.exp());
+			System.out.print("Testing log.");
+			test.accept((x,y) -> x.log());
+			test.accept((x,y) -> y.log());
 
-		System.out.print("Testing log.");
-		test2.accept((x,y) -> x.log());
-		test2.accept((x,y) -> y.log());
+			System.out.print("Testing invert.");
+			test.accept((x,y) -> x.invert());
+			test.accept((x,y) -> y.invert());
 
-		System.out.print("Testing invert.");
-		test2.accept((x,y) -> x.invert());
-		test2.accept((x,y) -> y.invert());
+			System.out.print("Testing abs.");
+			test.accept((x,y) -> x.abs());
+			test.accept((x,y) -> y.abs());
 
-		System.out.print("Testing abs.");
-		test2.accept((x,y) -> x.abs());
-		test2.accept((x,y) -> y.abs());
+			System.out.print("Testing accrue.");
+			test.accept((x,y) -> x.accrue(x, 2.0));
+			test.accept((x,y) -> x.accrue(x, 1.0/3.0));
+			test.accept((x,y) -> x.accrue(y, 1.0/3.0));
+			test.accept((x,y) -> y.accrue(x, 1.0/3.0));
+			test.accept((x,y) -> y.accrue(y, 1.0/3.0));
 
-		System.out.print("Testing accrue.");
-		test2.accept((x,y) -> x.accrue(x, 2.0));
-		test2.accept((x,y) -> x.accrue(x, 1.0/3.0));
-		test2.accept((x,y) -> x.accrue(y, 1.0/3.0));
-		test2.accept((x,y) -> y.accrue(x, 1.0/3.0));
-		test2.accept((x,y) -> y.accrue(y, 1.0/3.0));
+			System.out.print("Testing discount.");
+			test.accept((x,y) -> x.discount(x, 2.0));
+			test.accept((x,y) -> x.discount(x, 1.0/3.0));
+			test.accept((x,y) -> x.discount(y, 1.0/3.0));
+			test.accept((x,y) -> y.discount(x, 1.0/3.0));
+			test.accept((x,y) -> y.discount(y, 1.0/3.0));
 
-		System.out.print("Testing discount.");
-		test2.accept((x,y) -> x.discount(x, 2.0));
-		test2.accept((x,y) -> x.discount(x, 1.0/3.0));
-		test2.accept((x,y) -> x.discount(y, 1.0/3.0));
-		test2.accept((x,y) -> y.discount(x, 1.0/3.0));
-		test2.accept((x,y) -> y.discount(y, 1.0/3.0));
+			System.out.print("Testing add product");
+			test.accept((x,y) -> x.addProduct(x, x));
+			test.accept((x,y) -> x.addProduct(x, y));
+			test.accept((x,y) -> x.addProduct(y, x));
+			test.accept((x,y) -> x.addProduct(y, y));
+			test.accept((x,y) -> y.addProduct(x, x));
+			test.accept((x,y) -> y.addProduct(x, y));
+			test.accept((x,y) -> y.addProduct(y, x));
+			test.accept((x,y) -> y.addProduct(y, y));
 
-		System.out.print("Testing add product");
-		test2.accept((x,y) -> x.addProduct(x, x));
-		test2.accept((x,y) -> x.addProduct(x, y));
-		test2.accept((x,y) -> x.addProduct(y, x));
-		test2.accept((x,y) -> x.addProduct(y, y));
-		test2.accept((x,y) -> y.addProduct(x, x));
-		test2.accept((x,y) -> y.addProduct(x, y));
-		test2.accept((x,y) -> y.addProduct(y, x));
-		test2.accept((x,y) -> y.addProduct(y, y));
+			System.out.print("Testing add product scalar");
+			test.accept((x,y) -> x.addProduct(x, 1.0/3.0));
+			test.accept((x,y) -> x.addProduct(y, 1.0/3.0));
+			test.accept((x,y) -> y.addProduct(x, 1.0/3.0));
+			test.accept((x,y) -> y.addProduct(y, 1.0/3.0));
 
-		System.out.print("Testing add product scalar");
-		test2.accept((x,y) -> x.addProduct(x, 1.0/3.0));
-		test2.accept((x,y) -> x.addProduct(y, 1.0/3.0));
-		test2.accept((x,y) -> y.addProduct(x, 1.0/3.0));
-		test2.accept((x,y) -> y.addProduct(y, 1.0/3.0));
+			System.out.print("Testing add sum product");
+			test.accept((x,y) -> x.addSumProduct(new RandomVariable[] { x , x }, new RandomVariable[] { x , x }));
+			test.accept((x,y) -> x.addSumProduct(new RandomVariable[] { x , x }, new RandomVariable[] { x , y }));
+			test.accept((x,y) -> x.addSumProduct(new RandomVariable[] { x , y }, new RandomVariable[] { y , y }));
+			test.accept((x,y) -> x.addSumProduct(new RandomVariable[] { y , y }, new RandomVariable[] { y , y }));
+			test.accept((x,y) -> y.addSumProduct(new RandomVariable[] { x , x }, new RandomVariable[] { x , x }));
+			test.accept((x,y) -> y.addSumProduct(new RandomVariable[] { x , x }, new RandomVariable[] { x , y }));
+			test.accept((x,y) -> y.addSumProduct(new RandomVariable[] { x , y }, new RandomVariable[] { y , y }));
+			test.accept((x,y) -> y.addSumProduct(new RandomVariable[] { y , y }, new RandomVariable[] { y , y }));
 
-		System.out.print("Testing add sum product");
-		test2.accept((x,y) -> x.addSumProduct(new RandomVariable[] { x , x }, new RandomVariable[] { x , x }));
-		test2.accept((x,y) -> x.addSumProduct(new RandomVariable[] { x , x }, new RandomVariable[] { x , y }));
-		test2.accept((x,y) -> x.addSumProduct(new RandomVariable[] { x , y }, new RandomVariable[] { y , y }));
-		test2.accept((x,y) -> x.addSumProduct(new RandomVariable[] { y , y }, new RandomVariable[] { y , y }));
-		test2.accept((x,y) -> y.addSumProduct(new RandomVariable[] { x , x }, new RandomVariable[] { x , x }));
-		test2.accept((x,y) -> y.addSumProduct(new RandomVariable[] { x , x }, new RandomVariable[] { x , y }));
-		test2.accept((x,y) -> y.addSumProduct(new RandomVariable[] { x , y }, new RandomVariable[] { y , y }));
-		test2.accept((x,y) -> y.addSumProduct(new RandomVariable[] { y , y }, new RandomVariable[] { y , y }));
+			System.out.print("Testing getAverage");
+			test.accept((x,y) -> new Scalar(x.getAverage()));
+			test.accept((x,y) -> new Scalar(y.getAverage()));
+			test.accept((x,y) -> new Scalar(x.getAverage(x)));
+			test.accept((x,y) -> new Scalar(y.getAverage(y)));
 
-		System.out.print("Testing getAverage");
-		test2.accept((x,y) -> new Scalar(x.getAverage()));
-		test2.accept((x,y) -> new Scalar(y.getAverage()));
-		test2.accept((x,y) -> new Scalar(x.getAverage(x)));
-		test2.accept((x,y) -> new Scalar(y.getAverage(y)));
+		}	
 	}	
 }
