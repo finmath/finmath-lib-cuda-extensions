@@ -335,6 +335,7 @@ public class RandomVariableCuda implements RandomVariable {
 		if(randomVariable instanceof RandomVariableCuda2) return (RandomVariableCuda2)randomVariable;
 		else return new RandomVariableCuda2(randomVariable.getFiltrationTime(), randomVariable.getRealizations());
 	}
+
 	/**
 	 * @return
 	 */
@@ -699,8 +700,7 @@ public class RandomVariableCuda implements RandomVariable {
 	@Override
 	public double[] getRealizations() {
 		if(isDeterministic()) {
-			double[] result = new double[1];
-			result[0] = get(0);
+			double[] result = new double[] { valueIfNonStochastic };
 			return result;
 		}
 		else {
@@ -713,6 +713,15 @@ public class RandomVariableCuda implements RandomVariable {
 				}}).get();
 			} catch (InterruptedException | ExecutionException e) { throw new RuntimeException(e.getCause()); }
 			return getDoubleArray(result);
+		}
+	}
+
+	@Override
+	public Double doubleValue() {
+		if(isDeterministic()) {
+			return valueIfNonStochastic;
+		} else {
+			throw new UnsupportedOperationException("The random variable is non-deterministic");
 		}
 	}
 
@@ -1178,12 +1187,6 @@ public class RandomVariableCuda implements RandomVariable {
 
 			return new RandomVariableCuda(newTime, result, size());
 		}
-	}
-
-	@Override
-	public Double doubleValue() {
-		// TODO Auto-generated method stub
-		return null;
 	}
 
 	@Override
