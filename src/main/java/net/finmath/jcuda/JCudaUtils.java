@@ -51,6 +51,10 @@ public class JCudaUtils
 
 		String[] command = {
 				"nvcc",
+				"-arch",
+				"sm_30",
+				"-fmad",
+				"false",
 				modelString,
 				"-ptx",
 				cuFile.getPath(),
