@@ -138,7 +138,7 @@ public class RandomVariableTest {
 		Random random = new Random();
 		for(int i=0; i<numberOfPath; i++) realizations[i]= random.nextDouble();
 
-		AbstractRandomVariableFactory[] rvf = { new RandomVariableFactory(false), new RandomVariableCudaFactory() };
+		AbstractRandomVariableFactory[] rvf = { new RandomVariableFloatFactory(), new RandomVariableCudaFactory() };
 
 		BiFunction<AbstractRandomVariableFactory, Function<RandomVariable,RandomVariable>, Integer> hash = (rf, f) -> {
 			RandomVariable x= rf.createRandomVariable(0.0, realizations);
@@ -174,14 +174,6 @@ public class RandomVariableTest {
 		Consumer<BiFunction<RandomVariable,RandomVariable,RandomVariable>> test2 = f -> {
 			if( hash2.apply(rvf[0],f).intValue() != hash2.apply(rvf[1],f).intValue() ) {
 				System.out.println(" - failed.");
-				/*
-				RandomVariable x1 = rvf[0].createRandomVariable(0.0, realizations);
-				double[] xr1 = f.apply(x1).getRealizations();
-				RandomVariable x2 = rvf[1].createRandomVariable(0.0, realizations);
-				double[] xr2 = f.apply(x2).getRealizations();
-				System.out.print(Arrays.toString(xr1));
-				System.out.print(Arrays.toString(xr2));
-				 */
 			}
 			else {
 				System.out.println(" - ok.");

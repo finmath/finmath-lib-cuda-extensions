@@ -103,7 +103,7 @@ public class RandomVariableFromFloatArray implements RandomVariable {
 		super();
 		this.time = time;
 		realizations = null;
-		valueIfNonStochastic = (float) value;
+		valueIfNonStochastic = value;
 		this.typePriority = typePriority;
 	}
 
@@ -915,7 +915,7 @@ public class RandomVariableFromFloatArray implements RandomVariable {
 	@Override
 	public RandomVariableFromFloatArray log() {
 		if(isDeterministic()) {
-			double newValueIfNonStochastic = FastMath.log(valueIfNonStochastic);
+			double newValueIfNonStochastic = Math.log(valueIfNonStochastic);
 			return new RandomVariableFromFloatArray(time, newValueIfNonStochastic);
 		}
 		else {
@@ -978,13 +978,13 @@ public class RandomVariableFromFloatArray implements RandomVariable {
 		else if(isDeterministic()) {
 			float[] newRealizations = new float[Math.max(size(), randomVariable.size())];
 			for(int i=0; i<newRealizations.length; i++) {
-				newRealizations[i]		 = (float)(valueIfNonStochastic + randomVariable.get(i));
+				newRealizations[i]		 = ((float)valueIfNonStochastic + (float)randomVariable.get(i));
 			}
 			return new RandomVariableFromFloatArray(newTime, newRealizations);
 		} else {
-			double[] newRealizations = new double[Math.max(size(), randomVariable.size())];
+			float[] newRealizations = new float[Math.max(size(), randomVariable.size())];
 			for(int i=0; i<newRealizations.length; i++) {
-				newRealizations[i]		 = realizations[i] + randomVariable.get(i);
+				newRealizations[i]		 = realizations[i] + (float)randomVariable.get(i);
 			}
 			return new RandomVariableFromFloatArray(newTime, newRealizations);
 		}
@@ -1007,7 +1007,7 @@ public class RandomVariableFromFloatArray implements RandomVariable {
 		else if(isDeterministic()) {
 			float[] newRealizations = new float[Math.max(size(), randomVariable.size())];
 			for(int i=0; i<newRealizations.length; i++) {
-				newRealizations[i]		 = (float)(valueIfNonStochastic - randomVariable.get(i));
+				newRealizations[i]		 = (float)valueIfNonStochastic - (float)randomVariable.get(i);
 			}
 			return new RandomVariableFromFloatArray(newTime, newRealizations);
 		}
@@ -1100,7 +1100,7 @@ public class RandomVariableFromFloatArray implements RandomVariable {
 		else if(isDeterministic()) {
 			float[] newRealizations = new float[Math.max(size(), randomVariable.size())];
 			for(int i=0; i<newRealizations.length; i++) {
-				newRealizations[i]		 = (float) (valueIfNonStochastic / (float)randomVariable.get(i));
+				newRealizations[i] = (float)valueIfNonStochastic / (float)randomVariable.get(i);
 			}
 			return new RandomVariableFromFloatArray(newTime, newRealizations);
 		}
@@ -1130,7 +1130,7 @@ public class RandomVariableFromFloatArray implements RandomVariable {
 		else if(isDeterministic()) {
 			float[] newRealizations = new float[Math.max(size(), randomVariable.size())];
 			for(int i=0; i<newRealizations.length; i++) {
-				newRealizations[i]		 = (float) ((float)randomVariable.get(i) / valueIfNonStochastic);
+				newRealizations[i]		 = (float)randomVariable.get(i) / (float)valueIfNonStochastic;
 			}
 			return new RandomVariableFromFloatArray(newTime, newRealizations);
 		}
@@ -1211,22 +1211,13 @@ public class RandomVariableFromFloatArray implements RandomVariable {
 		// Set time of this random variable to maximum of time with respect to which measurability is known.
 		double newTime = Math.max(time, rate.getFiltrationTime());
 
-		if(isDeterministic() && rate.isDeterministic()) {
-			float newValueIfNonStochastic = (float) (valueIfNonStochastic * (1 + rate.get(0) * periodLength));
-			return new RandomVariableFromFloatArray(newTime, newValueIfNonStochastic);
+		if(rate.isDeterministic()) {
+			return this.mult(1.0 + rate.get(0) * periodLength);
 		}
 		else if(isDeterministic() && !rate.isDeterministic()) {
 			float[] newRealizations = new float[Math.max(size(), rate.size())];
 			for(int i=0; i<newRealizations.length; i++) {
-				newRealizations[i]		 = (float) (valueIfNonStochastic * (1 + rate.get(i) * periodLength));
-			}
-			return new RandomVariableFromFloatArray(newTime, newRealizations);
-		}
-		else if(!isDeterministic() && rate.isDeterministic()) {
-			float rateValue = (float)rate.get(0);
-			float[] newRealizations = new float[Math.max(size(), rate.size())];
-			for(int i=0; i<newRealizations.length; i++) {
-				newRealizations[i]		 = realizations[i] * (1.0f + rateValue * (float)periodLength);
+				newRealizations[i]		 =  (float)valueIfNonStochastic * (1 + (float)rate.get(i) * (float)periodLength);
 			}
 			return new RandomVariableFromFloatArray(newTime, newRealizations);
 		}
@@ -1250,13 +1241,13 @@ public class RandomVariableFromFloatArray implements RandomVariable {
 		double newTime = Math.max(time, rate.getFiltrationTime());
 
 		if(isDeterministic() && rate.isDeterministic()) {
-			float newValueIfNonStochastic = (float) (valueIfNonStochastic / (1.0f + (float)rate.get(0) * (float)periodLength));
+			double newValueIfNonStochastic = valueIfNonStochastic / (1.0 + rate.doubleValue() * periodLength);
 			return new RandomVariableFromFloatArray(newTime, newValueIfNonStochastic);
 		}
 		else if(isDeterministic() && !rate.isDeterministic()) {
 			float[] newRealizations = new float[Math.max(size(), rate.size())];
 			for(int i=0; i<newRealizations.length; i++) {
-				newRealizations[i]		 = (float) (valueIfNonStochastic / (1.0f + (float)rate.get(i) * (float)periodLength));
+				newRealizations[i]		 = (float)valueIfNonStochastic / (1.0f + (float)rate.get(i) * (float)periodLength);
 			}
 			return new RandomVariableFromFloatArray(newTime, newRealizations);
 		}
@@ -1346,14 +1337,13 @@ public class RandomVariableFromFloatArray implements RandomVariable {
 		// Set time of this random variable to maximum of time with respect to which measurability is known.
 		double newTime = Math.max(time, factor1.getFiltrationTime());
 
-		if(isDeterministic() && factor1.isDeterministic()) {
-			double newValueIfNonStochastic = valueIfNonStochastic + (factor1.get(0) * factor2);
-			return new RandomVariableFromFloatArray(newTime, newValueIfNonStochastic);
+		if(factor1.isDeterministic()) {
+			return this.add(factor1.get(0) * factor2);
 		}
 		else if(isDeterministic() && !factor1.isDeterministic()) {
 			float[] newRealizations = new float[Math.max(size(), factor1.size())];
 			for(int i=0; i<newRealizations.length; i++) {
-				newRealizations[i]		 = (float) (valueIfNonStochastic + factor1.get(i) * factor2);
+				newRealizations[i]		 = (float)valueIfNonStochastic + (float)factor1.get(i) * (float)factor2;
 			}
 			return new RandomVariableFromFloatArray(newTime, newRealizations);
 		}
@@ -1384,9 +1374,8 @@ public class RandomVariableFromFloatArray implements RandomVariable {
 		// Set time of this random variable to maximum of time with respect to which measurability is known.
 		double newTime = Math.max(Math.max(time, factor1.getFiltrationTime()), factor2.getFiltrationTime());
 
-		if(isDeterministic() && factor1.isDeterministic() && factor2.isDeterministic()) {
-			double newValueIfNonStochastic = valueIfNonStochastic + (factor1.get(0) * factor2.get(0));
-			return new RandomVariableFromFloatArray(newTime, newValueIfNonStochastic);
+		if(factor1.isDeterministic() && factor2.isDeterministic()) {
+			return this.add(factor1.get(0) * factor2.get(0));
 		}
 		else if(isDeterministic() && !factor1.isDeterministic() && !factor2.isDeterministic()) {
 			float[] newRealizations = new float[Math.max(size(), factor1.size())];
