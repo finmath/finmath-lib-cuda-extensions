@@ -360,6 +360,7 @@ public class RandomVariableCuda implements RandomVariable {
 	 */
 	public RandomVariableCuda(double time, float[] realisations) {
 		this(time, createCUdeviceptr(realisations), realisations.length);
+		deviceMemoryPool.manage(this.realizations, this);
 	}
 
 	/**
@@ -779,7 +780,7 @@ public class RandomVariableCuda implements RandomVariable {
 		else {
 			double[] newRealizations = new double[realizations.length];
 			for(int i=0; i<newRealizations.length; i++) newRealizations[i]		 = function.value(realizations[i]);
-			return new RandomVariableCuda(time, newRealizations);
+			return RandomVariableCuda.of(time, newRealizations);
 		}
 		 */
 	}
@@ -807,7 +808,7 @@ public class RandomVariableCuda implements RandomVariable {
 					null /* placeholder for pointer to result */}
 					);
 
-			return new RandomVariableCuda(time, result, size());
+			return RandomVariableCuda.of(time, result, size());
 		}
 	}
 
@@ -825,7 +826,7 @@ public class RandomVariableCuda implements RandomVariable {
 					null /* placeholder for pointer to result */}
 					);
 
-			return new RandomVariableCuda(time, result, size());
+			return RandomVariableCuda.of(time, result, size());
 		}
 	}
 
@@ -843,7 +844,7 @@ public class RandomVariableCuda implements RandomVariable {
 					null /* placeholder for pointer to result */}
 					);
 
-			return new RandomVariableCuda(time, result, size());
+			return RandomVariableCuda.of(time, result, size());
 		}
 	}
 
@@ -861,7 +862,7 @@ public class RandomVariableCuda implements RandomVariable {
 					null /* placeholder for pointer to result */}
 					);
 
-			return new RandomVariableCuda(time, result, size());
+			return RandomVariableCuda.of(time, result, size());
 		}
 	}
 
@@ -878,7 +879,7 @@ public class RandomVariableCuda implements RandomVariable {
 					null /* placeholder for pointer to result */}
 					);
 
-			return new RandomVariableCuda(time, result, size());
+			return RandomVariableCuda.of(time, result, size());
 		}
 	}
 
@@ -896,7 +897,7 @@ public class RandomVariableCuda implements RandomVariable {
 					null /* placeholder for pointer to result */}
 					);
 
-			return new RandomVariableCuda(time, result, size());
+			return RandomVariableCuda.of(time, result, size());
 		}
 	}
 
@@ -913,7 +914,7 @@ public class RandomVariableCuda implements RandomVariable {
 					Pointer.to(new float[] { (float)value }),
 					null /* placeholder for pointer to result */}
 					);
-			return new RandomVariableCuda(time, result, size());
+			return RandomVariableCuda.of(time, result, size());
 		}
 	}
 
@@ -929,7 +930,7 @@ public class RandomVariableCuda implements RandomVariable {
 					Pointer.to(new float[] { (float)value }),
 					null /* placeholder for pointer to result */}
 					);
-			return new RandomVariableCuda(time, result, size());
+			return RandomVariableCuda.of(time, result, size());
 		}
 	}
 
@@ -946,7 +947,7 @@ public class RandomVariableCuda implements RandomVariable {
 					Pointer.to(new float[] { (float)exponent }),
 					null /* placeholder for pointer to result */}
 					);
-			return new RandomVariableCuda(time, result, size());
+			return RandomVariableCuda.of(time, result, size());
 		}
 	}
 
@@ -977,7 +978,7 @@ public class RandomVariableCuda implements RandomVariable {
 					null /* placeholder for pointer to result */}
 					);
 
-			return new RandomVariableCuda(time, result, size());
+			return RandomVariableCuda.of(time, result, size());
 		}
 	}
 
@@ -993,7 +994,7 @@ public class RandomVariableCuda implements RandomVariable {
 					null /* placeholder for pointer to result */}
 					);
 
-			return new RandomVariableCuda(time, result, size());
+			return RandomVariableCuda.of(time, result, size());
 		}
 	}
 
@@ -1009,7 +1010,7 @@ public class RandomVariableCuda implements RandomVariable {
 					null /* placeholder for pointer to result */}
 					);
 
-			return new RandomVariableCuda(time, result, size());
+			return RandomVariableCuda.of(time, result, size());
 		}
 	}
 
@@ -1025,7 +1026,7 @@ public class RandomVariableCuda implements RandomVariable {
 					null /* placeholder for pointer to result */}
 					);
 
-			return new RandomVariableCuda(time, result, size());
+			return RandomVariableCuda.of(time, result, size());
 		}
 	}
 
@@ -1041,7 +1042,7 @@ public class RandomVariableCuda implements RandomVariable {
 					null /* placeholder for pointer to result */}
 					);
 
-			return new RandomVariableCuda(time, result, size());
+			return RandomVariableCuda.of(time, result, size());
 		}
 	}
 
@@ -1055,7 +1056,7 @@ public class RandomVariableCuda implements RandomVariable {
 		else {
 			double[] newRealizations = new double[realizations.length];
 			for(int i=0; i<newRealizations.length; i++) newRealizations[i]		 = Math.sin(realizations[i]);
-			return new RandomVariableCuda(time, newRealizations);
+			return RandomVariableCuda.of(time, newRealizations);
 		}
 		 */
 	}
@@ -1070,7 +1071,7 @@ public class RandomVariableCuda implements RandomVariable {
 		else {
 			double[] newRealizations = new double[realizations.length];
 			for(int i=0; i<newRealizations.length; i++) newRealizations[i]		 = Math.cos(realizations[i]);
-			return new RandomVariableCuda(time, newRealizations);
+			return RandomVariableCuda.of(time, newRealizations);
 		}
 		 */
 	}
@@ -1107,7 +1108,7 @@ public class RandomVariableCuda implements RandomVariable {
 					null /* placeholder for pointer to result */}
 					);
 
-			return new RandomVariableCuda(time, result, size());
+			return RandomVariableCuda.of(time, result, size());
 		}
 	}
 
@@ -1139,7 +1140,7 @@ public class RandomVariableCuda implements RandomVariable {
 					null /* placeholder for pointer to result */}
 					);
 
-			return new RandomVariableCuda(time, result, size());
+			return RandomVariableCuda.of(time, result, size());
 		}
 	}
 
@@ -1171,7 +1172,7 @@ public class RandomVariableCuda implements RandomVariable {
 					null /* placeholder for pointer to result */}
 					);
 
-			return new RandomVariableCuda(time, result, size());
+			return RandomVariableCuda.of(time, result, size());
 		}
 	}
 
