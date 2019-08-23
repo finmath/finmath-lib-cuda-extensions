@@ -419,15 +419,12 @@ public class RandomVariableCuda implements RandomVariable {
 		//		synchronized (vectorsInUseReferenceMap)
 		{
 			final CUdeviceptr cuDevicePtr = deviceMemoryPool.getCUdeviceptr(values.length);
-			JCudaDriver.cuMemcpyHtoD(cuDevicePtr, Pointer.to(values), (long)values.length * Sizeof.FLOAT);
-			/*
 			try {
 				deviceExecutor.submit(new Runnable() { public void run() {
-//					cuCtxSynchronize();
+					cuCtxSynchronize();
 					JCudaDriver.cuMemcpyHtoD(cuDevicePtr, Pointer.to(values), (long)values.length * Sizeof.FLOAT);
 				}}).get();
 			} catch (InterruptedException | ExecutionException e) { throw new RuntimeException(e.getCause()); }
-			 */
 			return cuDevicePtr;
 		}
 	}
