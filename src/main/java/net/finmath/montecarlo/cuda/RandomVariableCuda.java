@@ -1093,7 +1093,7 @@ public class RandomVariableCuda implements RandomVariable {
 
 		if(isDeterministic() && randomVariable.isDeterministic()) {
 			double newValueIfNonStochastic = valueIfNonStochastic + randomVariable.doubleValue();
-			return RandomVariableCuda.of(newTime, newValueIfNonStochastic);
+			return new RandomVariableCuda(newTime, newValueIfNonStochastic);
 		}
 		else if(isDeterministic()) {
 			return getRandomVariableCuda(randomVariable).add(valueIfNonStochastic);
@@ -1125,7 +1125,7 @@ public class RandomVariableCuda implements RandomVariable {
 
 		if(isDeterministic() && randomVariable.isDeterministic()) {
 			double newValueIfNonStochastic = valueIfNonStochastic - randomVariable.doubleValue();
-			return RandomVariableCuda.of(newTime, newValueIfNonStochastic);
+			return new RandomVariableCuda(newTime, newValueIfNonStochastic);
 		}
 		else if(isDeterministic()) {
 			return getRandomVariableCuda(randomVariable).bus(valueIfNonStochastic);
@@ -1157,7 +1157,7 @@ public class RandomVariableCuda implements RandomVariable {
 
 		if(isDeterministic() && randomVariable.isDeterministic()) {
 			double newValueIfNonStochastic = -valueIfNonStochastic + randomVariable.doubleValue();
-			return RandomVariableCuda.of(newTime, newValueIfNonStochastic);
+			return new RandomVariableCuda(newTime, newValueIfNonStochastic);
 		}
 		else if(isDeterministic()) {
 			return getRandomVariableCuda(randomVariable).sub(valueIfNonStochastic);
@@ -1189,7 +1189,7 @@ public class RandomVariableCuda implements RandomVariable {
 
 		if(isDeterministic() && randomVariable.isDeterministic()) {
 			double newValueIfNonStochastic = valueIfNonStochastic * randomVariable.doubleValue();
-			return RandomVariableCuda.of(newTime, newValueIfNonStochastic);
+			return new RandomVariableCuda(newTime, newValueIfNonStochastic);
 		}
 		else if(randomVariable.isDeterministic()) {
 			return this.mult(randomVariable.doubleValue());
@@ -1221,7 +1221,7 @@ public class RandomVariableCuda implements RandomVariable {
 
 		if(isDeterministic() && randomVariable.isDeterministic()) {
 			double newValueIfNonStochastic = valueIfNonStochastic / randomVariable.doubleValue();
-			return RandomVariableCuda.of(newTime, newValueIfNonStochastic);
+			return new RandomVariableCuda(newTime, newValueIfNonStochastic);
 		}
 		else if(isDeterministic()) {
 			return getRandomVariableCuda(randomVariable).vid(valueIfNonStochastic);
@@ -1253,7 +1253,7 @@ public class RandomVariableCuda implements RandomVariable {
 
 		if(isDeterministic() && randomVariable.isDeterministic()) {
 			double newValueIfNonStochastic = randomVariable.doubleValue() / valueIfNonStochastic;
-			return RandomVariableCuda.of(newTime, newValueIfNonStochastic);
+			return new RandomVariableCuda(newTime, newValueIfNonStochastic);
 		}
 		else if(isDeterministic()) {
 			return getRandomVariableCuda(randomVariable).div(valueIfNonStochastic);
@@ -1285,7 +1285,7 @@ public class RandomVariableCuda implements RandomVariable {
 
 		if(isDeterministic() && randomVariable.isDeterministic()) {
 			double newValueIfNonStochastic = Math.min(valueIfNonStochastic, randomVariable.doubleValue());
-			return RandomVariableCuda.of(newTime, newValueIfNonStochastic);
+			return new RandomVariableCuda(newTime, newValueIfNonStochastic);
 		}
 		else if(isDeterministic()) return randomVariable.cap(valueIfNonStochastic);
 		else {
@@ -1312,7 +1312,7 @@ public class RandomVariableCuda implements RandomVariable {
 
 		if(isDeterministic() && randomVariable.isDeterministic()) {
 			double newValueIfNonStochastic = Math.max(valueIfNonStochastic, randomVariable.doubleValue());
-			return RandomVariableCuda.of(newTime, newValueIfNonStochastic);
+			return new RandomVariableCuda(newTime, newValueIfNonStochastic);
 		}
 		else if(isDeterministic()) {
 			return getRandomVariableCuda(randomVariable).floor(valueIfNonStochastic);
@@ -1439,7 +1439,7 @@ public class RandomVariableCuda implements RandomVariable {
 
 		if(isDeterministic() && factor1.isDeterministic() && factor2.isDeterministic()) {
 			double newValueIfNonStochastic = valueIfNonStochastic + (factor1.doubleValue() * factor2.doubleValue());
-			return RandomVariableCuda.of(newTime, newValueIfNonStochastic);
+			return new RandomVariableCuda(newTime, newValueIfNonStochastic);
 		}
 		else if(factor1.isDeterministic() && factor2.isDeterministic()) {
 			return add(factor1.doubleValue() * factor2.doubleValue());
