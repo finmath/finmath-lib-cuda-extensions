@@ -72,12 +72,13 @@ public class RandomVariableCuda implements RandomVariable {
 		private final static float	vectorsRecyclerPercentageFreeToWaitForGC	= 0.02f;		// should be set by monitoring GPU mem
 		private final static long	vectorsRecyclerMaxTimeOutMillis			= 100;
 
+		/*
 		static {
 			new Thread(new Runnable() {
 				@Override
 				public void run() {
 					while(true) {
-						System.gc();
+//						System.gc();
 
 						try {
 							Thread.sleep(10);
@@ -89,6 +90,7 @@ public class RandomVariableCuda implements RandomVariable {
 				}
 			}).start();
 		}
+		*/
 
 		public void manage(CUdeviceptr cuDevicePtr, RandomVariableCuda wrapper) {
 			int size = wrapper.size();
