@@ -154,7 +154,7 @@ public class RandomVariableCuda implements RandomVariable {
 				cuModuleGetFunction(floorByScalar, module, "floorByScalar");
 				cuModuleGetFunction(addScalar, module, "addScalar");
 				cuModuleGetFunction(subScalar, module, "subScalar");
-				cuModuleGetFunction(busScalar, module, "subScalar");
+				cuModuleGetFunction(busScalar, module, "busScalar");
 				cuModuleGetFunction(multScalar, module, "multScalar");
 				cuModuleGetFunction(divScalar, module, "divScalar");
 				cuModuleGetFunction(vidScalar, module, "vidScalar");
