@@ -71,7 +71,29 @@ public class RandomVariableCuda implements RandomVariable {
 		private final static float	vectorsRecyclerPercentageFreeToStartGC		= 0.05f;		// should be set by monitoring GPU mem
 		private final static float	vectorsRecyclerPercentageFreeToWaitForGC	= 0.02f;		// should be set by monitoring GPU mem
 		private final static long	vectorsRecyclerMaxTimeOutMillis			= 100;
-		
+
+		static {
+			new Thread(new Runnable() {
+				@Override
+				public void run() {
+					while(true) {
+						float deviceFreeMemPercentage = getDeviceFreeMemPercentage();
+						// No pointer found, try GC if we are above a critical level
+						if(deviceFreeMemPercentage < vectorsRecyclerPercentageFreeToStartGC) {
+								System.gc();
+						}
+
+						try {
+							Thread.sleep(10);
+						} catch (InterruptedException e) {
+							// TODO Auto-generated catch block
+							e.printStackTrace();
+						}
+					}
+				}
+			}).start();
+		}
+
 		public void manage(CUdeviceptr cuDevicePtr, RandomVariableCuda wrapper) {
 			int size = wrapper.size();
 			ReferenceQueue<RandomVariableCuda> vectorsToRecycleReferenceQueue = vectorsToRecycleReferenceQueueMap.get(size);
@@ -97,63 +119,63 @@ public class RandomVariableCuda implements RandomVariable {
 				}
 				else {
 
-				float deviceFreeMemPercentage = getDeviceFreeMemPercentage();
-				// No pointer found, try GC if we are above a critical level
-				if(reference == null && deviceFreeMemPercentage < vectorsRecyclerPercentageFreeToStartGC) {
-					try {
-						System.gc();
-						reference = vectorsToRecycleReferenceQueue.remove(1);
-					} catch (IllegalArgumentException | InterruptedException e) {}
-				}
-
-				// Wait for GC
-				if(reference == null && deviceFreeMemPercentage < vectorsRecyclerPercentageFreeToWaitForGC) {
-
-					/*
-					 * Try to obtain a reference after GC, retry with waits for 1 ms, 10 ms, 100 ms, ...
-					 */
-					System.gc();
-					long timeOut = 1;
-					while(reference == null && timeOut < vectorsRecyclerMaxTimeOutMillis) {
+					float deviceFreeMemPercentage = getDeviceFreeMemPercentage();
+					// No pointer found, try GC if we are above a critical level
+					if(reference == null && deviceFreeMemPercentage < vectorsRecyclerPercentageFreeToStartGC) {
 						try {
-							reference = vectorsToRecycleReferenceQueue.remove(timeOut);
-							timeOut *= 10;
+							System.gc();
+							reference = vectorsToRecycleReferenceQueue.remove(1);
 						} catch (IllegalArgumentException | InterruptedException e) {}
 					}
 
-					// Still no pointer found for requested size, consider cleaning all (also other sizes)
-					if(reference == null) {
-						clean();
+					// Wait for GC
+					if(reference == null && deviceFreeMemPercentage < vectorsRecyclerPercentageFreeToWaitForGC) {
+
+						/*
+						 * Try to obtain a reference after GC, retry with waits for 1 ms, 10 ms, 100 ms, ...
+						 */
+						System.gc();
+						long timeOut = 1;
+						while(reference == null && timeOut < vectorsRecyclerMaxTimeOutMillis) {
+							try {
+								reference = vectorsToRecycleReferenceQueue.remove(timeOut);
+								timeOut *= 10;
+							} catch (IllegalArgumentException | InterruptedException e) {}
+						}
+
+						// Still no pointer found for requested size, consider cleaning all (also other sizes)
+						if(reference == null) {
+							clean();
+						}
 					}
-				}
 
-				if(reference != null) {
-					logger.finest("Recycling device pointer " + cuDevicePtr + " from " + reference);
-					cuDevicePtr = vectorsInUseReferenceMap.remove(reference);
-				}
+					if(reference != null) {
+						logger.finest("Recycling device pointer " + cuDevicePtr + " from " + reference);
+						cuDevicePtr = vectorsInUseReferenceMap.remove(reference);
+					}
 
-				if(cuDevicePtr != null) return cuDevicePtr;
+					if(cuDevicePtr != null) return cuDevicePtr;
 
-				// Still no pointer found, create new one
-				try {
-					cuDevicePtr =
-							deviceExecutor.submit(new Callable<CUdeviceptr>() { public CUdeviceptr call() {
-								CUdeviceptr cuDevicePtr =
-										new CUdeviceptr();
-								int succ = JCudaDriver.cuMemAlloc(cuDevicePtr, size * Sizeof.FLOAT);
-								if(succ != 0) {
-									cuDevicePtr = null;
-									logger.warning("Failed creating device vector "+ cuDevicePtr + " with size=" + size);
-								}
-								else {
-									logger.finest("Creating device vector "+ cuDevicePtr + " with size=" + size);
-								}
-								return cuDevicePtr;
-							}}).get();
-				} catch (InterruptedException | ExecutionException e) {
-					System.out.println("Failed to allocate device vector with size=" + size);
-					throw new RuntimeException(e.getCause());
-				}
+					// Still no pointer found, create new one
+					try {
+						cuDevicePtr =
+								deviceExecutor.submit(new Callable<CUdeviceptr>() { public CUdeviceptr call() {
+									CUdeviceptr cuDevicePtr =
+											new CUdeviceptr();
+									int succ = JCudaDriver.cuMemAlloc(cuDevicePtr, size * Sizeof.FLOAT);
+									if(succ != 0) {
+										cuDevicePtr = null;
+										logger.warning("Failed creating device vector "+ cuDevicePtr + " with size=" + size);
+									}
+									else {
+										logger.finest("Creating device vector "+ cuDevicePtr + " with size=" + size);
+									}
+									return cuDevicePtr;
+								}}).get();
+					} catch (InterruptedException | ExecutionException e) {
+						System.out.println("Failed to allocate device vector with size=" + size);
+						throw new RuntimeException(e.getCause());
+					}
 				}
 
 				if(cuDevicePtr == null) {
@@ -164,7 +186,7 @@ public class RandomVariableCuda implements RandomVariable {
 				return cuDevicePtr;
 			}
 		}
-		
+
 		public static void clean() {
 			// Clean up all remaining pointers
 			for(ReferenceQueue<RandomVariableCuda> vectorsToRecycleReferenceQueue : vectorsToRecycleReferenceQueueMap.values()) {
@@ -182,10 +204,10 @@ public class RandomVariableCuda implements RandomVariable {
 		}
 
 	}
-	
+
 	private static DeviceMemoryPool deviceMemoryPool = new DeviceMemoryPool();
-	
-	
+
+
 	private static final long serialVersionUID = 7620120320663270600L;
 
 	private final double      time;	                // Time (filtration)
@@ -367,7 +389,7 @@ public class RandomVariableCuda implements RandomVariable {
 	public static CUdeviceptr getCUdeviceptr(final long size) {
 		return deviceMemoryPool.getCUdeviceptr(size);
 	}
-	
+
 	public static void clean() {
 		DeviceMemoryPool.clean();
 	}
