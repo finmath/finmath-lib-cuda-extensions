@@ -69,7 +69,7 @@ public class RandomVariableCuda implements RandomVariable {
 
 	private final double      time;	                // Time (filtration)
 
-	private static final int typePriorityDefault = 1;
+	private static final int typePriorityDefault = 20;
 
 	private final int typePriority;
 
@@ -1508,15 +1508,20 @@ public class RandomVariableCuda implements RandomVariable {
 			// of pointers which point to the actual values.
 			final Pointer kernelParameters = Pointer.to(arguments);
 
-			deviceExecutor.submit(new Runnable() { public void run() {
-				cuCtxSynchronize();
-				cuLaunchKernel(function,
-						gridSizeX,  1, 1,      // Grid dimension
-						blockSizeX, 1, 1,      // Block dimension
-						sharedMemorySize * Sizeof.FLOAT, null,               // Shared memory size and stream
-						kernelParameters, null // Kernel- and extra parameters
-						);
-			}});
+			try {
+				deviceExecutor.submit(new Runnable() { public void run() {
+					cuCtxSynchronize();
+					cuLaunchKernel(function,
+							gridSizeX,  1, 1,      // Grid dimension
+							blockSizeX, 1, 1,      // Block dimension
+							sharedMemorySize * Sizeof.FLOAT, null,               // Shared memory size and stream
+							kernelParameters, null // Kernel- and extra parameters
+							);
+				}}).get();
+			} catch (InterruptedException | ExecutionException e) {
+				e.printStackTrace();
+				throw new RuntimeException("Cuda calculation of " + function + " failed.");
+			}
 		}
 	}
 }
