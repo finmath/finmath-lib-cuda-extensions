@@ -264,7 +264,13 @@ public class RandomVariableCuda implements RandomVariable {
 			if(vectorsToRecycleReferenceQueue == null) {
 				vectorsToRecycleReferenceQueueMap.put(new Integer((int)size), vectorsToRecycleReferenceQueue = new ReferenceQueue<RandomVariableCuda>());
 			}
+
 			Reference<? extends RandomVariableCuda> reference = vectorsToRecycleReferenceQueue.poll();
+			if(reference == null) {
+				System.gc();
+				Thread.yield();
+				reference = vectorsToRecycleReferenceQueue.poll();
+			}
 			if(reference != null) {
 				cuDevicePtr = vectorsInUseReferenceMap.remove(reference);
 				logger.finest("Recycling device pointer " + cuDevicePtr + " from " + reference);
