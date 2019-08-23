@@ -328,8 +328,6 @@ public class RandomVariableCuda implements RandomVariable {
 		this.size = size;
 		this.valueIfNonStochastic = Double.NaN;
 		this.typePriority = typePriorityDefault;
-
-		deviceMemoryPool.manage(realizations, this);
 	}
 
 	/**
@@ -1095,7 +1093,7 @@ public class RandomVariableCuda implements RandomVariable {
 
 		if(isDeterministic() && randomVariable.isDeterministic()) {
 			double newValueIfNonStochastic = valueIfNonStochastic + randomVariable.doubleValue();
-			return new RandomVariableCuda(newTime, newValueIfNonStochastic);
+			return RandomVariableCuda.of(newTime, newValueIfNonStochastic);
 		}
 		else if(isDeterministic()) {
 			return getRandomVariableCuda(randomVariable).add(valueIfNonStochastic);
@@ -1127,7 +1125,7 @@ public class RandomVariableCuda implements RandomVariable {
 
 		if(isDeterministic() && randomVariable.isDeterministic()) {
 			double newValueIfNonStochastic = valueIfNonStochastic - randomVariable.doubleValue();
-			return new RandomVariableCuda(newTime, newValueIfNonStochastic);
+			return RandomVariableCuda.of(newTime, newValueIfNonStochastic);
 		}
 		else if(isDeterministic()) {
 			return getRandomVariableCuda(randomVariable).bus(valueIfNonStochastic);
@@ -1159,7 +1157,7 @@ public class RandomVariableCuda implements RandomVariable {
 
 		if(isDeterministic() && randomVariable.isDeterministic()) {
 			double newValueIfNonStochastic = -valueIfNonStochastic + randomVariable.doubleValue();
-			return new RandomVariableCuda(newTime, newValueIfNonStochastic);
+			return RandomVariableCuda.of(newTime, newValueIfNonStochastic);
 		}
 		else if(isDeterministic()) {
 			return getRandomVariableCuda(randomVariable).sub(valueIfNonStochastic);
@@ -1191,7 +1189,7 @@ public class RandomVariableCuda implements RandomVariable {
 
 		if(isDeterministic() && randomVariable.isDeterministic()) {
 			double newValueIfNonStochastic = valueIfNonStochastic * randomVariable.doubleValue();
-			return new RandomVariableCuda(newTime, newValueIfNonStochastic);
+			return RandomVariableCuda.of(newTime, newValueIfNonStochastic);
 		}
 		else if(randomVariable.isDeterministic()) {
 			return this.mult(randomVariable.doubleValue());
@@ -1207,7 +1205,7 @@ public class RandomVariableCuda implements RandomVariable {
 					null /* placeholder for pointer to result */}
 					);
 
-			return new RandomVariableCuda(newTime, result, size());
+			return RandomVariableCuda.of(newTime, result, size());
 		}
 	}
 
@@ -1223,7 +1221,7 @@ public class RandomVariableCuda implements RandomVariable {
 
 		if(isDeterministic() && randomVariable.isDeterministic()) {
 			double newValueIfNonStochastic = valueIfNonStochastic / randomVariable.doubleValue();
-			return new RandomVariableCuda(newTime, newValueIfNonStochastic);
+			return RandomVariableCuda.of(newTime, newValueIfNonStochastic);
 		}
 		else if(isDeterministic()) {
 			return getRandomVariableCuda(randomVariable).vid(valueIfNonStochastic);
@@ -1239,7 +1237,7 @@ public class RandomVariableCuda implements RandomVariable {
 					null /* placeholder for pointer to result */}
 					);
 
-			return new RandomVariableCuda(newTime, result, size());
+			return RandomVariableCuda.of(newTime, result, size());
 		}
 	}
 
@@ -1255,7 +1253,7 @@ public class RandomVariableCuda implements RandomVariable {
 
 		if(isDeterministic() && randomVariable.isDeterministic()) {
 			double newValueIfNonStochastic = randomVariable.doubleValue() / valueIfNonStochastic;
-			return new RandomVariableCuda(newTime, newValueIfNonStochastic);
+			return RandomVariableCuda.of(newTime, newValueIfNonStochastic);
 		}
 		else if(isDeterministic()) {
 			return getRandomVariableCuda(randomVariable).div(valueIfNonStochastic);
@@ -1271,7 +1269,7 @@ public class RandomVariableCuda implements RandomVariable {
 					null /* placeholder for pointer to result */}
 					);
 
-			return new RandomVariableCuda(newTime, result, size());
+			return RandomVariableCuda.of(newTime, result, size());
 		}
 	}
 
@@ -1287,7 +1285,7 @@ public class RandomVariableCuda implements RandomVariable {
 
 		if(isDeterministic() && randomVariable.isDeterministic()) {
 			double newValueIfNonStochastic = Math.min(valueIfNonStochastic, randomVariable.doubleValue());
-			return new RandomVariableCuda(newTime, newValueIfNonStochastic);
+			return RandomVariableCuda.of(newTime, newValueIfNonStochastic);
 		}
 		else if(isDeterministic()) return randomVariable.cap(valueIfNonStochastic);
 		else {
@@ -1298,7 +1296,7 @@ public class RandomVariableCuda implements RandomVariable {
 					null /* placeholder for pointer to result */}
 					);
 
-			return new RandomVariableCuda(newTime, result, size());
+			return RandomVariableCuda.of(newTime, result, size());
 		}
 	}
 
@@ -1314,7 +1312,7 @@ public class RandomVariableCuda implements RandomVariable {
 
 		if(isDeterministic() && randomVariable.isDeterministic()) {
 			double newValueIfNonStochastic = Math.max(valueIfNonStochastic, randomVariable.doubleValue());
-			return new RandomVariableCuda(newTime, newValueIfNonStochastic);
+			return RandomVariableCuda.of(newTime, newValueIfNonStochastic);
 		}
 		else if(isDeterministic()) {
 			return getRandomVariableCuda(randomVariable).floor(valueIfNonStochastic);
@@ -1330,7 +1328,7 @@ public class RandomVariableCuda implements RandomVariable {
 					null /* placeholder for pointer to result */}
 					);
 
-			return new RandomVariableCuda(newTime, result, size());
+			return RandomVariableCuda.of(newTime, result, size());
 		}
 	}
 
@@ -1358,7 +1356,7 @@ public class RandomVariableCuda implements RandomVariable {
 					null /* placeholder for pointer to result */}
 					);
 
-			return new RandomVariableCuda(newTime, result, size());
+			return RandomVariableCuda.of(newTime, result, size());
 		}
 	}
 
@@ -1388,7 +1386,7 @@ public class RandomVariableCuda implements RandomVariable {
 					null /* placeholder for pointer to result */}
 					);
 
-			return new RandomVariableCuda(newTime, result, size());
+			return RandomVariableCuda.of(newTime, result, size());
 		}
 	}
 
@@ -1424,7 +1422,7 @@ public class RandomVariableCuda implements RandomVariable {
 					Pointer.to(new float[] { (float)factor2 }),
 					null /* placeholder for pointer to result */}
 					);
-			return new RandomVariableCuda(newTime, result, size());
+			return RandomVariableCuda.of(newTime, result, size());
 		} else
 			return this.add(factor1.mult(factor2));
 	}
@@ -1441,7 +1439,7 @@ public class RandomVariableCuda implements RandomVariable {
 
 		if(isDeterministic() && factor1.isDeterministic() && factor2.isDeterministic()) {
 			double newValueIfNonStochastic = valueIfNonStochastic + (factor1.doubleValue() * factor2.doubleValue());
-			return new RandomVariableCuda(newTime, newValueIfNonStochastic);
+			return RandomVariableCuda.of(newTime, newValueIfNonStochastic);
 		}
 		else if(factor1.isDeterministic() && factor2.isDeterministic()) {
 			return add(factor1.doubleValue() * factor2.doubleValue());
@@ -1460,7 +1458,7 @@ public class RandomVariableCuda implements RandomVariable {
 					Pointer.to(((RandomVariableCuda)factor2).realizations),
 					null /* placeholder for pointer to result */}
 					);
-			return new RandomVariableCuda(newTime, result, size());
+			return RandomVariableCuda.of(newTime, result, size());
 		} else
 			return this.add(factor1.mult(factor2));
 	}
@@ -1513,7 +1511,7 @@ public class RandomVariableCuda implements RandomVariable {
 					Pointer.to(reduceVector)},
 					gridSizeX, blockSizeX, blockSizeX);
 
-			return new RandomVariableCuda(0.0, reduceVector, gridSizeX);
+			return RandomVariableCuda.of(-Double.MAX_VALUE, reduceVector, gridSizeX);
 		}
 	}
 
