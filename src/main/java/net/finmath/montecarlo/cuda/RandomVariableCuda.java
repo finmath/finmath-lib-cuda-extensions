@@ -1495,7 +1495,7 @@ public class RandomVariableCuda implements RandomVariable {
 			CUdeviceptr result = getCUdeviceptr((long)size());
 			arguments[arguments.length-1] = Pointer.to(result);
 
-			int blockSizeX = 512;
+			int blockSizeX = 256;
 			int gridSizeX = (int)Math.ceil((double)size() / blockSizeX);
 			callCudaFunction(function, arguments, gridSizeX, blockSizeX, 0);
 			return result;
