@@ -367,6 +367,10 @@ public class RandomVariableCuda implements RandomVariable {
 	public static CUdeviceptr getCUdeviceptr(final long size) {
 		return deviceMemoryPool.getCUdeviceptr(size);
 	}
+	
+	public static void clean() {
+		DeviceMemoryPool.clean();
+	}
 
 	private static RandomVariableCuda getRandomVariableCuda(RandomVariable randomVariable) {
 		if(randomVariable instanceof RandomVariableCuda) return (RandomVariableCuda)randomVariable;
