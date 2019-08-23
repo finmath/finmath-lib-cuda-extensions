@@ -294,6 +294,12 @@ public class RandomVariableCuda implements RandomVariable {
 		}
 	}
 
+	public static RandomVariableCuda of(double time, CUdeviceptr realizations, long size) {
+		RandomVariableCuda randomVariableCuda = new RandomVariableCuda(time, realizations, size);
+		deviceMemoryPool.manage(realizations, randomVariableCuda);
+		return randomVariableCuda;
+	}
+
 	private RandomVariableCuda(double time, CUdeviceptr realizations, long size) {
 		this.time = time;
 		this.realizations = realizations;
@@ -358,7 +364,7 @@ public class RandomVariableCuda implements RandomVariable {
 	}
 
 
-	public CUdeviceptr getCUdeviceptr(final long size) {
+	public static CUdeviceptr getCUdeviceptr(final long size) {
 		return deviceMemoryPool.getCUdeviceptr(size);
 	}
 

@@ -173,7 +173,7 @@ public class BrownianMotionCudaWithRandomVariableCuda implements BrownianMotion,
 				CUdeviceptr realizations = RandomVariableCuda.getCUdeviceptr((long)numberOfPaths);
 				jcuda.jcurand.JCurand.curandGenerateNormal(generator, realizations, numberOfPaths, 0.0f /* mean */, sqrtOfTimeStep /* stddev */);
 
-				brownianIncrements[timeIndex][factor] = new RandomVariableCuda(time, realizations, numberOfPaths);
+				brownianIncrements[timeIndex][factor] = RandomVariableCuda.of(time, realizations, numberOfPaths);
 			}
 		}
 
