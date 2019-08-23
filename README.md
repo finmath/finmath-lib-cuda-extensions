@@ -4,14 +4,19 @@
 ** Enabling finmath lib with cuda via jcuda. - Running finmath lib models on a GPU **
 - - - -
 
-The finmath lib cuda extensions provide an Cuda implementation of the finmath lib interfaces `RandomVariable` and `BrownianMotion` compatible with finmath lib 4.0.12 or later.
+The finmath lib cuda extensions provide a Cuda implementation of the finmath lib interfaces `RandomVariable` and `BrownianMotion` compatible with finmath lib 4.0.12 or later.
 
-A `RandomVariableCudaFactory` is provided, which can be inject in any finmath lib model using a random variable factory to construct `RandomVariable` objects. Objects created from this factory or from objects created from this factory perform their calculation on the GPU.
+### RandomVariable ###
 
-The `RandomVariableCudaFactory` can be combined with AAD wrappers, to allow algorithmic differentiation together with calculations performed on the GPU.
+A `RandomVariableCudaFactory` is provided, which can be injected in any finmath lib model/algorithm using a random variable factory to construct `RandomVariable` objects. Objects created from this factory or from objects created from this factory perform their calculation on the GPU.
+
+The implementation supports type priorities (see http://ssrn.com/abstract=3246127 ) and the default priority of `RandomVariableCuda` is 20. For example: operators involving CPU and GPU vectors will result in GPU vectors.
+
+The `RandomVariableCudaFactory` can be combined with AAD wrappers, to allow algorithmic differentiation together with calculations performed on the GPU. For the type priority: objects allowing for algorithmic differentiation (AAD) have higher priority, AAD on GPU has higher priority than AAD on CPU.
+
+### BrownianMotion ###
 
 In addition, objects of type `BrownianMotion` are also taking the role of a factory for objects of type `RandomVariable`. Thus, injecting the `BrownianMotionCuda` into classes consuming a `BrownianMotion` will result in finmath-lib models performing their calculations on the GPU - seamlessly.
-
 
 ## Example
 
@@ -36,7 +41,7 @@ double[] result = randomVariable.getRealizations();
 
 ## Installation
 
-Of course, you should have NVidia Cuda 10.0 installed. (If you like to use a different version, you can try to switch the JCuda version in the Maven pom.xml).
+You have to have NVidia Cuda 10.0 installed. (If you like to use a different version, you can try to switch the JCuda version in the Maven pom.xml).
 
 To obtain and build the finmath-lib-cuda-extensions then do
 ```
@@ -75,17 +80,10 @@ Test of performance of BrownianMotionCudaWithRandomVariableCuda	..........test t
 
 ```
 Running net.finmath.montecarlo.assetderivativevaluation.MonteCarloBlackScholesModelTest
-BrownianMotionLazyInit
-   value Monte-Carlo =  0.1898	 value analytic    =  0.1899	 calculation time =  4.00 sec.
-
-BrownianMotionJavaRandom
-   value Monte-Carlo =  0.1901	 value analytic    =  0.1899	 calculation time =  5.19 sec.
-
-BrownianMotionCudaWithHostRandomVariable
-   value Monte-Carlo =  0.1898	 value analytic    =  0.1899	 calculation time =  2.50 sec.
-
-BrownianMotionCudaWithRandomVariableCuda
-   value Monte-Carlo =  0.1898	 value analytic    =  0.1899	 calculation time =  0.09 sec.
+BrownianMotionLazyInit                      value Monte-Carlo =  0.1898	 value analytic    =  0.1899	 calculation time =  4.00 sec.
+BrownianMotionJavaRandom                    value Monte-Carlo =  0.1901	 value analytic    =  0.1899	 calculation time =  5.19 sec.
+BrownianMotionCudaWithHostRandomVariable    value Monte-Carlo =  0.1898	 value analytic    =  0.1899	 calculation time =  2.50 sec.
+BrownianMotionCudaWithRandomVariableCuda    value Monte-Carlo =  0.1898	 value analytic    =  0.1899	 calculation time =  0.09 sec.
 ```
 
 Remark:
@@ -93,6 +91,11 @@ Remark:
 * `BrownianMotionJavaRandom`: Calculation on CPU, using Java random number generator (LCG).
 * `BrownianMotionCudaWithHostRandomVariable`: Calculation on CPU and GPU: Random number generator on GPU, Simulation on CPU.
 * `BrownianMotionCudaWithRandomVariableCuda`: Calculation on GPU: Random number generator on GPU, Simulation on GPU.
+
+
+### Unit test for LIBOR Market Model calibration
+
+There is also a unit test performing a brute force Monte-Carlo calibration of a LIBOR Market Model with stochastic volatility on the CPU and the GPU. Note however that the unit test uses a too small size for the number of simulation paths, such that the GPU code is no improvement over the CPU code. The unit test shows that CPU and GPU give consistent results.
 
 ## References
 
