@@ -77,11 +77,7 @@ public class RandomVariableCuda implements RandomVariable {
 				@Override
 				public void run() {
 					while(true) {
-						float deviceFreeMemPercentage = getDeviceFreeMemPercentage();
-						// No pointer found, try GC if we are above a critical level
-						if(deviceFreeMemPercentage < vectorsRecyclerPercentageFreeToStartGC) {
-								System.gc();
-						}
+						System.gc();
 
 						try {
 							Thread.sleep(10);
@@ -96,11 +92,13 @@ public class RandomVariableCuda implements RandomVariable {
 
 		public void manage(CUdeviceptr cuDevicePtr, RandomVariableCuda wrapper) {
 			int size = wrapper.size();
-			ReferenceQueue<RandomVariableCuda> vectorsToRecycleReferenceQueue = vectorsToRecycleReferenceQueueMap.get(size);
-			if(vectorsToRecycleReferenceQueue == null) {
-				vectorsToRecycleReferenceQueueMap.put(size, vectorsToRecycleReferenceQueue = new ReferenceQueue<RandomVariableCuda>());
+			synchronized (vectorsInUseReferenceMap) {
+				ReferenceQueue<RandomVariableCuda> vectorsToRecycleReferenceQueue = vectorsToRecycleReferenceQueueMap.get(size);
+				if(vectorsToRecycleReferenceQueue == null) {
+					vectorsToRecycleReferenceQueueMap.put(size, vectorsToRecycleReferenceQueue = new ReferenceQueue<RandomVariableCuda>());
+				}
+				vectorsInUseReferenceMap.put(new WeakReference<RandomVariableCuda>(wrapper, vectorsToRecycleReferenceQueue), cuDevicePtr);
 			}
-			vectorsInUseReferenceMap.put(new WeakReference<RandomVariableCuda>(wrapper, vectorsToRecycleReferenceQueue), cuDevicePtr);
 		}
 
 		public CUdeviceptr getCUdeviceptr(final long size) {
