@@ -70,7 +70,7 @@ public class RandomVariableCuda implements RandomVariable {
 		private final static Map<WeakReference<RandomVariableCuda>, CUdeviceptr>	vectorsInUseReferenceMap			= new ConcurrentHashMap<WeakReference<RandomVariableCuda>, CUdeviceptr>();
 		private final static float	vectorsRecyclerPercentageFreeToStartGC		= 0.05f;		// should be set by monitoring GPU mem
 		private final static float	vectorsRecyclerPercentageFreeToWaitForGC	= 0.02f;		// should be set by monitoring GPU mem
-		private final static long	vectorsRecyclerMaxTimeOutMillis			= 100;
+		private final static long	vectorsRecyclerMaxTimeOutMillis			= 300;
 
 		static {
 			new Thread(new Runnable() {
@@ -137,7 +137,7 @@ public class RandomVariableCuda implements RandomVariable {
 						while(reference == null && timeOut < vectorsRecyclerMaxTimeOutMillis) {
 							try {
 								reference = vectorsToRecycleReferenceQueue.remove(timeOut);
-								timeOut *= 10;
+								timeOut *= 4;
 							} catch (IllegalArgumentException | InterruptedException e) {}
 						}
 
