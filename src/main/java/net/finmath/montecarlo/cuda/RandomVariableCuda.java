@@ -78,7 +78,7 @@ public class RandomVariableCuda implements RandomVariable {
 				@Override
 				public void run() {
 					while(true) {
-						System.gc();
+//						System.gc();
 
 						try {
 							Thread.sleep(10);
