@@ -148,12 +148,13 @@ public class RandomVariableCuda implements RandomVariable {
 							clean();
 						}
 					}
+
+					if(reference != null) {
+						logger.finest("Recycling (2) device pointer " + cuDevicePtr + " from " + reference);
+						cuDevicePtr = vectorsInUseReferenceMap.remove(reference);
+					}
 				}
 
-				if(reference != null) {
-					logger.finest("Recycling (2) device pointer " + cuDevicePtr + " from " + reference);
-					cuDevicePtr = vectorsInUseReferenceMap.remove(reference);
-				}
 
 				if(cuDevicePtr != null) return cuDevicePtr;
 
@@ -166,7 +167,12 @@ public class RandomVariableCuda implements RandomVariable {
 								int succ = JCudaDriver.cuMemAlloc(cuDevicePtr, size * Sizeof.FLOAT);
 								if(succ != 0) {
 									cuDevicePtr = null;
-									logger.warning("Failed creating device vector "+ cuDevicePtr + " with size=" + size);
+									String[] cudaErrorName = new String[1];
+									JCudaDriver.cuGetErrorName(succ, cudaErrorName);
+									String[] cudaErrorDescription = new String[1];
+									JCudaDriver.cuGetErrorString(succ, cudaErrorDescription);
+									
+									logger.warning("Failed creating device vector "+ cuDevicePtr + " with size=" + size + " with error "+ cudaErrorName + ": " + cudaErrorDescription);
 								}
 								else {
 									logger.finest("Creating device vector "+ cuDevicePtr + " with size=" + size);
