@@ -804,7 +804,7 @@ public class RandomVariableCuda implements RandomVariable {
 					Pointer.to(new int[] { size() }),
 					Pointer.to(realizations),
 					Pointer.to(new float[] { (float)cap }),
-					result }
+					Pointer.to(result) }
 					);
 
 			return RandomVariableCuda.of(time, result, size());
@@ -823,7 +823,7 @@ public class RandomVariableCuda implements RandomVariable {
 					Pointer.to(new int[] { size() }),
 					Pointer.to(realizations),
 					Pointer.to(new float[] { (float)floor }),
-					result }
+					Pointer.to(result) }
 					);
 
 			return RandomVariableCuda.of(time, result, size());
@@ -842,7 +842,7 @@ public class RandomVariableCuda implements RandomVariable {
 					Pointer.to(new int[] { size() }),
 					Pointer.to(realizations),
 					Pointer.to(new float[] { (float)value }),
-					result }
+					Pointer.to(result) }
 					);
 
 			return RandomVariableCuda.of(time, result, size());
@@ -861,7 +861,7 @@ public class RandomVariableCuda implements RandomVariable {
 					Pointer.to(new int[] { size() }),
 					Pointer.to(realizations),
 					Pointer.to(new float[] { (float)value }),
-					result }
+					Pointer.to(result) }
 					);
 
 			return RandomVariableCuda.of(time, result, size());
@@ -879,7 +879,7 @@ public class RandomVariableCuda implements RandomVariable {
 					Pointer.to(new int[] { size() }),
 					Pointer.to(realizations),
 					Pointer.to(new float[] { (float)value }),
-					result }
+					Pointer.to(result) }
 					);
 
 			return RandomVariableCuda.of(time, result, size());
@@ -898,7 +898,7 @@ public class RandomVariableCuda implements RandomVariable {
 					Pointer.to(new int[] { size() }),
 					Pointer.to(realizations),
 					Pointer.to(new float[] { ((float)value) }),
-					result }
+					Pointer.to(result) }
 					);
 
 			return RandomVariableCuda.of(time, result, size());
@@ -917,7 +917,7 @@ public class RandomVariableCuda implements RandomVariable {
 					Pointer.to(new int[] { size() }),
 					Pointer.to(realizations),
 					Pointer.to(new float[] { (float)value }),
-					result }
+					Pointer.to(result) }
 					);
 			return RandomVariableCuda.of(time, result, size());
 		}
@@ -934,7 +934,7 @@ public class RandomVariableCuda implements RandomVariable {
 					Pointer.to(new int[] { size() }),
 					Pointer.to(realizations),
 					Pointer.to(new float[] { (float)value }),
-					result }
+					Pointer.to(result) }
 					);
 			return RandomVariableCuda.of(time, result, size());
 		}
@@ -952,7 +952,7 @@ public class RandomVariableCuda implements RandomVariable {
 					Pointer.to(new int[] { size() }),
 					Pointer.to(realizations),
 					Pointer.to(new float[] { (float)exponent }),
-					result }
+					Pointer.to(result) }
 					);
 			return RandomVariableCuda.of(time, result, size());
 		}
@@ -983,7 +983,7 @@ public class RandomVariableCuda implements RandomVariable {
 			callCudaFunction(cuSqrt, new Pointer[] {
 					Pointer.to(new int[] { size() }),
 					Pointer.to(realizations),
-					result }
+					Pointer.to(result) }
 					);
 
 			return RandomVariableCuda.of(time, result, size());
@@ -1000,7 +1000,7 @@ public class RandomVariableCuda implements RandomVariable {
 			callCudaFunction(invert, new Pointer[] {
 					Pointer.to(new int[] { size() }),
 					Pointer.to(realizations),
-					result }
+					Pointer.to(result) }
 					);
 
 			return RandomVariableCuda.of(time, result, size());
@@ -1017,7 +1017,7 @@ public class RandomVariableCuda implements RandomVariable {
 			callCudaFunction(cuAbs, new Pointer[] {
 					Pointer.to(new int[] { size() }),
 					Pointer.to(realizations),
-					result }
+					Pointer.to(result) }
 					);
 
 			return RandomVariableCuda.of(time, result, size());
@@ -1034,7 +1034,7 @@ public class RandomVariableCuda implements RandomVariable {
 			callCudaFunction(cuExp, new Pointer[] {
 					Pointer.to(new int[] { size() }),
 					Pointer.to(realizations),
-					result }
+					Pointer.to(result) }
 					);
 
 			return RandomVariableCuda.of(time, result, size());
@@ -1051,7 +1051,7 @@ public class RandomVariableCuda implements RandomVariable {
 			callCudaFunction(cuLog, new Pointer[] {
 					Pointer.to(new int[] { size() }),
 					Pointer.to(realizations),
-					result }
+					Pointer.to(result) }
 					);
 
 			return RandomVariableCuda.of(time, result, size());
@@ -1118,7 +1118,7 @@ public class RandomVariableCuda implements RandomVariable {
 					Pointer.to(new int[] { size() }),
 					Pointer.to(realizations),
 					Pointer.to(getRandomVariableCuda(randomVariable).realizations),
-					result }
+					Pointer.to(result) }
 					);
 
 			return RandomVariableCuda.of(time, result, size());
@@ -1151,7 +1151,7 @@ public class RandomVariableCuda implements RandomVariable {
 					Pointer.to(new int[] { size() }),
 					Pointer.to(realizations),
 					Pointer.to(getRandomVariableCuda(randomVariable).realizations),
-					result }
+					Pointer.to(result) }
 					);
 
 			return RandomVariableCuda.of(time, result, size());
@@ -1184,7 +1184,7 @@ public class RandomVariableCuda implements RandomVariable {
 					Pointer.to(new int[] { size() }),
 					Pointer.to(getRandomVariableCuda(randomVariable).realizations),		// flipped arguments
 					Pointer.to(realizations),
-					result }
+					Pointer.to(result) }
 					);
 
 			return RandomVariableCuda.of(time, result, size());
@@ -1217,7 +1217,7 @@ public class RandomVariableCuda implements RandomVariable {
 					Pointer.to(new int[] { size() }),
 					Pointer.to(realizations),
 					Pointer.to(getRandomVariableCuda(randomVariable).realizations),
-					result }
+					Pointer.to(result) }
 					);
 
 			return RandomVariableCuda.of(newTime, result, size());
@@ -1250,7 +1250,7 @@ public class RandomVariableCuda implements RandomVariable {
 					Pointer.to(new int[] { size() }),
 					Pointer.to(realizations),
 					Pointer.to(getRandomVariableCuda(randomVariable).realizations),
-					result }
+					Pointer.to(result) }
 					);
 
 			return RandomVariableCuda.of(newTime, result, size());
@@ -1283,7 +1283,7 @@ public class RandomVariableCuda implements RandomVariable {
 					Pointer.to(new int[] { size() }),
 					Pointer.to(getRandomVariableCuda(randomVariable).realizations),
 					Pointer.to(realizations),
-					result }
+					Pointer.to(result) }
 					);
 
 			return RandomVariableCuda.of(newTime, result, size());
@@ -1311,7 +1311,7 @@ public class RandomVariableCuda implements RandomVariable {
 					Pointer.to(new int[] { size() }),
 					Pointer.to(realizations),
 					Pointer.to(((RandomVariableCuda)randomVariable).realizations),
-					result }
+					Pointer.to(result) }
 					);
 
 			return RandomVariableCuda.of(newTime, result, size());
@@ -1344,7 +1344,7 @@ public class RandomVariableCuda implements RandomVariable {
 					Pointer.to(new int[] { size() }),
 					Pointer.to(realizations),
 					Pointer.to(((RandomVariableCuda)randomVariable).realizations),
-					result }
+					Pointer.to(result) }
 					);
 
 			return RandomVariableCuda.of(newTime, result, size());
@@ -1373,7 +1373,7 @@ public class RandomVariableCuda implements RandomVariable {
 					Pointer.to(realizations),
 					Pointer.to(((RandomVariableCuda)rate).realizations),
 					Pointer.to(new float[] { (float)periodLength }),
-					result }
+					Pointer.to(result) }
 					);
 
 			return RandomVariableCuda.of(newTime, result, size());
@@ -1404,7 +1404,7 @@ public class RandomVariableCuda implements RandomVariable {
 					Pointer.to(realizations),
 					Pointer.to(((RandomVariableCuda)rate).realizations),
 					Pointer.to(new float[] { (float)periodLength }),
-					result }
+					Pointer.to(result) }
 					);
 
 			return RandomVariableCuda.of(newTime, result, size());
@@ -1442,7 +1442,7 @@ public class RandomVariableCuda implements RandomVariable {
 					Pointer.to(realizations),
 					Pointer.to(((RandomVariableCuda)factor1).realizations),
 					Pointer.to(new float[] { (float)factor2 }),
-					result }
+					Pointer.to(result) }
 					);
 			return RandomVariableCuda.of(newTime, result, size());
 		} else
@@ -1479,7 +1479,7 @@ public class RandomVariableCuda implements RandomVariable {
 					Pointer.to(realizations),
 					Pointer.to(((RandomVariableCuda)factor1).realizations),
 					Pointer.to(((RandomVariableCuda)factor2).realizations),
-					result }
+					Pointer.to(result) }
 					);
 			return RandomVariableCuda.of(newTime, result, size());
 		} else
