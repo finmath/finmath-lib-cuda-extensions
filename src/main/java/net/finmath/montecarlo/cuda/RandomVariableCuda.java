@@ -113,7 +113,7 @@ public class RandomVariableCuda implements RandomVariable {
 				Reference<? extends RandomVariableCuda> reference = vectorsToRecycleReferenceQueue.poll();
 				if(reference != null) {
 					cuDevicePtr = vectorsInUseReferenceMap.remove(reference);
-					logger.finest("Recycling device pointer " + cuDevicePtr + " from " + reference);
+					logger.finest("Recycling (1) device pointer " + cuDevicePtr + " from " + reference);
 				}
 				else {
 
@@ -149,7 +149,7 @@ public class RandomVariableCuda implements RandomVariable {
 				}
 
 				if(reference != null) {
-					logger.finest("Recycling device pointer " + cuDevicePtr + " from " + reference);
+					logger.finest("Recycling (2) device pointer " + cuDevicePtr + " from " + reference);
 					cuDevicePtr = vectorsInUseReferenceMap.remove(reference);
 				}
 
