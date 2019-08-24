@@ -386,7 +386,7 @@ public class RandomVariableCuda implements RandomVariable {
 	 * @param time the filtration time, set to 0.0 if not used.
 	 * @param realisations the vector of realizations.
 	 */
-	public RandomVariableCuda(double time, float[] realisations) {
+	public RandomVariableCuda(double time, final float[] realisations) {
 		this(time, createCUdeviceptr(realisations), realisations.length);
 		deviceMemoryPool.manage(this.realizations, this);
 	}
@@ -460,6 +460,7 @@ public class RandomVariableCuda implements RandomVariable {
 				deviceExecutor.submit(new Runnable() { public void run() {
 					cuCtxSynchronize();
 					JCudaDriver.cuMemcpyHtoD(cuDevicePtr, Pointer.to(values), (long)values.length * Sizeof.FLOAT);
+					cuCtxSynchronize();
 				}}).get();
 			} catch (InterruptedException | ExecutionException e) { throw new RuntimeException(e.getCause()); }
 			return cuDevicePtr;
