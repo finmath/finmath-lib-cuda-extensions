@@ -29,6 +29,7 @@ import java.util.concurrent.Executors;
 import java.util.function.DoubleBinaryOperator;
 import java.util.function.DoubleUnaryOperator;
 import java.util.function.IntToDoubleFunction;
+import java.util.logging.Level;
 import java.util.logging.Logger;
 import java.util.stream.DoubleStream;
 
@@ -106,14 +107,16 @@ public class RandomVariableCuda implements RandomVariable {
 		}
 
 		public synchronized CUdeviceptr getCUdeviceptr(final long size) {
-			StringBuilder stringBuilder = new StringBuilder();
-			stringBuilder.append("Memory pool stats: ");
-			stringBuilder.append("  vector sizes: ");
-			for(Map.Entry<Integer, ReferenceQueue<RandomVariableCuda>> entry : vectorsToRecycleReferenceQueueMap.entrySet()) {
-				stringBuilder.append("    " + entry.getKey());
+			if(logger.isLoggable(Level.FINEST)) {
+				StringBuilder stringBuilder = new StringBuilder();
+				stringBuilder.append("Memory pool stats: ");
+				stringBuilder.append("  vector sizes: ");
+				for(Map.Entry<Integer, ReferenceQueue<RandomVariableCuda>> entry : vectorsToRecycleReferenceQueueMap.entrySet()) {
+					stringBuilder.append("    " + entry.getKey());
+				}
+				stringBuilder.append("  total number of vectors: " + vectorsInUseReferenceMap.size());
+				logger.finest(stringBuilder.toString());
 			}
-			stringBuilder.append("  total number of vectors: " + vectorsInUseReferenceMap.size());
-			logger.info(stringBuilder.toString());
 
 			CUdeviceptr cuDevicePtr = null;
 
