@@ -118,6 +118,8 @@ public class RandomVariableCuda implements RandomVariable {
 				else {
 
 					float deviceFreeMemPercentage = getDeviceFreeMemPercentage();
+					logger.info("Device free memomy " + deviceFreeMemPercentage + "%");
+
 					// No pointer found, try GC if we are above a critical level
 					if(reference == null && deviceFreeMemPercentage < vectorsRecyclerPercentageFreeToStartGC) {
 						try {
