@@ -15,6 +15,8 @@ import net.finmath.stochastic.RandomVariable;
  */
 public class RandomVariableCudaFactory extends AbstractRandomVariableFactory {
 
+	private static final long serialVersionUID = 1L;
+
 	public RandomVariableCudaFactory() {
 		super();
 	}
