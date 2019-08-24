@@ -343,8 +343,8 @@ public class RandomVariableCuda implements RandomVariable {
 			}
 		}
 
-		float deviceFreeMemPercentage = getDeviceFreeMemPercentage();
-		logger.finest("Device free memory " + deviceFreeMemPercentage + "%");
+//		float deviceFreeMemPercentage = getDeviceFreeMemPercentage();
+//		logger.finest("Device free memory " + deviceFreeMemPercentage + "%");
 	}
 
 	public static RandomVariableCuda of(double time, CUdeviceptr realizations, long size) {
