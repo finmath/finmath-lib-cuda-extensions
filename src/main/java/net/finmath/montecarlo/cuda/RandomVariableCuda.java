@@ -95,6 +95,7 @@ public class RandomVariableCuda implements RandomVariable {
 
 			ReferenceQueue<RandomVariableCuda> vectorsToRecycleReferenceQueue = vectorsToRecycleReferenceQueueMap.get(new Integer(size));
 			if(vectorsToRecycleReferenceQueue == null) {
+				logger.info("Creating reference queue for vector size " + size);
 				vectorsToRecycleReferenceQueueMap.put(new Integer(size), vectorsToRecycleReferenceQueue = new ReferenceQueue<RandomVariableCuda>());
 			}
 			vectorsInUseReferenceMap.put(new WeakReference<RandomVariableCuda>(wrapper, vectorsToRecycleReferenceQueue), cuDevicePtr);
@@ -115,6 +116,7 @@ public class RandomVariableCuda implements RandomVariable {
 			// Check for object to recycle
 			ReferenceQueue<RandomVariableCuda> vectorsToRecycleReferenceQueue = vectorsToRecycleReferenceQueueMap.get(new Integer((int)size));
 			if(vectorsToRecycleReferenceQueue == null) {
+				logger.info("Creating reference queue for vector size " + size);
 				vectorsToRecycleReferenceQueueMap.put(new Integer((int)size), vectorsToRecycleReferenceQueue = new ReferenceQueue<RandomVariableCuda>());
 			}
 
