@@ -101,7 +101,7 @@ public class RandomVariableCuda implements RandomVariable {
 			// Manage CUdeviceptr
 			WeakReference<RandomVariableCuda> reference = new WeakReference<RandomVariableCuda>(wrapper, vectorsToRecycleReferenceQueue);
 			vectorsInUseReferenceMap.put(reference, cuDevicePtr);
-			logger.info("Created weak reference " + reference + ". Size of reference map " + vectorsInUseReferenceMap);
+			logger.finest("Created weak reference " + reference + ". Size of reference map " + vectorsInUseReferenceMap.size());
 		}
 
 		public synchronized CUdeviceptr getCUdeviceptr(final long size) {
