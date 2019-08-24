@@ -68,8 +68,8 @@ public class RandomVariableCuda implements RandomVariable {
 	private static class DeviceMemoryPool {
 		private final static Map<Integer, ReferenceQueue<RandomVariableCuda>>		vectorsToRecycleReferenceQueueMap	= new ConcurrentHashMap<Integer, ReferenceQueue<RandomVariableCuda>>();
 		private final static Map<WeakReference<RandomVariableCuda>, CUdeviceptr>	vectorsInUseReferenceMap			= new ConcurrentHashMap<WeakReference<RandomVariableCuda>, CUdeviceptr>();
-		private final static float	vectorsRecyclerPercentageFreeToStartGC		= 0.05f;		// should be set by monitoring GPU mem
-		private final static float	vectorsRecyclerPercentageFreeToWaitForGC	= 0.02f;		// should be set by monitoring GPU mem
+		private final static float	vectorsRecyclerPercentageFreeToStartGC		= 0.10f;		// should be set by monitoring GPU mem
+		private final static float	vectorsRecyclerPercentageFreeToWaitForGC	= 0.05f;		// should be set by monitoring GPU mem
 		private final static long	vectorsRecyclerMaxTimeOutMillis			= 300;
 
 		static {
@@ -153,18 +153,16 @@ public class RandomVariableCuda implements RandomVariable {
 						} catch (IllegalArgumentException | InterruptedException e) {}
 					}
 
-					// Still no pointer found for requested size, consider cleaning all (also other sizes)
-					if(reference == null) {
+					if(reference != null) {
+						logger.finest("Recycling (2) device pointer " + cuDevicePtr + " from " + reference);
+						cuDevicePtr = vectorsInUseReferenceMap.remove(reference);
+					}
+					else {
+						// Still no pointer found for requested size, consider cleaning all (also other sizes)
 						clean();
 					}
 				}
-
-				if(reference != null) {
-					logger.finest("Recycling (2) device pointer " + cuDevicePtr + " from " + reference);
-					cuDevicePtr = vectorsInUseReferenceMap.remove(reference);
-				}
 			}
-
 
 			if(cuDevicePtr != null) return cuDevicePtr;
 
@@ -383,7 +381,7 @@ public class RandomVariableCuda implements RandomVariable {
 	 */
 	public RandomVariableCuda(double time, float[] realisations) {
 		this(time, createCUdeviceptr(realisations), realisations.length);
-		deviceMemoryPool.manage(this.realizations, this);
+//		deviceMemoryPool.manage(this.realizations, this);
 	}
 
 	/**
@@ -416,7 +414,11 @@ public class RandomVariableCuda implements RandomVariable {
 
 	private static RandomVariableCuda getRandomVariableCuda(RandomVariable randomVariable) {
 		if(randomVariable instanceof RandomVariableCuda) return (RandomVariableCuda)randomVariable;
-		else return new RandomVariableCuda(randomVariable.getFiltrationTime(), randomVariable.getRealizations());
+		else {
+			RandomVariableCuda randomVariableCuda = new RandomVariableCuda(randomVariable.getFiltrationTime(), randomVariable.getRealizations());
+			deviceMemoryPool.manage(randomVariableCuda.realizations, randomVariableCuda);
+			return randomVariableCuda;
+		}
 	}
 
 	/**
