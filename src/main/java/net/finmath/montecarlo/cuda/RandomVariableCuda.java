@@ -78,7 +78,7 @@ public class RandomVariableCuda implements RandomVariable {
 				@Override
 				public void run() {
 					while(true) {
-//						System.gc();
+						System.gc();
 
 						try {
 							Thread.sleep(10);
@@ -192,6 +192,7 @@ public class RandomVariableCuda implements RandomVariable {
 							else {
 								logger.finest("Creating device vector "+ cuDevicePtr + " with size=" + size);
 							}
+							cuCtxSynchronize();
 							return cuDevicePtr;
 						}}).get();
 			} catch (InterruptedException | ExecutionException e) {
@@ -432,10 +433,18 @@ public class RandomVariableCuda implements RandomVariable {
 	 * @return
 	 */
 	private static float getDeviceFreeMemPercentage() {
-		long[] free = new long[1];
-		long[] total = new long[1];
-		jcuda.runtime.JCuda.cudaMemGetInfo(free, total);
-		float freeRate = ((float)free[0]/(total[0]));
+		float freeRate;
+		try {
+			freeRate = deviceExecutor.submit(new Callable<Float>() { public Float call() {
+				long[] free = new long[1];
+				long[] total = new long[1];
+				jcuda.runtime.JCuda.cudaMemGetInfo(free, total);
+				float freeRate = ((float)free[0]/(total[0]));
+				return freeRate;
+			}}).get();
+		} catch (InterruptedException | ExecutionException e) {
+			return freeRate = Float.NaN;
+		}
 		return freeRate;
 	}
 
