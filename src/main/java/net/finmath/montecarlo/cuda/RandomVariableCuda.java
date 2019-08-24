@@ -409,7 +409,7 @@ public class RandomVariableCuda implements RandomVariable {
 	}
 
 	public static void clean() {
-		DeviceMemoryPool.clean();
+		deviceMemoryPool.clean();
 	}
 
 	private static RandomVariableCuda getRandomVariableCuda(RandomVariable randomVariable) {
