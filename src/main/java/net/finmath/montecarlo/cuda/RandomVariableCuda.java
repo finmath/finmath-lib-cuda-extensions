@@ -343,8 +343,8 @@ public class RandomVariableCuda implements RandomVariable {
 			}
 		}
 
-//		float deviceFreeMemPercentage = getDeviceFreeMemPercentage();
-//		logger.finest("Device free memory " + deviceFreeMemPercentage + "%");
+		float deviceFreeMemPercentage = getDeviceFreeMemPercentage();
+		logger.finest("Device free memory " + deviceFreeMemPercentage + "%");
 	}
 
 	public static RandomVariableCuda of(double time, CUdeviceptr realizations, long size) {
@@ -436,19 +436,19 @@ public class RandomVariableCuda implements RandomVariable {
 	 * @return
 	 */
 	private static float getDeviceFreeMemPercentage() {
-//		float freeRate;
-//		try {
-//			freeRate = deviceExecutor.submit(new Callable<Float>() { public Float call() {
+		float freeRate;
+		try {
+			freeRate = deviceExecutor.submit(new Callable<Float>() { public Float call() {
 				long[] free = new long[1];
 				long[] total = new long[1];
 				jcuda.runtime.JCuda.cudaMemGetInfo(free, total);
 				float freeRate = ((float)free[0]/(total[0]));
 				return freeRate;
-//			}}).get();
-//		} catch (InterruptedException | ExecutionException e) {
-//			return freeRate = Float.NaN;
-//		}
-		// return freeRate;
+			}}).get();
+		} catch (InterruptedException | ExecutionException e) {
+			return freeRate = Float.NaN;
+		}
+		return freeRate;
 	}
 
 	/**
