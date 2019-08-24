@@ -77,7 +77,7 @@ public class RandomVariableCuda implements RandomVariable {
 				@Override
 				public void run() {
 					while(true) {
-						//						System.gc();
+//						System.gc();
 
 						try {
 							Thread.sleep(10);
@@ -90,98 +90,105 @@ public class RandomVariableCuda implements RandomVariable {
 			}).start();
 		}
 
-		public void manage(CUdeviceptr cuDevicePtr, RandomVariableCuda wrapper) {
+		public synchronized void manage(CUdeviceptr cuDevicePtr, RandomVariableCuda wrapper) {
 			int size = wrapper.size();
-			synchronized (vectorsInUseReferenceMap) {
-				ReferenceQueue<RandomVariableCuda> vectorsToRecycleReferenceQueue = vectorsToRecycleReferenceQueueMap.get(new Integer(size));
-				if(vectorsToRecycleReferenceQueue == null) {
-					vectorsToRecycleReferenceQueueMap.put(new Integer(size), vectorsToRecycleReferenceQueue = new ReferenceQueue<RandomVariableCuda>());
-				}
-				vectorsInUseReferenceMap.put(new WeakReference<RandomVariableCuda>(wrapper, vectorsToRecycleReferenceQueue), cuDevicePtr);
+
+			ReferenceQueue<RandomVariableCuda> vectorsToRecycleReferenceQueue = vectorsToRecycleReferenceQueueMap.get(new Integer(size));
+			if(vectorsToRecycleReferenceQueue == null) {
+				vectorsToRecycleReferenceQueueMap.put(new Integer(size), vectorsToRecycleReferenceQueue = new ReferenceQueue<RandomVariableCuda>());
 			}
+			vectorsInUseReferenceMap.put(new WeakReference<RandomVariableCuda>(wrapper, vectorsToRecycleReferenceQueue), cuDevicePtr);
 		}
 
-		public CUdeviceptr getCUdeviceptr(final long size) {
+		public synchronized CUdeviceptr getCUdeviceptr(final long size) {
+			StringBuilder stringBuilder = new StringBuilder();
+			stringBuilder.append("Memory pool stats: ");
+			stringBuilder.append("  vector sizes: ");
+			for(Map.Entry<Integer, ReferenceQueue<RandomVariableCuda>> entry : vectorsToRecycleReferenceQueueMap.entrySet()) {
+				stringBuilder.append("    " + entry.getKey());
+			}
+			stringBuilder.append("  total number of vectors: " + vectorsInUseReferenceMap.size());
+			logger.info(stringBuilder.toString());
+
 			CUdeviceptr cuDevicePtr = null;
-			synchronized (vectorsInUseReferenceMap) {
-				// Check for object to recycle
-				ReferenceQueue<RandomVariableCuda> vectorsToRecycleReferenceQueue = vectorsToRecycleReferenceQueueMap.get(new Integer((int)size));
-				if(vectorsToRecycleReferenceQueue == null) {
-					vectorsToRecycleReferenceQueueMap.put(new Integer((int)size), vectorsToRecycleReferenceQueue = new ReferenceQueue<RandomVariableCuda>());
+
+			// Check for object to recycle
+			ReferenceQueue<RandomVariableCuda> vectorsToRecycleReferenceQueue = vectorsToRecycleReferenceQueueMap.get(new Integer((int)size));
+			if(vectorsToRecycleReferenceQueue == null) {
+				vectorsToRecycleReferenceQueueMap.put(new Integer((int)size), vectorsToRecycleReferenceQueue = new ReferenceQueue<RandomVariableCuda>());
+			}
+
+			Reference<? extends RandomVariableCuda> reference = vectorsToRecycleReferenceQueue.poll();
+			if(reference != null) {
+				cuDevicePtr = vectorsInUseReferenceMap.remove(reference);
+				logger.finest("Recycling (1) device pointer " + cuDevicePtr + " from " + reference);
+			}
+			else {
+
+				float deviceFreeMemPercentage = getDeviceFreeMemPercentage();
+				logger.finest("Device free memory " + deviceFreeMemPercentage + "%");
+
+				// No pointer found, try GC if we are above a critical level
+				if(reference == null && deviceFreeMemPercentage < vectorsRecyclerPercentageFreeToStartGC) {
+					try {
+						System.gc();
+						reference = vectorsToRecycleReferenceQueue.remove(1);
+					} catch (IllegalArgumentException | InterruptedException e) {}
 				}
 
-				Reference<? extends RandomVariableCuda> reference = vectorsToRecycleReferenceQueue.poll();
-				if(reference != null) {
-					cuDevicePtr = vectorsInUseReferenceMap.remove(reference);
-					logger.finest("Recycling (1) device pointer " + cuDevicePtr + " from " + reference);
-				}
-				else {
+				// Wait for GC
+				if(reference == null && deviceFreeMemPercentage < vectorsRecyclerPercentageFreeToWaitForGC) {
 
-					float deviceFreeMemPercentage = getDeviceFreeMemPercentage();
-					logger.finest("Device free memory " + deviceFreeMemPercentage + "%");
-
-					// No pointer found, try GC if we are above a critical level
-					if(reference == null && deviceFreeMemPercentage < vectorsRecyclerPercentageFreeToStartGC) {
+					/*
+					 * Try to obtain a reference after GC, retry with waits for 1 ms, 10 ms, 100 ms, ...
+					 */
+					System.gc();
+					long timeOut = 1;
+					while(reference == null && timeOut < vectorsRecyclerMaxTimeOutMillis) {
 						try {
-							System.gc();
-							reference = vectorsToRecycleReferenceQueue.remove(1);
+							reference = vectorsToRecycleReferenceQueue.remove(timeOut);
+							timeOut *= 4;
 						} catch (IllegalArgumentException | InterruptedException e) {}
 					}
 
-					// Wait for GC
-					if(reference == null && deviceFreeMemPercentage < vectorsRecyclerPercentageFreeToWaitForGC) {
-
-						/*
-						 * Try to obtain a reference after GC, retry with waits for 1 ms, 10 ms, 100 ms, ...
-						 */
-						System.gc();
-						long timeOut = 1;
-						while(reference == null && timeOut < vectorsRecyclerMaxTimeOutMillis) {
-							try {
-								reference = vectorsToRecycleReferenceQueue.remove(timeOut);
-								timeOut *= 4;
-							} catch (IllegalArgumentException | InterruptedException e) {}
-						}
-
-						// Still no pointer found for requested size, consider cleaning all (also other sizes)
-						if(reference == null) {
-							clean();
-						}
-					}
-
-					if(reference != null) {
-						logger.finest("Recycling (2) device pointer " + cuDevicePtr + " from " + reference);
-						cuDevicePtr = vectorsInUseReferenceMap.remove(reference);
+					// Still no pointer found for requested size, consider cleaning all (also other sizes)
+					if(reference == null) {
+						clean();
 					}
 				}
 
-
-				if(cuDevicePtr != null) return cuDevicePtr;
-
-				// Still no pointer found, create new one
-				try {
-					cuDevicePtr =
-							deviceExecutor.submit(new Callable<CUdeviceptr>() { public CUdeviceptr call() {
-								CUdeviceptr cuDevicePtr =
-										new CUdeviceptr();
-								int succ = JCudaDriver.cuMemAlloc(cuDevicePtr, size * Sizeof.FLOAT);
-								if(succ != 0) {
-									cuDevicePtr = null;
-									String[] cudaErrorName = new String[1];
-									JCudaDriver.cuGetErrorName(succ, cudaErrorName);
-									String[] cudaErrorDescription = new String[1];
-									JCudaDriver.cuGetErrorString(succ, cudaErrorDescription);
-									
-									logger.warning("Failed creating device vector "+ cuDevicePtr + " with size=" + size + " with error "+ cudaErrorName + ": " + cudaErrorDescription);
-								}
-								else {
-									logger.finest("Creating device vector "+ cuDevicePtr + " with size=" + size);
-								}
-								return cuDevicePtr;
-							}}).get();
-				} catch (InterruptedException | ExecutionException e) {
-					logger.severe("Failed to allocate device vector with size=" + size);
+				if(reference != null) {
+					logger.finest("Recycling (2) device pointer " + cuDevicePtr + " from " + reference);
+					cuDevicePtr = vectorsInUseReferenceMap.remove(reference);
 				}
+			}
+
+
+			if(cuDevicePtr != null) return cuDevicePtr;
+
+			// Still no pointer found, create new one
+			try {
+				cuDevicePtr =
+						deviceExecutor.submit(new Callable<CUdeviceptr>() { public CUdeviceptr call() {
+							CUdeviceptr cuDevicePtr =
+									new CUdeviceptr();
+							int succ = JCudaDriver.cuMemAlloc(cuDevicePtr, size * Sizeof.FLOAT);
+							if(succ != 0) {
+								cuDevicePtr = null;
+								String[] cudaErrorName = new String[1];
+								JCudaDriver.cuGetErrorName(succ, cudaErrorName);
+								String[] cudaErrorDescription = new String[1];
+								JCudaDriver.cuGetErrorString(succ, cudaErrorDescription);
+
+								logger.warning("Failed creating device vector "+ cuDevicePtr + " with size=" + size + " with error "+ cudaErrorName + ": " + cudaErrorDescription);
+							}
+							else {
+								logger.finest("Creating device vector "+ cuDevicePtr + " with size=" + size);
+							}
+							return cuDevicePtr;
+						}}).get();
+			} catch (InterruptedException | ExecutionException e) {
+				logger.severe("Failed to allocate device vector with size=" + size);
 			}
 
 			if(cuDevicePtr == null) {
@@ -192,7 +199,7 @@ public class RandomVariableCuda implements RandomVariable {
 			return cuDevicePtr;
 		}
 
-		public static void clean() {
+		public synchronized void clean() {
 			// Clean up all remaining pointers
 			for(ReferenceQueue<RandomVariableCuda> vectorsToRecycleReferenceQueue : vectorsToRecycleReferenceQueueMap.values()) {
 				Reference<? extends RandomVariableCuda> reference;
@@ -321,7 +328,7 @@ public class RandomVariableCuda implements RandomVariable {
 				cuModuleGetFunction(addProduct, module, "addProduct");
 				cuModuleGetFunction(addProduct_vs, module, "addProduct_vs");
 				cuModuleGetFunction(reducePartial, module, "reducePartial");
-				
+
 				float deviceFreeMemPercentage = getDeviceFreeMemPercentage();
 				logger.finest("Device free memory " + deviceFreeMemPercentage + "%");
 			}});
@@ -430,7 +437,7 @@ public class RandomVariableCuda implements RandomVariable {
 	 * @return Pointer to device vector.
 	 */
 	private static CUdeviceptr createCUdeviceptr(final float[] values) {
-		//		synchronized (vectorsInUseReferenceMap)
+		synchronized (deviceMemoryPool)
 		{
 			final CUdeviceptr cuDevicePtr = deviceMemoryPool.getCUdeviceptr(values.length);
 			try {
@@ -754,7 +761,9 @@ public class RandomVariableCuda implements RandomVariable {
 					cuMemcpyDtoH(Pointer.to(result), realizations, size * Sizeof.FLOAT);
 					cuCtxSynchronize();
 				}}).get();
-			} catch (InterruptedException | ExecutionException e) { throw new RuntimeException(e.getCause()); }
+			} catch (InterruptedException | ExecutionException e) {
+				throw new RuntimeException(e.getCause());
+			}
 			return getDoubleArray(result);
 		}
 	}
@@ -933,6 +942,7 @@ public class RandomVariableCuda implements RandomVariable {
 					Pointer.to(new float[] { (float)value }),
 					Pointer.to(result) }
 					);
+
 			return RandomVariableCuda.of(time, result, size());
 		}
 	}
@@ -950,6 +960,7 @@ public class RandomVariableCuda implements RandomVariable {
 					Pointer.to(new float[] { (float)value }),
 					Pointer.to(result) }
 					);
+
 			return RandomVariableCuda.of(time, result, size());
 		}
 	}
@@ -968,6 +979,7 @@ public class RandomVariableCuda implements RandomVariable {
 					Pointer.to(new float[] { (float)exponent }),
 					Pointer.to(result) }
 					);
+
 			return RandomVariableCuda.of(time, result, size());
 		}
 	}
@@ -1495,6 +1507,7 @@ public class RandomVariableCuda implements RandomVariable {
 					Pointer.to(((RandomVariableCuda)factor2).realizations),
 					Pointer.to(result) }
 					);
+
 			return RandomVariableCuda.of(newTime, result, size());
 		} else
 			return this.add(factor1.mult(factor2));
