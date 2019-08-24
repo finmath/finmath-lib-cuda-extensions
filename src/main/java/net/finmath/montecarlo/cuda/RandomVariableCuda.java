@@ -77,7 +77,7 @@ public class RandomVariableCuda implements RandomVariable {
 				@Override
 				public void run() {
 					while(true) {
-//						System.gc();
+						//						System.gc();
 
 						try {
 							Thread.sleep(10);
@@ -331,10 +331,10 @@ public class RandomVariableCuda implements RandomVariable {
 				cuModuleGetFunction(addProduct, module, "addProduct");
 				cuModuleGetFunction(addProduct_vs, module, "addProduct_vs");
 				cuModuleGetFunction(reducePartial, module, "reducePartial");
-
-				float deviceFreeMemPercentage = getDeviceFreeMemPercentage();
-				logger.finest("Device free memory " + deviceFreeMemPercentage + "%");
 			}});
+
+			float deviceFreeMemPercentage = getDeviceFreeMemPercentage();
+			logger.finest("Device free memory " + deviceFreeMemPercentage + "%");
 		}
 	}
 
@@ -384,7 +384,7 @@ public class RandomVariableCuda implements RandomVariable {
 	 */
 	public RandomVariableCuda(double time, float[] realisations) {
 		this(time, createCUdeviceptr(realisations), realisations.length);
-//		deviceMemoryPool.manage(this.realizations, this);
+		//		deviceMemoryPool.manage(this.realizations, this);
 	}
 
 	/**
@@ -428,13 +428,11 @@ public class RandomVariableCuda implements RandomVariable {
 	 * @return
 	 */
 	private static float getDeviceFreeMemPercentage() {
-		synchronized (deviceMemoryPool) {
-			long[] free = new long[1];
-			long[] total = new long[1];
-			jcuda.runtime.JCuda.cudaMemGetInfo(free, total);
-			float freeRate = ((float)free[0]/(total[0]));
-			return freeRate;
-		}
+		long[] free = new long[1];
+		long[] total = new long[1];
+		jcuda.runtime.JCuda.cudaMemGetInfo(free, total);
+		float freeRate = ((float)free[0]/(total[0]));
+		return freeRate;
 	}
 
 	/**
