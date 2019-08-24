@@ -301,42 +301,46 @@ public class RandomVariableCuda implements RandomVariable {
 			}
 
 			final String ptxFileName2 = ptxFileName;
-			deviceExecutor.submit(new Runnable() { public void run() {
-				// Initialize the driver and create a context for the first device.
-				cuInit(0);
-				cuDeviceGet(device, 0);
-				cuCtxCreate(context, jcuda.driver.CUctx_flags.CU_CTX_SCHED_BLOCKING_SYNC, device);
+			try {
+				deviceExecutor.submit(new Runnable() { public void run() {
+					// Initialize the driver and create a context for the first device.
+					cuInit(0);
+					cuDeviceGet(device, 0);
+					cuCtxCreate(context, jcuda.driver.CUctx_flags.CU_CTX_SCHED_BLOCKING_SYNC, device);
 
-				// Load the ptx file.
-				cuModuleLoad(module, ptxFileName2);
+					// Load the ptx file.
+					cuModuleLoad(module, ptxFileName2);
 
-				// Obtain a function pointers
-				cuModuleGetFunction(capByScalar, module, "capByScalar");
-				cuModuleGetFunction(floorByScalar, module, "floorByScalar");
-				cuModuleGetFunction(addScalar, module, "addScalar");
-				cuModuleGetFunction(subScalar, module, "subScalar");
-				cuModuleGetFunction(busScalar, module, "busScalar");
-				cuModuleGetFunction(multScalar, module, "multScalar");
-				cuModuleGetFunction(divScalar, module, "divScalar");
-				cuModuleGetFunction(vidScalar, module, "vidScalar");
-				cuModuleGetFunction(cuPow, module, "cuPow");
-				cuModuleGetFunction(cuSqrt, module, "cuSqrt");
-				cuModuleGetFunction(cuExp, module, "cuExp");
-				cuModuleGetFunction(cuLog, module, "cuLog");
-				cuModuleGetFunction(invert, module, "invert");
-				cuModuleGetFunction(cuAbs, module, "cuAbs");
-				cuModuleGetFunction(cap, module, "cap");
-				cuModuleGetFunction(cuFloor, module, "cuFloor");
-				cuModuleGetFunction(add, module, "add");
-				cuModuleGetFunction(sub, module, "sub");
-				cuModuleGetFunction(mult, module, "mult");
-				cuModuleGetFunction(cuDiv, module, "cuDiv");
-				cuModuleGetFunction(accrue, module, "accrue");
-				cuModuleGetFunction(discount, module, "discount");
-				cuModuleGetFunction(addProduct, module, "addProduct");
-				cuModuleGetFunction(addProduct_vs, module, "addProduct_vs");
-				cuModuleGetFunction(reducePartial, module, "reducePartial");
-			}});
+					// Obtain a function pointers
+					cuModuleGetFunction(capByScalar, module, "capByScalar");
+					cuModuleGetFunction(floorByScalar, module, "floorByScalar");
+					cuModuleGetFunction(addScalar, module, "addScalar");
+					cuModuleGetFunction(subScalar, module, "subScalar");
+					cuModuleGetFunction(busScalar, module, "busScalar");
+					cuModuleGetFunction(multScalar, module, "multScalar");
+					cuModuleGetFunction(divScalar, module, "divScalar");
+					cuModuleGetFunction(vidScalar, module, "vidScalar");
+					cuModuleGetFunction(cuPow, module, "cuPow");
+					cuModuleGetFunction(cuSqrt, module, "cuSqrt");
+					cuModuleGetFunction(cuExp, module, "cuExp");
+					cuModuleGetFunction(cuLog, module, "cuLog");
+					cuModuleGetFunction(invert, module, "invert");
+					cuModuleGetFunction(cuAbs, module, "cuAbs");
+					cuModuleGetFunction(cap, module, "cap");
+					cuModuleGetFunction(cuFloor, module, "cuFloor");
+					cuModuleGetFunction(add, module, "add");
+					cuModuleGetFunction(sub, module, "sub");
+					cuModuleGetFunction(mult, module, "mult");
+					cuModuleGetFunction(cuDiv, module, "cuDiv");
+					cuModuleGetFunction(accrue, module, "accrue");
+					cuModuleGetFunction(discount, module, "discount");
+					cuModuleGetFunction(addProduct, module, "addProduct");
+					cuModuleGetFunction(addProduct_vs, module, "addProduct_vs");
+					cuModuleGetFunction(reducePartial, module, "reducePartial");
+				}}).get();
+			} catch (InterruptedException | ExecutionException e) {
+				logger.severe("Failed to initialized cuda.");
+			}
 		}
 
 		float deviceFreeMemPercentage = getDeviceFreeMemPercentage();
