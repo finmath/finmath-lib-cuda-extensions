@@ -93,9 +93,9 @@ public class RandomVariableCuda implements RandomVariable {
 		public void manage(CUdeviceptr cuDevicePtr, RandomVariableCuda wrapper) {
 			int size = wrapper.size();
 			synchronized (vectorsInUseReferenceMap) {
-				ReferenceQueue<RandomVariableCuda> vectorsToRecycleReferenceQueue = vectorsToRecycleReferenceQueueMap.get(size);
+				ReferenceQueue<RandomVariableCuda> vectorsToRecycleReferenceQueue = vectorsToRecycleReferenceQueueMap.get(new Integer(size));
 				if(vectorsToRecycleReferenceQueue == null) {
-					vectorsToRecycleReferenceQueueMap.put(size, vectorsToRecycleReferenceQueue = new ReferenceQueue<RandomVariableCuda>());
+					vectorsToRecycleReferenceQueueMap.put(new Integer(size), vectorsToRecycleReferenceQueue = new ReferenceQueue<RandomVariableCuda>());
 				}
 				vectorsInUseReferenceMap.put(new WeakReference<RandomVariableCuda>(wrapper, vectorsToRecycleReferenceQueue), cuDevicePtr);
 			}
@@ -105,9 +105,9 @@ public class RandomVariableCuda implements RandomVariable {
 			CUdeviceptr cuDevicePtr = null;
 			synchronized (vectorsInUseReferenceMap) {
 				// Check for object to recycle
-				ReferenceQueue<RandomVariableCuda> vectorsToRecycleReferenceQueue = vectorsToRecycleReferenceQueueMap.get((int)size);
+				ReferenceQueue<RandomVariableCuda> vectorsToRecycleReferenceQueue = vectorsToRecycleReferenceQueueMap.get(new Integer((int)size));
 				if(vectorsToRecycleReferenceQueue == null) {
-					vectorsToRecycleReferenceQueueMap.put((int)size, vectorsToRecycleReferenceQueue = new ReferenceQueue<RandomVariableCuda>());
+					vectorsToRecycleReferenceQueueMap.put(new Integer((int)size), vectorsToRecycleReferenceQueue = new ReferenceQueue<RandomVariableCuda>());
 				}
 
 				Reference<? extends RandomVariableCuda> reference = vectorsToRecycleReferenceQueue.poll();
