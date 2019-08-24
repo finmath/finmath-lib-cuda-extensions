@@ -424,7 +424,6 @@ public class RandomVariableCuda implements RandomVariable {
 		if(randomVariable instanceof RandomVariableCuda) return (RandomVariableCuda)randomVariable;
 		else {
 			RandomVariableCuda randomVariableCuda = new RandomVariableCuda(randomVariable.getFiltrationTime(), randomVariable.getRealizations());
-			deviceMemoryPool.manage(randomVariableCuda.realizations, randomVariableCuda);
 			return randomVariableCuda;
 		}
 	}
