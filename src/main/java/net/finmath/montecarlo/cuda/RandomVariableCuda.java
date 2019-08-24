@@ -172,13 +172,12 @@ public class RandomVariableCuda implements RandomVariable {
 								return cuDevicePtr;
 							}}).get();
 				} catch (InterruptedException | ExecutionException e) {
-					System.out.println("Failed to allocate device vector with size=" + size);
-					throw new RuntimeException(e.getCause());
+					logger.severe("Failed to allocate device vector with size=" + size);
 				}
 			}
 
 			if(cuDevicePtr == null) {
-				System.out.println("Failed to allocate device vector with size=" + size);
+				logger.severe("Failed to allocate device vector with size=" + size);
 				throw new OutOfMemoryError("Failed to allocate device vector with size=" + size);
 			}
 
@@ -197,7 +196,10 @@ public class RandomVariableCuda implements RandomVariable {
 							cuCtxSynchronize();
 							JCudaDriver.cuMemFree(cuDevicePtr);
 						}}).get();
-					} catch (InterruptedException | ExecutionException e) { throw new RuntimeException(e.getCause()); }
+					} catch (InterruptedException | ExecutionException e) {
+						logger.severe("Unable to free pointer " + cuDevicePtr + " from " + reference);
+						throw new RuntimeException(e.getCause());
+					}
 				}
 			}
 		}
