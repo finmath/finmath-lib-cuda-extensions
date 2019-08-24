@@ -194,6 +194,7 @@ public class RandomVariableCuda implements RandomVariable {
 					logger.finest("Freeing device pointer " + cuDevicePtr + " from " + reference);
 					try {
 						deviceExecutor.submit(new Runnable() { public void run() {
+							cuCtxSynchronize();
 							JCudaDriver.cuMemFree(cuDevicePtr);
 						}}).get();
 					} catch (InterruptedException | ExecutionException e) { throw new RuntimeException(e.getCause()); }
@@ -316,6 +317,7 @@ public class RandomVariableCuda implements RandomVariable {
 
 	public static RandomVariableCuda of(double time, CUdeviceptr realizations, long size) {
 		RandomVariableCuda randomVariableCuda = new RandomVariableCuda(time, realizations, size);
+		deviceMemoryPool.manage(realizations, randomVariableCuda);
 		return randomVariableCuda;
 	}
 
@@ -325,7 +327,6 @@ public class RandomVariableCuda implements RandomVariable {
 		this.size = size;
 		this.valueIfNonStochastic = Double.NaN;
 		this.typePriority = typePriorityDefault;
-		deviceMemoryPool.manage(realizations, this);
 	}
 
 	/**
