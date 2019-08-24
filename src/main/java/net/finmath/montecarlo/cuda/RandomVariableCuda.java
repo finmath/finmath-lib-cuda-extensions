@@ -321,6 +321,9 @@ public class RandomVariableCuda implements RandomVariable {
 				cuModuleGetFunction(addProduct, module, "addProduct");
 				cuModuleGetFunction(addProduct_vs, module, "addProduct_vs");
 				cuModuleGetFunction(reducePartial, module, "reducePartial");
+				
+				float deviceFreeMemPercentage = getDeviceFreeMemPercentage();
+				logger.finest("Device free memory " + deviceFreeMemPercentage + "%");
 			}});
 		}
 	}
