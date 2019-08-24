@@ -316,7 +316,6 @@ public class RandomVariableCuda implements RandomVariable {
 
 	public static RandomVariableCuda of(double time, CUdeviceptr realizations, long size) {
 		RandomVariableCuda randomVariableCuda = new RandomVariableCuda(time, realizations, size);
-		deviceMemoryPool.manage(realizations, randomVariableCuda);
 		return randomVariableCuda;
 	}
 
@@ -326,6 +325,7 @@ public class RandomVariableCuda implements RandomVariable {
 		this.size = size;
 		this.valueIfNonStochastic = Double.NaN;
 		this.typePriority = typePriorityDefault;
+		deviceMemoryPool.manage(realizations, this);
 	}
 
 	/**
