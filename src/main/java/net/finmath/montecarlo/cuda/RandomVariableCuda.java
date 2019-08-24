@@ -105,9 +105,9 @@ public class RandomVariableCuda implements RandomVariable {
 			CUdeviceptr cuDevicePtr = null;
 			synchronized (vectorsInUseReferenceMap) {
 				// Check for object to recycle
-				ReferenceQueue<RandomVariableCuda> vectorsToRecycleReferenceQueue = vectorsToRecycleReferenceQueueMap.get(new Integer((int)size));
+				ReferenceQueue<RandomVariableCuda> vectorsToRecycleReferenceQueue = vectorsToRecycleReferenceQueueMap.get((int)size);
 				if(vectorsToRecycleReferenceQueue == null) {
-					vectorsToRecycleReferenceQueueMap.put(new Integer((int)size), vectorsToRecycleReferenceQueue = new ReferenceQueue<RandomVariableCuda>());
+					vectorsToRecycleReferenceQueueMap.put((int)size, vectorsToRecycleReferenceQueue = new ReferenceQueue<RandomVariableCuda>());
 				}
 
 				Reference<? extends RandomVariableCuda> reference = vectorsToRecycleReferenceQueue.poll();
