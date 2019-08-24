@@ -91,6 +91,7 @@ public class RandomVariableCuda implements RandomVariable {
 		}
 
 		public synchronized void manage(CUdeviceptr cuDevicePtr, RandomVariableCuda wrapper) {
+			logger.finest("Managing" + cuDevicePtr + " with " + wrapper + ". Size of reference map " + vectorsInUseReferenceMap.size());
 			int size = wrapper.size();
 
 			ReferenceQueue<RandomVariableCuda> vectorsToRecycleReferenceQueue = vectorsToRecycleReferenceQueueMap.get(new Integer(size));
@@ -162,6 +163,7 @@ public class RandomVariableCuda implements RandomVariable {
 					}
 					else {
 						// Still no pointer found for requested size, consider cleaning all (also other sizes)
+						logger.info("Last resort: Cleaning all unused vectors on device.");
 						clean();
 					}
 				}
@@ -173,8 +175,7 @@ public class RandomVariableCuda implements RandomVariable {
 			try {
 				cuDevicePtr =
 						deviceExecutor.submit(new Callable<CUdeviceptr>() { public CUdeviceptr call() {
-							CUdeviceptr cuDevicePtr =
-									new CUdeviceptr();
+							CUdeviceptr cuDevicePtr = new CUdeviceptr();
 							int succ = JCudaDriver.cuMemAlloc(cuDevicePtr, size * Sizeof.FLOAT);
 							if(succ != 0) {
 								cuDevicePtr = null;
@@ -384,7 +385,7 @@ public class RandomVariableCuda implements RandomVariable {
 	 */
 	public RandomVariableCuda(double time, float[] realisations) {
 		this(time, createCUdeviceptr(realisations), realisations.length);
-		//		deviceMemoryPool.manage(this.realizations, this);
+		deviceMemoryPool.manage(this.realizations, this);
 	}
 
 	/**
@@ -827,7 +828,7 @@ public class RandomVariableCuda implements RandomVariable {
 		}
 		else {
 			// Allocate device output memory
-			CUdeviceptr result = getCUdeviceptr((long)size());getCUdeviceptr((long)size());
+			CUdeviceptr result = getCUdeviceptr((long)size());
 			callCudaFunction(capByScalar, new Pointer[] {
 					Pointer.to(new int[] { size() }),
 					Pointer.to(realizations),
