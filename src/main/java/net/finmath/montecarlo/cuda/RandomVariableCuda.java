@@ -77,7 +77,7 @@ public class RandomVariableCuda implements RandomVariable {
 				@Override
 				public void run() {
 					while(true) {
-//						System.gc();
+						//						System.gc();
 
 						try {
 							Thread.sleep(10);
@@ -146,43 +146,43 @@ public class RandomVariableCuda implements RandomVariable {
 							clean();
 						}
 					}
-
-					if(reference != null) {
-						logger.finest("Recycling device pointer " + cuDevicePtr + " from " + reference);
-						cuDevicePtr = vectorsInUseReferenceMap.remove(reference);
-					}
-
-					if(cuDevicePtr != null) return cuDevicePtr;
-
-					// Still no pointer found, create new one
-					try {
-						cuDevicePtr =
-								deviceExecutor.submit(new Callable<CUdeviceptr>() { public CUdeviceptr call() {
-									CUdeviceptr cuDevicePtr =
-											new CUdeviceptr();
-									int succ = JCudaDriver.cuMemAlloc(cuDevicePtr, size * Sizeof.FLOAT);
-									if(succ != 0) {
-										cuDevicePtr = null;
-										logger.warning("Failed creating device vector "+ cuDevicePtr + " with size=" + size);
-									}
-									else {
-										logger.finest("Creating device vector "+ cuDevicePtr + " with size=" + size);
-									}
-									return cuDevicePtr;
-								}}).get();
-					} catch (InterruptedException | ExecutionException e) {
-						System.out.println("Failed to allocate device vector with size=" + size);
-						throw new RuntimeException(e.getCause());
-					}
 				}
 
-				if(cuDevicePtr == null) {
+				if(reference != null) {
+					logger.finest("Recycling device pointer " + cuDevicePtr + " from " + reference);
+					cuDevicePtr = vectorsInUseReferenceMap.remove(reference);
+				}
+
+				if(cuDevicePtr != null) return cuDevicePtr;
+
+				// Still no pointer found, create new one
+				try {
+					cuDevicePtr =
+							deviceExecutor.submit(new Callable<CUdeviceptr>() { public CUdeviceptr call() {
+								CUdeviceptr cuDevicePtr =
+										new CUdeviceptr();
+								int succ = JCudaDriver.cuMemAlloc(cuDevicePtr, size * Sizeof.FLOAT);
+								if(succ != 0) {
+									cuDevicePtr = null;
+									logger.warning("Failed creating device vector "+ cuDevicePtr + " with size=" + size);
+								}
+								else {
+									logger.finest("Creating device vector "+ cuDevicePtr + " with size=" + size);
+								}
+								return cuDevicePtr;
+							}}).get();
+				} catch (InterruptedException | ExecutionException e) {
 					System.out.println("Failed to allocate device vector with size=" + size);
-					throw new OutOfMemoryError("Failed to allocate device vector with size=" + size);
+					throw new RuntimeException(e.getCause());
 				}
-
-				return cuDevicePtr;
 			}
+
+			if(cuDevicePtr == null) {
+				System.out.println("Failed to allocate device vector with size=" + size);
+				throw new OutOfMemoryError("Failed to allocate device vector with size=" + size);
+			}
+
+			return cuDevicePtr;
 		}
 
 		public static void clean() {
