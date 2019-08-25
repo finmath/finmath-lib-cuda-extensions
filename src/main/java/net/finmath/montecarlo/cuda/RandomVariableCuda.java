@@ -47,10 +47,12 @@ import net.finmath.montecarlo.RandomVariableFromFloatArray;
 import net.finmath.stochastic.RandomVariable;
 
 /**
- * The class RandomVariableFromDoubleArray represents a random variable being the evaluation of a stochastic process
+ * The class RandomVariableCuda represents a random variable being the evaluation of a stochastic process
  * at a certain time within a Monte-Carlo simulation.
+ * 
  * It is thus essentially a vector of floating point numbers - the realizations - together with a double - the time.
  * The index of the vector represents path.
+ * 
  * The class may also be used for non-stochastic quantities which may potentially be stochastic
  * (e.g. volatility). If only non-stochastic random variables are involved in an operation the class uses
  * optimized code.
@@ -58,14 +60,25 @@ import net.finmath.stochastic.RandomVariable;
  * Accesses performed exclusively through the interface
  * <code>RandomVariable</code> is thread safe (and does not mutate the class).
  *
- * This implementation uses floats for the realizations (consuming less memory compared to using doubles). However,
- * the calculation of the average is performed using double precision.
+ * <b>This implementation uses floats for the realizations on a Cuda GPU</b>
  *
  * @author Christian Fries
- * @version 1.8
+ * @version 2.0
  */
 public class RandomVariableCuda implements RandomVariable {
 
+	/**
+	 * A memory pool for the GPU vectors.
+	 * 
+	 * The memory pool is provided for vectors of different length.
+	 * 
+	 * Implementation details:
+	 * The map vectorsToRecycleReferenceQueueMap maps each vector length to a ReferenceQueue<RandomVariableCuda> holding
+	 * reference of recycleable vectors. The map vectorsInUseReferenceMap maps this weak reference to a Cuda vector.
+	 * 
+	 * @author Christian Fries
+	 *
+	 */
 	private static class DeviceMemoryPool {
 		private final static Map<Integer, ReferenceQueue<RandomVariableCuda>>		vectorsToRecycleReferenceQueueMap	= new ConcurrentHashMap<Integer, ReferenceQueue<RandomVariableCuda>>();
 		private final static Map<WeakReference<RandomVariableCuda>, CUdeviceptr>	vectorsInUseReferenceMap			= new ConcurrentHashMap<WeakReference<RandomVariableCuda>, CUdeviceptr>();
@@ -1658,7 +1671,7 @@ public class RandomVariableCuda implements RandomVariable {
 
 	private void callCudaFunction(CUfunction function, Pointer[] arguments) {
 		synchronized (deviceMemoryPool) {
-			int blockSizeX = 256;
+			int blockSizeX = 512;
 			int gridSizeX = (int)Math.ceil((double)size() / blockSizeX);
 			callCudaFunction(function, arguments, gridSizeX, blockSizeX, 0);
 		}
