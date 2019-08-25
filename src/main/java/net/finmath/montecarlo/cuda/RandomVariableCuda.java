@@ -91,7 +91,7 @@ public class RandomVariableCuda implements RandomVariable {
 				}
 			}).start();
 		}
-		*/
+		 */
 
 		public synchronized void manage(CUdeviceptr cuDevicePtr, RandomVariableCuda wrapper) {
 			if(logger.isLoggable(Level.FINEST)) logger.finest("Managing" + cuDevicePtr + " with " + wrapper + ". Size of reference map " + vectorsInUseReferenceMap.size());
@@ -839,14 +839,17 @@ public class RandomVariableCuda implements RandomVariable {
 		}
 		else {
 			// Allocate device output memory
-			final CUdeviceptr result = getCUdeviceptr((long)size());
-			callCudaFunction(capByScalar, new Pointer[] {
-					Pointer.to(new int[] { size() }),
-					Pointer.to(realizations),
-					Pointer.to(new float[] { (float)cap }),
-					Pointer.to(result) }
-					);
+			final CUdeviceptr result;
+			synchronized(deviceMemoryPool) {
+				result = getCUdeviceptr((long)size());
+				callCudaFunction(capByScalar, new Pointer[] {
+						Pointer.to(new int[] { size() }),
+						Pointer.to(realizations),
+						Pointer.to(new float[] { (float)cap }),
+						Pointer.to(result) }
+						);
 
+			}
 			return RandomVariableCuda.of(time, result, size());
 		}
 	}
@@ -858,14 +861,17 @@ public class RandomVariableCuda implements RandomVariable {
 			return new RandomVariableCuda(time, newValueIfNonStochastic);
 		}
 		else {
-			final CUdeviceptr result = getCUdeviceptr((long)size());
-			callCudaFunction(floorByScalar, new Pointer[] {
-					Pointer.to(new int[] { size() }),
-					Pointer.to(realizations),
-					Pointer.to(new float[] { (float)floor }),
-					Pointer.to(result) }
-					);
+			final CUdeviceptr result;
+			synchronized(deviceMemoryPool) {
+				result = getCUdeviceptr((long)size());
+				callCudaFunction(floorByScalar, new Pointer[] {
+						Pointer.to(new int[] { size() }),
+						Pointer.to(realizations),
+						Pointer.to(new float[] { (float)floor }),
+						Pointer.to(result) }
+						);
 
+			}
 			return RandomVariableCuda.of(time, result, size());
 		}
 	}
@@ -877,14 +883,17 @@ public class RandomVariableCuda implements RandomVariable {
 			return new RandomVariableCuda(time, newValueIfNonStochastic);
 		}
 		else {
-			final CUdeviceptr result = getCUdeviceptr((long)size());
-			callCudaFunction(addScalar, new Pointer[] {
-					Pointer.to(new int[] { size() }),
-					Pointer.to(realizations),
-					Pointer.to(new float[] { (float)value }),
-					Pointer.to(result) }
-					);
+			final CUdeviceptr result;
+			synchronized(deviceMemoryPool) {
+				result = getCUdeviceptr((long)size());
+				callCudaFunction(addScalar, new Pointer[] {
+						Pointer.to(new int[] { size() }),
+						Pointer.to(realizations),
+						Pointer.to(new float[] { (float)value }),
+						Pointer.to(result) }
+						);
 
+			}
 			return RandomVariableCuda.of(time, result, size());
 		}
 	}
@@ -896,14 +905,17 @@ public class RandomVariableCuda implements RandomVariable {
 			return new RandomVariableCuda(time, newValueIfNonStochastic);
 		}
 		else {
-			final CUdeviceptr result = getCUdeviceptr((long)size());
-			callCudaFunction(subScalar, new Pointer[] {
-					Pointer.to(new int[] { size() }),
-					Pointer.to(realizations),
-					Pointer.to(new float[] { (float)value }),
-					Pointer.to(result) }
-					);
+			final CUdeviceptr result;
+			synchronized(deviceMemoryPool) {
+				result = getCUdeviceptr((long)size());
+				callCudaFunction(subScalar, new Pointer[] {
+						Pointer.to(new int[] { size() }),
+						Pointer.to(realizations),
+						Pointer.to(new float[] { (float)value }),
+						Pointer.to(result) }
+						);
 
+			}
 			return RandomVariableCuda.of(time, result, size());
 		}
 	}
@@ -914,14 +926,17 @@ public class RandomVariableCuda implements RandomVariable {
 			return new RandomVariableCuda(time, newValueIfNonStochastic);
 		}
 		else {
-			final CUdeviceptr result = getCUdeviceptr((long)size());
-			callCudaFunction(busScalar, new Pointer[] {
-					Pointer.to(new int[] { size() }),
-					Pointer.to(realizations),
-					Pointer.to(new float[] { (float)value }),
-					Pointer.to(result) }
-					);
+			final CUdeviceptr result;
+			synchronized(deviceMemoryPool) {
+				result = getCUdeviceptr((long)size());
+				callCudaFunction(busScalar, new Pointer[] {
+						Pointer.to(new int[] { size() }),
+						Pointer.to(realizations),
+						Pointer.to(new float[] { (float)value }),
+						Pointer.to(result) }
+						);
 
+			}
 			return RandomVariableCuda.of(time, result, size());
 		}
 	}
@@ -933,14 +948,16 @@ public class RandomVariableCuda implements RandomVariable {
 			return new RandomVariableCuda(time, newValueIfNonStochastic);
 		}
 		else {
-			final CUdeviceptr result = getCUdeviceptr((long)size());
-			callCudaFunction(multScalar, new Pointer[] {
-					Pointer.to(new int[] { size() }),
-					Pointer.to(realizations),
-					Pointer.to(new float[] { ((float)value) }),
-					Pointer.to(result) }
-					);
-
+			final CUdeviceptr result;
+			synchronized(deviceMemoryPool) {
+				result = getCUdeviceptr((long)size());
+				callCudaFunction(multScalar, new Pointer[] {
+						Pointer.to(new int[] { size() }),
+						Pointer.to(realizations),
+						Pointer.to(new float[] { ((float)value) }),
+						Pointer.to(result) }
+						);
+			}
 			return RandomVariableCuda.of(time, result, size());
 		}
 	}
@@ -952,14 +969,17 @@ public class RandomVariableCuda implements RandomVariable {
 			return new RandomVariableCuda(time, newValueIfNonStochastic);
 		}
 		else {
-			final CUdeviceptr result = getCUdeviceptr((long)size());
-			callCudaFunction(divScalar, new Pointer[] {
-					Pointer.to(new int[] { size() }),
-					Pointer.to(realizations),
-					Pointer.to(new float[] { (float)value }),
-					Pointer.to(result) }
-					);
+			final CUdeviceptr result;
+			synchronized(deviceMemoryPool) {
+				result = getCUdeviceptr((long)size());
+				callCudaFunction(divScalar, new Pointer[] {
+						Pointer.to(new int[] { size() }),
+						Pointer.to(realizations),
+						Pointer.to(new float[] { (float)value }),
+						Pointer.to(result) }
+						);
 
+			}
 			return RandomVariableCuda.of(time, result, size());
 		}
 	}
@@ -970,13 +990,16 @@ public class RandomVariableCuda implements RandomVariable {
 			return new RandomVariableCuda(time, newValueIfNonStochastic);
 		}
 		else {
-			final CUdeviceptr result = getCUdeviceptr((long)size());
-			callCudaFunction(vidScalar, new Pointer[] {
-					Pointer.to(new int[] { size() }),
-					Pointer.to(realizations),
-					Pointer.to(new float[] { (float)value }),
-					Pointer.to(result) }
-					);
+			final CUdeviceptr result;
+			synchronized(deviceMemoryPool) {
+				result = getCUdeviceptr((long)size());
+				callCudaFunction(vidScalar, new Pointer[] {
+						Pointer.to(new int[] { size() }),
+						Pointer.to(realizations),
+						Pointer.to(new float[] { (float)value }),
+						Pointer.to(result) }
+						);
+			}
 
 			return RandomVariableCuda.of(time, result, size());
 		}
@@ -989,14 +1012,16 @@ public class RandomVariableCuda implements RandomVariable {
 			return new RandomVariableCuda(time, newValueIfNonStochastic);
 		}
 		else {
-			final CUdeviceptr result = getCUdeviceptr((long)size());
-			callCudaFunction(cuPow, new Pointer[] {
-					Pointer.to(new int[] { size() }),
-					Pointer.to(realizations),
-					Pointer.to(new float[] { (float)exponent }),
-					Pointer.to(result) }
-					);
-
+			final CUdeviceptr result;
+			synchronized(deviceMemoryPool) {
+				result = getCUdeviceptr((long)size());
+				callCudaFunction(cuPow, new Pointer[] {
+						Pointer.to(new int[] { size() }),
+						Pointer.to(realizations),
+						Pointer.to(new float[] { (float)exponent }),
+						Pointer.to(result) }
+						);
+			}
 			return RandomVariableCuda.of(time, result, size());
 		}
 	}
@@ -1022,13 +1047,16 @@ public class RandomVariableCuda implements RandomVariable {
 			return new RandomVariableCuda(time, newValueIfNonStochastic);
 		}
 		else {
-			final CUdeviceptr result = getCUdeviceptr((long)size());
-			callCudaFunction(cuSqrt, new Pointer[] {
-					Pointer.to(new int[] { size() }),
-					Pointer.to(realizations),
-					Pointer.to(result) }
-					);
+			final CUdeviceptr result;
+			synchronized(deviceMemoryPool) {
+				result = getCUdeviceptr((long)size());
+				callCudaFunction(cuSqrt, new Pointer[] {
+						Pointer.to(new int[] { size() }),
+						Pointer.to(realizations),
+						Pointer.to(result) }
+						);
 
+			}
 			return RandomVariableCuda.of(time, result, size());
 		}
 	}
@@ -1039,13 +1067,16 @@ public class RandomVariableCuda implements RandomVariable {
 			return new RandomVariableCuda(time, newValueIfNonStochastic);
 		}
 		else {
-			final CUdeviceptr result = getCUdeviceptr((long)size());
-			callCudaFunction(invert, new Pointer[] {
-					Pointer.to(new int[] { size() }),
-					Pointer.to(realizations),
-					Pointer.to(result) }
-					);
+			final CUdeviceptr result;
+			synchronized(deviceMemoryPool) {
+				result = getCUdeviceptr((long)size());
+				callCudaFunction(invert, new Pointer[] {
+						Pointer.to(new int[] { size() }),
+						Pointer.to(realizations),
+						Pointer.to(result) }
+						);
 
+			}
 			return RandomVariableCuda.of(time, result, size());
 		}
 	}
@@ -1056,13 +1087,16 @@ public class RandomVariableCuda implements RandomVariable {
 			return new RandomVariableCuda(time, newValueIfNonStochastic);
 		}
 		else {
-			final CUdeviceptr result = getCUdeviceptr((long)size());
-			callCudaFunction(cuAbs, new Pointer[] {
-					Pointer.to(new int[] { size() }),
-					Pointer.to(realizations),
-					Pointer.to(result) }
-					);
+			final CUdeviceptr result;
+			synchronized(deviceMemoryPool) {
+				result = getCUdeviceptr((long)size());
+				callCudaFunction(cuAbs, new Pointer[] {
+						Pointer.to(new int[] { size() }),
+						Pointer.to(realizations),
+						Pointer.to(result) }
+						);
 
+			}
 			return RandomVariableCuda.of(time, result, size());
 		}
 	}
@@ -1073,13 +1107,16 @@ public class RandomVariableCuda implements RandomVariable {
 			return new RandomVariableCuda(time, newValueIfNonStochastic);
 		}
 		else {
-			final CUdeviceptr result = getCUdeviceptr((long)size());
-			callCudaFunction(cuExp, new Pointer[] {
-					Pointer.to(new int[] { size() }),
-					Pointer.to(realizations),
-					Pointer.to(result) }
-					);
+			final CUdeviceptr result;
+			synchronized(deviceMemoryPool) {
+				result = getCUdeviceptr((long)size());
+				callCudaFunction(cuExp, new Pointer[] {
+						Pointer.to(new int[] { size() }),
+						Pointer.to(realizations),
+						Pointer.to(result) }
+						);
 
+			}
 			return RandomVariableCuda.of(time, result, size());
 		}
 	}
@@ -1090,13 +1127,16 @@ public class RandomVariableCuda implements RandomVariable {
 			return new RandomVariableCuda(time, newValueIfNonStochastic);
 		}
 		else {
-			final CUdeviceptr result = getCUdeviceptr((long)size());
-			callCudaFunction(cuLog, new Pointer[] {
-					Pointer.to(new int[] { size() }),
-					Pointer.to(realizations),
-					Pointer.to(result) }
-					);
+			final CUdeviceptr result;
+			synchronized(deviceMemoryPool) {
+				result = getCUdeviceptr((long)size());
+				callCudaFunction(cuLog, new Pointer[] {
+						Pointer.to(new int[] { size() }),
+						Pointer.to(realizations),
+						Pointer.to(result) }
+						);
 
+			}
 			return RandomVariableCuda.of(time, result, size());
 		}
 	}
@@ -1156,14 +1196,17 @@ public class RandomVariableCuda implements RandomVariable {
 			return this.add(randomVariable.doubleValue());
 		}
 		else {
-			final CUdeviceptr result = getCUdeviceptr((long)size());
-			callCudaFunction(add, new Pointer[] {
-					Pointer.to(new int[] { size() }),
-					Pointer.to(realizations),
-					Pointer.to(getRandomVariableCuda(randomVariable).realizations),
-					Pointer.to(result) }
-					);
+			final CUdeviceptr result;
+			synchronized(deviceMemoryPool) {
+				result = getCUdeviceptr((long)size());
+				callCudaFunction(add, new Pointer[] {
+						Pointer.to(new int[] { size() }),
+						Pointer.to(realizations),
+						Pointer.to(getRandomVariableCuda(randomVariable).realizations),
+						Pointer.to(result) }
+						);
 
+			}
 			return RandomVariableCuda.of(time, result, size());
 		}
 	}
@@ -1189,14 +1232,17 @@ public class RandomVariableCuda implements RandomVariable {
 			return this.sub(randomVariable.doubleValue());
 		}
 		else {
-			final CUdeviceptr result = getCUdeviceptr((long)size());
-			callCudaFunction(sub, new Pointer[] {
-					Pointer.to(new int[] { size() }),
-					Pointer.to(realizations),
-					Pointer.to(getRandomVariableCuda(randomVariable).realizations),
-					Pointer.to(result) }
-					);
+			final CUdeviceptr result;
+			synchronized(deviceMemoryPool) {
+				result = getCUdeviceptr((long)size());
+				callCudaFunction(sub, new Pointer[] {
+						Pointer.to(new int[] { size() }),
+						Pointer.to(realizations),
+						Pointer.to(getRandomVariableCuda(randomVariable).realizations),
+						Pointer.to(result) }
+						);
 
+			}
 			return RandomVariableCuda.of(time, result, size());
 		}
 	}
@@ -1222,14 +1268,17 @@ public class RandomVariableCuda implements RandomVariable {
 			return this.bus(randomVariable.doubleValue());
 		}
 		else {
-			final CUdeviceptr result = getCUdeviceptr((long)size());
-			callCudaFunction(sub, new Pointer[] {
-					Pointer.to(new int[] { size() }),
-					Pointer.to(getRandomVariableCuda(randomVariable).realizations),		// flipped arguments
-					Pointer.to(realizations),
-					Pointer.to(result) }
-					);
+			final CUdeviceptr result;
+			synchronized(deviceMemoryPool) {
+				result = getCUdeviceptr((long)size());
+				callCudaFunction(sub, new Pointer[] {
+						Pointer.to(new int[] { size() }),
+						Pointer.to(getRandomVariableCuda(randomVariable).realizations),		// flipped arguments
+						Pointer.to(realizations),
+						Pointer.to(result) }
+						);
 
+			}
 			return RandomVariableCuda.of(time, result, size());
 		}
 	}
@@ -1255,14 +1304,17 @@ public class RandomVariableCuda implements RandomVariable {
 			return getRandomVariableCuda(randomVariable).mult(this.valueIfNonStochastic);
 		}
 		else {
-			final CUdeviceptr result = getCUdeviceptr((long)size());
-			callCudaFunction(mult, new Pointer[] {
-					Pointer.to(new int[] { size() }),
-					Pointer.to(realizations),
-					Pointer.to(getRandomVariableCuda(randomVariable).realizations),
-					Pointer.to(result) }
-					);
+			final CUdeviceptr result;
+			synchronized(deviceMemoryPool) {
+				result = getCUdeviceptr((long)size());
+				callCudaFunction(mult, new Pointer[] {
+						Pointer.to(new int[] { size() }),
+						Pointer.to(realizations),
+						Pointer.to(getRandomVariableCuda(randomVariable).realizations),
+						Pointer.to(result) }
+						);
 
+			}
 			return RandomVariableCuda.of(newTime, result, size());
 		}
 	}
@@ -1288,14 +1340,17 @@ public class RandomVariableCuda implements RandomVariable {
 			return this.div(randomVariable.doubleValue());
 		}
 		else {
-			final CUdeviceptr result = getCUdeviceptr((long)size());
-			callCudaFunction(cuDiv, new Pointer[] {
-					Pointer.to(new int[] { size() }),
-					Pointer.to(realizations),
-					Pointer.to(getRandomVariableCuda(randomVariable).realizations),
-					Pointer.to(result) }
-					);
+			final CUdeviceptr result;
+			synchronized(deviceMemoryPool) {
+				result = getCUdeviceptr((long)size());
+				callCudaFunction(cuDiv, new Pointer[] {
+						Pointer.to(new int[] { size() }),
+						Pointer.to(realizations),
+						Pointer.to(getRandomVariableCuda(randomVariable).realizations),
+						Pointer.to(result) }
+						);
 
+			}
 			return RandomVariableCuda.of(newTime, result, size());
 		}
 	}
@@ -1321,14 +1376,17 @@ public class RandomVariableCuda implements RandomVariable {
 			return this.vid(randomVariable.doubleValue());
 		}
 		else {
-			final CUdeviceptr result = getCUdeviceptr((long)size());
-			callCudaFunction(cuDiv, new Pointer[] {
-					Pointer.to(new int[] { size() }),
-					Pointer.to(getRandomVariableCuda(randomVariable).realizations),
-					Pointer.to(realizations),
-					Pointer.to(result) }
-					);
+			final CUdeviceptr result;
+			synchronized(deviceMemoryPool) {
+				result = getCUdeviceptr((long)size());
+				callCudaFunction(cuDiv, new Pointer[] {
+						Pointer.to(new int[] { size() }),
+						Pointer.to(getRandomVariableCuda(randomVariable).realizations),
+						Pointer.to(realizations),
+						Pointer.to(result) }
+						);
 
+			}
 			return RandomVariableCuda.of(newTime, result, size());
 		}
 	}
@@ -1349,14 +1407,17 @@ public class RandomVariableCuda implements RandomVariable {
 		}
 		else if(isDeterministic()) return randomVariable.cap(valueIfNonStochastic);
 		else {
-			final CUdeviceptr result = getCUdeviceptr((long)size());
-			callCudaFunction(cap, new Pointer[] {
-					Pointer.to(new int[] { size() }),
-					Pointer.to(realizations),
-					Pointer.to(((RandomVariableCuda)randomVariable).realizations),
-					Pointer.to(result) }
-					);
+			final CUdeviceptr result;
+			synchronized(deviceMemoryPool) {
+				result = getCUdeviceptr((long)size());
+				callCudaFunction(cap, new Pointer[] {
+						Pointer.to(new int[] { size() }),
+						Pointer.to(realizations),
+						Pointer.to(((RandomVariableCuda)randomVariable).realizations),
+						Pointer.to(result) }
+						);
 
+			}
 			return RandomVariableCuda.of(newTime, result, size());
 		}
 	}
@@ -1382,14 +1443,17 @@ public class RandomVariableCuda implements RandomVariable {
 			return this.floor(randomVariable.doubleValue());
 		}
 		else {
-			final CUdeviceptr result = getCUdeviceptr((long)size());
-			callCudaFunction(cuFloor, new Pointer[] {
-					Pointer.to(new int[] { size() }),
-					Pointer.to(realizations),
-					Pointer.to(((RandomVariableCuda)randomVariable).realizations),
-					Pointer.to(result) }
-					);
+			final CUdeviceptr result;
+			synchronized(deviceMemoryPool) {
+				result = getCUdeviceptr((long)size());
+				callCudaFunction(cuFloor, new Pointer[] {
+						Pointer.to(new int[] { size() }),
+						Pointer.to(realizations),
+						Pointer.to(((RandomVariableCuda)randomVariable).realizations),
+						Pointer.to(result) }
+						);
 
+			}
 			return RandomVariableCuda.of(newTime, result, size());
 		}
 	}
@@ -1410,15 +1474,18 @@ public class RandomVariableCuda implements RandomVariable {
 		else if(isDeterministic() && !rate.isDeterministic())
 			return getRandomVariableCuda(rate.mult(periodLength).add(1.0).mult(valueIfNonStochastic));
 		else {
-			final CUdeviceptr result = getCUdeviceptr((long)size());
-			callCudaFunction(accrue, new Pointer[] {
-					Pointer.to(new int[] { size() }),
-					Pointer.to(realizations),
-					Pointer.to(((RandomVariableCuda)rate).realizations),
-					Pointer.to(new float[] { (float)periodLength }),
-					Pointer.to(result) }
-					);
+			final CUdeviceptr result;
+			synchronized(deviceMemoryPool) {
+				result = getCUdeviceptr((long)size());
+				callCudaFunction(accrue, new Pointer[] {
+						Pointer.to(new int[] { size() }),
+						Pointer.to(realizations),
+						Pointer.to(((RandomVariableCuda)rate).realizations),
+						Pointer.to(new float[] { (float)periodLength }),
+						Pointer.to(result) }
+						);
 
+			}
 			return RandomVariableCuda.of(newTime, result, size());
 		}
 	}
@@ -1441,15 +1508,18 @@ public class RandomVariableCuda implements RandomVariable {
 			return ((RandomVariableCuda)getRandomVariableCuda(rate.mult(periodLength).add(1.0)).vid(valueIfNonStochastic));
 		}
 		else {
-			final CUdeviceptr result = getCUdeviceptr((long)size());
-			callCudaFunction(discount, new Pointer[] {
-					Pointer.to(new int[] { size() }),
-					Pointer.to(realizations),
-					Pointer.to(((RandomVariableCuda)rate).realizations),
-					Pointer.to(new float[] { (float)periodLength }),
-					Pointer.to(result) }
-					);
+			final CUdeviceptr result;
+			synchronized(deviceMemoryPool) {
+				result = getCUdeviceptr((long)size());
+				callCudaFunction(discount, new Pointer[] {
+						Pointer.to(new int[] { size() }),
+						Pointer.to(realizations),
+						Pointer.to(((RandomVariableCuda)rate).realizations),
+						Pointer.to(new float[] { (float)periodLength }),
+						Pointer.to(result) }
+						);
 
+			}
 			return RandomVariableCuda.of(newTime, result, size());
 		}
 	}
@@ -1479,14 +1549,17 @@ public class RandomVariableCuda implements RandomVariable {
 			return this.add(factor1.doubleValue() * factor2);
 		}
 		else if(!isDeterministic() && !factor1.isDeterministic()) {
-			final CUdeviceptr result = getCUdeviceptr((long)size());
-			callCudaFunction(addProduct_vs, new Pointer[] {
-					Pointer.to(new int[] { size() }),
-					Pointer.to(realizations),
-					Pointer.to(((RandomVariableCuda)factor1).realizations),
-					Pointer.to(new float[] { (float)factor2 }),
-					Pointer.to(result) }
-					);
+			final CUdeviceptr result;
+			synchronized(deviceMemoryPool) {
+				result = getCUdeviceptr((long)size());
+				callCudaFunction(addProduct_vs, new Pointer[] {
+						Pointer.to(new int[] { size() }),
+						Pointer.to(realizations),
+						Pointer.to(((RandomVariableCuda)factor1).realizations),
+						Pointer.to(new float[] { (float)factor2 }),
+						Pointer.to(result) }
+						);
+			}
 			return RandomVariableCuda.of(newTime, result, size());
 		} else
 			return this.add(factor1.mult(factor2));
@@ -1516,15 +1589,18 @@ public class RandomVariableCuda implements RandomVariable {
 			return this.addProduct(factor2, factor1.doubleValue());
 		}
 		else if(!isDeterministic() && !factor1.isDeterministic() && !factor2.isDeterministic()) {
-			final CUdeviceptr result = getCUdeviceptr((long)size());
-			callCudaFunction(addProduct, new Pointer[] {
-					Pointer.to(new int[] { size() }),
-					Pointer.to(realizations),
-					Pointer.to(((RandomVariableCuda)factor1).realizations),
-					Pointer.to(((RandomVariableCuda)factor2).realizations),
-					Pointer.to(result) }
-					);
+			final CUdeviceptr result;
+			synchronized(deviceMemoryPool) {
+				result = getCUdeviceptr((long)size());
+				callCudaFunction(addProduct, new Pointer[] {
+						Pointer.to(new int[] { size() }),
+						Pointer.to(realizations),
+						Pointer.to(((RandomVariableCuda)factor1).realizations),
+						Pointer.to(((RandomVariableCuda)factor2).realizations),
+						Pointer.to(result) }
+						);
 
+			}
 			return RandomVariableCuda.of(newTime, result, size());
 		} else
 			return this.add(factor1.mult(factor2));
