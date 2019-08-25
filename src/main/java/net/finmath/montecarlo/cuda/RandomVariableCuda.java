@@ -73,7 +73,7 @@ public class RandomVariableCuda implements RandomVariable {
 		private final static float	vectorsRecyclerPercentageFreeToWaitForGC	= 0.05f;		// should be set by monitoring GPU mem
 		private final static long	vectorsRecyclerMaxTimeOutMillis			= 300;
 
-		// Thread to collect weak references - will be worked on for a futre version.
+		// Thread to collect weak references - will be worked on for a future version.
 		static {
 			new Thread(new Runnable() {
 				@Override
@@ -81,7 +81,7 @@ public class RandomVariableCuda implements RandomVariable {
 					while(true) {
 						System.gc();
 						try {
-							Thread.sleep(10);
+							Thread.sleep(1000);
 						} catch (InterruptedException e) {
 							// TODO Auto-generated catch block
 							e.printStackTrace();
