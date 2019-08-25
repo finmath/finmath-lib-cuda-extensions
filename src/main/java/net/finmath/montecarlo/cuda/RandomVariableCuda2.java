@@ -253,53 +253,53 @@ public class RandomVariableCuda2 implements RandomVariable {
 		CUdeviceptr cuDevicePtr = null;
 		synchronized (vectorsInUseReferenceMap) {
 			if(false) {
-			// Check for object to recycle
-			ReferenceQueue<RandomVariableCuda2> vectorsToRecycleReferenceQueue = vectorsToRecycleReferenceQueueMap.get(new Integer((int)size));
-			if(vectorsToRecycleReferenceQueue == null) {
-				vectorsToRecycleReferenceQueueMap.put(new Integer((int)size), vectorsToRecycleReferenceQueue = new ReferenceQueue<RandomVariableCuda2>());
-			}
-			Reference<? extends RandomVariableCuda2> reference = vectorsToRecycleReferenceQueue.poll();
-			if(reference != null) {
-				cuDevicePtr = vectorsInUseReferenceMap.remove(reference);
-				logger.fine("Recycling device pointer " + cuDevicePtr + " from " + reference);
-				return cuDevicePtr;
-			}
+				// Check for object to recycle
+				ReferenceQueue<RandomVariableCuda2> vectorsToRecycleReferenceQueue = vectorsToRecycleReferenceQueueMap.get(new Integer((int)size));
+				if(vectorsToRecycleReferenceQueue == null) {
+					vectorsToRecycleReferenceQueueMap.put(new Integer((int)size), vectorsToRecycleReferenceQueue = new ReferenceQueue<RandomVariableCuda2>());
+				}
+				Reference<? extends RandomVariableCuda2> reference = vectorsToRecycleReferenceQueue.poll();
+				if(reference != null) {
+					cuDevicePtr = vectorsInUseReferenceMap.remove(reference);
+					logger.fine("Recycling device pointer " + cuDevicePtr + " from " + reference);
+					return cuDevicePtr;
+				}
 
-			float deviceFreeMemPercentage = getDeviceFreeMemPercentage();
-			// No pointer found, try GC if we are above a critical level
-			if(reference == null && deviceFreeMemPercentage < vectorsRecyclerPercentageFreeToStartGC) {
-				try {
-					System.gc();
-					reference = vectorsToRecycleReferenceQueue.remove(1);
-				} catch (IllegalArgumentException | InterruptedException e) {}
-			}
-
-			// Wait for GC
-			if(reference == null && deviceFreeMemPercentage < vectorsRecyclerPercentageFreeToWaitForGC) {
-
-				/*
-				 * Try to obtain a reference after GC, retry with waits for 1 ms, 10 ms, 100 ms, ...
-				 */
-				System.gc();
-				long timeOut = 1;
-				while(reference == null && timeOut < vectorsRecyclerMaxTimeOutMillis) {
+				float deviceFreeMemPercentage = getDeviceFreeMemPercentage();
+				// No pointer found, try GC if we are above a critical level
+				if(reference == null && deviceFreeMemPercentage < vectorsRecyclerPercentageFreeToStartGC) {
 					try {
-						//					System.err.println("Wait" + timeOut);
-						reference = vectorsToRecycleReferenceQueue.remove(timeOut);
-						timeOut *= 10;
+						System.gc();
+						reference = vectorsToRecycleReferenceQueue.remove(1);
 					} catch (IllegalArgumentException | InterruptedException e) {}
 				}
 
-				// Still no pointer found for requested size, consider cleaning all (also other sizes)
-				if(reference == null) {
-					clean();
-				}
-			}
+				// Wait for GC
+				if(reference == null && deviceFreeMemPercentage < vectorsRecyclerPercentageFreeToWaitForGC) {
 
-			if(reference != null) {
-				logger.fine("Recycling device pointer " + cuDevicePtr + " from " + reference);
-				cuDevicePtr = vectorsInUseReferenceMap.remove(reference);
-			}
+					/*
+					 * Try to obtain a reference after GC, retry with waits for 1 ms, 10 ms, 100 ms, ...
+					 */
+					System.gc();
+					long timeOut = 1;
+					while(reference == null && timeOut < vectorsRecyclerMaxTimeOutMillis) {
+						try {
+							//					System.err.println("Wait" + timeOut);
+							reference = vectorsToRecycleReferenceQueue.remove(timeOut);
+							timeOut *= 10;
+						} catch (IllegalArgumentException | InterruptedException e) {}
+					}
+
+					// Still no pointer found for requested size, consider cleaning all (also other sizes)
+					if(reference == null) {
+						clean();
+					}
+				}
+
+				if(reference != null) {
+					logger.fine("Recycling device pointer " + cuDevicePtr + " from " + reference);
+					cuDevicePtr = vectorsInUseReferenceMap.remove(reference);
+				}
 			}
 
 			if(cuDevicePtr != null) return cuDevicePtr;
@@ -719,11 +719,10 @@ public class RandomVariableCuda2 implements RandomVariable {
 
 	@Override
 	public Double doubleValue() {
-		if(isDeterministic()) {
+		if(isDeterministic())
 			return valueIfNonStochastic;
-		} else {
+		else
 			throw new UnsupportedOperationException("The random variable is non-deterministic");
-		}
 	}
 
 	@Override
@@ -1003,10 +1002,9 @@ public class RandomVariableCuda2 implements RandomVariable {
 
 	@Override
 	public RandomVariable add(RandomVariable randomVariable) {
-		if(randomVariable.getTypePriority() > this.getTypePriority()) {
+		if(randomVariable.getTypePriority() > this.getTypePriority())
 			// Check type priority
 			return randomVariable.add(this);
-		}
 
 		// Set time of this random variable to maximum of time with respect to which measurability is known.
 		double newTime = Math.max(time, randomVariable.getFiltrationTime());
@@ -1025,9 +1023,8 @@ public class RandomVariableCuda2 implements RandomVariable {
 
 			return new RandomVariableCuda2(time, result, size());
 		}
-		else if(randomVariable.isDeterministic()) {
+		else if(randomVariable.isDeterministic())
 			return this.add(randomVariable.get(0));
-		}
 		else {
 			CUdeviceptr result = callCudaFunction(add, new Pointer[] {
 					Pointer.to(new int[] { size() }),
@@ -1042,10 +1039,9 @@ public class RandomVariableCuda2 implements RandomVariable {
 
 	@Override
 	public RandomVariable sub(RandomVariable randomVariable) {
-		if(randomVariable.getTypePriority() > this.getTypePriority()) {
+		if(randomVariable.getTypePriority() > this.getTypePriority())
 			// Check type priority
 			return randomVariable.bus(this);
-		}
 
 		// Set time of this random variable to maximum of time with respect to which measurability is known.
 		double newTime = Math.max(time, randomVariable.getFiltrationTime());
@@ -1078,10 +1074,9 @@ public class RandomVariableCuda2 implements RandomVariable {
 
 	@Override
 	public RandomVariable bus(RandomVariable randomVariable) {
-		if(randomVariable.getTypePriority() > this.getTypePriority()) {
+		if(randomVariable.getTypePriority() > this.getTypePriority())
 			// Check type priority
 			return randomVariable.sub(this);
-		}
 
 		// @TODO Add native cuda implementation here
 		return this.sub(randomVariable).mult(-1.0);
@@ -1089,10 +1084,9 @@ public class RandomVariableCuda2 implements RandomVariable {
 
 	@Override
 	public RandomVariable mult(RandomVariable randomVariable) {
-		if(randomVariable.getTypePriority() > this.getTypePriority()) {
+		if(randomVariable.getTypePriority() > this.getTypePriority())
 			// Check type priority
 			return randomVariable.mult(this);
-		}
 
 		// Set time of this random variable to maximum of time with respect to which measurability is known.
 		double newTime = Math.max(time, randomVariable.getFiltrationTime());
@@ -1101,9 +1095,8 @@ public class RandomVariableCuda2 implements RandomVariable {
 			double newValueIfNonStochastic = valueIfNonStochastic * randomVariable.get(0);
 			return new RandomVariableCuda2(newTime, newValueIfNonStochastic);
 		}
-		else if(!isDeterministic() && randomVariable.isDeterministic()) {
-			return this.mult(randomVariable.get(0));			
-		}
+		else if(!isDeterministic() && randomVariable.isDeterministic())
+			return this.mult(randomVariable.get(0));
 		else if(isDeterministic() && !randomVariable.isDeterministic()) {
 			CUdeviceptr result = callCudaFunction(multScalar, new Pointer[] {
 					Pointer.to(new int[] { size() }),
@@ -1128,10 +1121,9 @@ public class RandomVariableCuda2 implements RandomVariable {
 
 	@Override
 	public RandomVariable div(RandomVariable randomVariable) {
-		if(randomVariable.getTypePriority() > this.getTypePriority()) {
+		if(randomVariable.getTypePriority() > this.getTypePriority())
 			// Check type priority
 			return randomVariable.vid(this);
-		}
 
 		// Set time of this random variable to maximum of time with respect to which measurability is known.
 		double newTime = Math.max(time, randomVariable.getFiltrationTime());
@@ -1166,10 +1158,9 @@ public class RandomVariableCuda2 implements RandomVariable {
 
 	@Override
 	public RandomVariable vid(RandomVariable randomVariable) {
-		if(randomVariable.getTypePriority() > this.getTypePriority()) {
+		if(randomVariable.getTypePriority() > this.getTypePriority())
 			// Check type priority
 			return randomVariable.div(this);
-		}
 
 		// TODO write native cuda kernel
 		return this.div(randomVariable).invert();
@@ -1177,10 +1168,9 @@ public class RandomVariableCuda2 implements RandomVariable {
 
 	@Override
 	public RandomVariable cap(RandomVariable randomVariable) {
-		if(randomVariable.getTypePriority() > this.getTypePriority()) {
+		if(randomVariable.getTypePriority() > this.getTypePriority())
 			// Check type priority
 			return randomVariable.cap(this);
-		}
 
 		// Set time of this random variable to maximum of time with respect to which measurability is known.
 		double newTime = Math.max(time, randomVariable.getFiltrationTime());
@@ -1189,9 +1179,8 @@ public class RandomVariableCuda2 implements RandomVariable {
 			double newValueIfNonStochastic = Math.min(valueIfNonStochastic, randomVariable.get(0));
 			return new RandomVariableCuda2(newTime, newValueIfNonStochastic);
 		}
-		else if(isDeterministic()) {
+		else if(isDeterministic())
 			return getRandomVariableCuda(randomVariable.cap(this));
-		}
 		else {
 			CUdeviceptr result = callCudaFunction(cap, new Pointer[] {
 					Pointer.to(new int[] { size() }),
@@ -1206,10 +1195,9 @@ public class RandomVariableCuda2 implements RandomVariable {
 
 	@Override
 	public RandomVariable floor(RandomVariable randomVariable) {
-		if(randomVariable.getTypePriority() > this.getTypePriority()) {
+		if(randomVariable.getTypePriority() > this.getTypePriority())
 			// Check type priority
 			return randomVariable.floor(this);
-		}
 
 		// Set time of this random variable to maximum of time with respect to which measurability is known.
 		double newTime = Math.max(time, randomVariable.getFiltrationTime());
@@ -1218,9 +1206,8 @@ public class RandomVariableCuda2 implements RandomVariable {
 			double newValueIfNonStochastic = Math.max(valueIfNonStochastic, randomVariable.get(0));
 			return new RandomVariableCuda2(newTime, newValueIfNonStochastic);
 		}
-		else if(isDeterministic()) {
+		else if(isDeterministic())
 			return getRandomVariableCuda(randomVariable.floor(this));
-		}
 		else {
 			CUdeviceptr result = callCudaFunction(cuFloor, new Pointer[] {
 					Pointer.to(new int[] { size() }),
@@ -1235,10 +1222,9 @@ public class RandomVariableCuda2 implements RandomVariable {
 
 	@Override
 	public RandomVariable accrue(RandomVariable rate, double periodLength) {
-		if(rate.getTypePriority() > this.getTypePriority()) {
+		if(rate.getTypePriority() > this.getTypePriority())
 			// Check type priority
 			return rate.mult(periodLength).add(1.0).mult(this);
-		}
 
 		// Set time of this random variable to maximum of time with respect to which measurability is known.
 		double newTime = Math.max(time, rate.getFiltrationTime());
@@ -1270,10 +1256,9 @@ public class RandomVariableCuda2 implements RandomVariable {
 
 	@Override
 	public RandomVariable discount(RandomVariable rate, double periodLength) {
-		if(rate.getTypePriority() > this.getTypePriority()) {
+		if(rate.getTypePriority() > this.getTypePriority())
 			// Check type priority
 			return rate.mult(periodLength).add(1.0).invert().mult(this);
-		}
 
 		// Set time of this random variable to maximum of time with respect to which measurability is known.
 		double newTime = Math.max(time, rate.getFiltrationTime());
@@ -1329,10 +1314,9 @@ public class RandomVariableCuda2 implements RandomVariable {
 
 	@Override
 	public RandomVariable addProduct(RandomVariable factor1, double factor2) {
-		if(factor1.getTypePriority() > this.getTypePriority()) {
+		if(factor1.getTypePriority() > this.getTypePriority())
 			// Check type priority
 			return factor1.mult(factor2).add(this);
-		}
 
 		// Set time of this random variable to maximum of time with respect to which measurability is known.
 		double newTime = Math.max(time, factor1.getFiltrationTime());
@@ -1354,10 +1338,9 @@ public class RandomVariableCuda2 implements RandomVariable {
 
 	@Override
 	public RandomVariable addProduct(RandomVariable factor1, RandomVariable factor2) {
-		if(factor1.getTypePriority() > this.getTypePriority() || factor2.getTypePriority() > this.getTypePriority()) {
+		if(factor1.getTypePriority() > this.getTypePriority() || factor2.getTypePriority() > this.getTypePriority())
 			// Check type priority
 			return factor1.mult(factor2).add(this);
-		}
 
 		// Set time of this random variable to maximum of time with respect to which measurability is known.
 		double newTime = Math.max(Math.max(time, factor1.getFiltrationTime()), factor2.getFiltrationTime());
@@ -1383,10 +1366,9 @@ public class RandomVariableCuda2 implements RandomVariable {
 
 	@Override
 	public RandomVariable addRatio(RandomVariable numerator, RandomVariable denominator) {
-		if(numerator.getTypePriority() > this.getTypePriority() || denominator.getTypePriority() > this.getTypePriority()) {
+		if(numerator.getTypePriority() > this.getTypePriority() || denominator.getTypePriority() > this.getTypePriority())
 			// Check type priority
 			return numerator.div(denominator).add(this);
-		}
 
 		// TODO Implement a kernel here
 		return this.add(numerator.div(denominator));
@@ -1394,10 +1376,9 @@ public class RandomVariableCuda2 implements RandomVariable {
 
 	@Override
 	public RandomVariable subRatio(RandomVariable numerator, RandomVariable denominator) {
-		if(numerator.getTypePriority() > this.getTypePriority() || denominator.getTypePriority() > this.getTypePriority()) {
+		if(numerator.getTypePriority() > this.getTypePriority() || denominator.getTypePriority() > this.getTypePriority())
 			// Check type priority
 			return numerator.div(denominator).mult(-1).add(this);
-		}
 
 		// TODO Implement a kernel here
 		return this.sub(numerator.div(denominator));

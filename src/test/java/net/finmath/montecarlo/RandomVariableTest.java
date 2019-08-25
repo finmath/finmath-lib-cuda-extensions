@@ -9,7 +9,6 @@ import java.util.Arrays;
 import java.util.Random;
 import java.util.function.BiFunction;
 import java.util.function.Consumer;
-import java.util.function.Function;
 
 import org.junit.Assert;
 import org.junit.Test;
@@ -138,7 +137,9 @@ public class RandomVariableTest {
 		for(int testRun=0; testRun<10; testRun++) {
 			int numberOfPath = 100000;
 			final double[] realizations = new double[numberOfPath];
-			for(int i=0; i<numberOfPath; i++) realizations[i]= random.nextDouble();
+			for(int i=0; i<numberOfPath; i++) {
+				realizations[i]= random.nextDouble();
+			}
 
 			AbstractRandomVariableFactory[] rvf = { new RandomVariableFloatFactory(), new RandomVariableCudaFactory() };
 
@@ -156,7 +157,7 @@ public class RandomVariableTest {
 				else {
 					System.out.println(" - ok.");
 				}
-				Assert.assertEquals("test", hash.apply(rvf[0],f) , hash.apply(rvf[1],f));			
+				Assert.assertEquals("test", hash.apply(rvf[0],f) , hash.apply(rvf[1],f));
 			};
 
 			System.out.print("Testing squared.");
@@ -293,6 +294,6 @@ public class RandomVariableTest {
 			test.accept((x,y) -> new Scalar(x.getAverage(x)));
 			test.accept((x,y) -> new Scalar(y.getAverage(y)));
 
-		}	
-	}	
+		}
+	}
 }

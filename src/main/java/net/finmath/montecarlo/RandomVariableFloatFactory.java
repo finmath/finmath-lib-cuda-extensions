@@ -6,7 +6,6 @@
 
 package net.finmath.montecarlo;
 
-import net.finmath.montecarlo.AbstractRandomVariableFactory;
 import net.finmath.stochastic.RandomVariable;
 
 /**
