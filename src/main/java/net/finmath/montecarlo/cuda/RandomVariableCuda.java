@@ -1585,6 +1585,8 @@ public class RandomVariableCuda implements RandomVariable {
 	private CUdeviceptr callCudaFunction(CUfunction function, Pointer[] arguments) {
 		synchronized (deviceMemoryPool) {
 			CUdeviceptr result = getCUdeviceptr(size());
+			arguments[arguments.length-1] = Pointer.to(result);
+
 			int blockSizeX = 256;
 			int gridSizeX = (int)Math.ceil((double)size() / blockSizeX);
 			callCudaFunction(function, arguments, gridSizeX, blockSizeX, 0);
