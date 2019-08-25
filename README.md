@@ -1,7 +1,7 @@
 # finmath lib cuda extensions
 
 - - - -
-** Enabling finmath lib with cuda via jcuda. - Running finmath lib models on a GPU **
+**Enabling finmath lib with Cuda via jCuda. - Running finmath lib models on a GPU**
 - - - -
 
 The finmath lib cuda extensions provide a Cuda implementation of the finmath lib interfaces `RandomVariable` and `BrownianMotion` compatible with finmath lib 4.0.12 or later.
@@ -17,6 +17,15 @@ The `RandomVariableCudaFactory` can be combined with AAD wrappers, to allow algo
 ### BrownianMotion ###
 
 In addition, objects of type `BrownianMotion` are also taking the role of a factory for objects of type `RandomVariable`. Thus, injecting the `BrownianMotionCuda` into classes consuming a `BrownianMotion` will result in finmath-lib models performing their calculations on the GPU - seamlessly.
+
+## Distribution
+
+finmath-lib-cuda-extensions is distributed through the central Maven repository. It's coordinates are:
+
+    <groupId>net.finmath</groupId>
+    <artifactId>finmath-lib-cuda-extensions</artifactId>
+    <version>4.0.3</version>
+
 
 ## Example
 
