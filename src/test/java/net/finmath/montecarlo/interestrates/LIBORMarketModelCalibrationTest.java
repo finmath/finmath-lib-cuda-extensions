@@ -59,7 +59,7 @@ public class LIBORMarketModelCalibrationTest {
 		});
 	}
 
-	private final int numberOfPaths		= 50000;
+	private final int numberOfPaths		= 100000;
 	private final int numberOfFactors	= 5;
 	private static final int maxIterations = 30;
 
