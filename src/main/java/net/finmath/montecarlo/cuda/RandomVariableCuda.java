@@ -74,6 +74,7 @@ public class RandomVariableCuda implements RandomVariable {
 		private final static long	vectorsRecyclerMaxTimeOutMillis			= 300;
 
 		// Thread to collect weak references - will be worked on for a future version.
+		/* *
 		static {
 			new Thread(new Runnable() {
 				@Override
@@ -90,6 +91,7 @@ public class RandomVariableCuda implements RandomVariable {
 				}
 			}).start();
 		}
+		* */
 
 		public synchronized void manage(CUdeviceptr cuDevicePtr, RandomVariableCuda wrapper) {
 			if(logger.isLoggable(Level.FINEST)) logger.finest("Managing" + cuDevicePtr + " with " + wrapper + ". Size of reference map " + vectorsInUseReferenceMap.size());
