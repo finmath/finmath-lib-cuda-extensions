@@ -1238,7 +1238,7 @@ public class RandomVariableCuda implements RandomVariable {
 		else if(randomVariable.isDeterministic())
 			return this.floor(randomVariable.doubleValue());
 		else {
-			DevicePointerReference result = callCudaFunctionv2s0(floor, size, realizations, getRandomVariableCuda(randomVariable).realizations);
+			DevicePointerReference result = callCudaFunctionv2s0(cuFloor, size, realizations, getRandomVariableCuda(randomVariable).realizations);
 			return RandomVariableCuda.of(newTime, result, size());
 		}
 	}
