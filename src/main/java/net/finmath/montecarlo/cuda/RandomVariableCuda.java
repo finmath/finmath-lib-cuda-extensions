@@ -152,21 +152,22 @@ public class RandomVariableCuda implements RandomVariable {
 			}
 			else {
 				float deviceFreeMemPercentage = getDeviceFreeMemPercentage();
-				if(logger.isLoggable(Level.FINEST)) {
-					logger.finest("Device free memory " + deviceFreeMemPercentage + "%");
-				}
 
 				// No pointer found, try GC if we are above a critical level
 				if(reference == null && deviceFreeMemPercentage < vectorsRecyclerPercentageFreeToStartGC) {
+					System.gc();
+
+					if(logger.isLoggable(Level.FINE)) {
+						logger.fine("Device free memory " + deviceFreeMemPercentage + "%");
+					}
+
 					try {
-						System.gc();
 						reference = vectorsToRecycleReferenceQueue.remove(1);
 					} catch (IllegalArgumentException | InterruptedException e) {}
 				}
 
 				// Wait for GC
 				if(reference == null && deviceFreeMemPercentage < vectorsRecyclerPercentageFreeToWaitForGC) {
-
 					/*
 					 * Try to obtain a reference after GC, retry with waits for 1 ms, 10 ms, 100 ms, ...
 					 */
