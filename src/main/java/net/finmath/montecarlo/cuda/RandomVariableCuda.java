@@ -102,7 +102,7 @@ public class RandomVariableCuda implements RandomVariable {
 		private final static Map<WeakReference<DevicePointerReference>, CUdeviceptr>	vectorsInUseReferenceMap			= new ConcurrentHashMap<WeakReference<DevicePointerReference>, CUdeviceptr>();
 		private final static float	vectorsRecyclerPercentageFreeToStartGC		= 0.10f;		// should be set by monitoring GPU mem
 		private final static float	vectorsRecyclerPercentageFreeToWaitForGC	= 0.05f;		// should be set by monitoring GPU mem
-		private final static long	vectorsRecyclerMaxTimeOutMillis			= 300;
+		private final static long	vectorsRecyclerMaxTimeOutMillis			= 1000;
 
 		// Thread to collect weak references - will be worked on for a future version.
 		static {
