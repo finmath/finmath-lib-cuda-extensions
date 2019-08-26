@@ -141,12 +141,14 @@ public class RandomVariableCuda implements RandomVariable {
 			try {
 				System.gc();
 				Reference<? extends DevicePointerReference> devicePointerReference = devicePointersToRecycle.remove(timeOut);
-				DevicePointer devicePointer =  vectorsInUseReferenceMap.remove(devicePointerReference);
-				Queue<DevicePointer> devicePointerToRecycleForGivenSize = vectorsToRecycleReferenceQueueMap.get((int)devicePointer.size);
-				if(devicePointerToRecycleForGivenSize == null) {
-					vectorsToRecycleReferenceQueueMap.put((int)devicePointer.size, devicePointerToRecycleForGivenSize = new ConcurrentLinkedQueue<DevicePointer>());
+				if(devicePointerReference != null) {
+					DevicePointer devicePointer =  vectorsInUseReferenceMap.remove(devicePointerReference);
+					Queue<DevicePointer> devicePointerToRecycleForGivenSize = vectorsToRecycleReferenceQueueMap.get((int)devicePointer.size);
+					if(devicePointerToRecycleForGivenSize == null) {
+						vectorsToRecycleReferenceQueueMap.put((int)devicePointer.size, devicePointerToRecycleForGivenSize = new ConcurrentLinkedQueue<DevicePointer>());
+					}
+					devicePointerToRecycleForGivenSize.add(devicePointer);
 				}
-				devicePointerToRecycleForGivenSize.add(devicePointer);
 			} catch (IllegalArgumentException | InterruptedException e1) {
 				// TODO Auto-generated catch block
 				e1.printStackTrace();
@@ -270,7 +272,7 @@ public class RandomVariableCuda implements RandomVariable {
 				logger.severe("Failed to allocate device vector with size=" + size);
 				throw new OutOfMemoryError("Failed to allocate device vector with size=" + size);
 			}
-			
+
 			DevicePointerReference devicePointerReference = new DevicePointerReference(devicePointer.devicePointer, size);
 			manage(devicePointerReference);
 			return devicePointerReference;
