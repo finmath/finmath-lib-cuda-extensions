@@ -54,8 +54,8 @@ public class LIBORMarketModelCalibrationTest {
 	public static Collection<Object[]> data() {
 		return Arrays.asList(new Object[][] {
 			{ ProcessingUnit.GPU },
-			{ ProcessingUnit.CPU },
 			{ ProcessingUnit.GPU_WITH_CPU_RANDOM },
+			{ ProcessingUnit.CPU },
 		});
 	}
 
