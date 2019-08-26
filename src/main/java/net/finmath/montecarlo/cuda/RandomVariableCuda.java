@@ -1304,8 +1304,9 @@ public class RandomVariableCuda implements RandomVariable {
 		// Set time of this random variable to maximum of time with respect to which measurability is known.
 		double newTime = Math.max(time, factor1.getFiltrationTime());
 
-		if(factor1.isDeterministic())
+		if(factor1.isDeterministic()) {
 			return this.add(factor1.doubleValue() * factor2);
+		}
 		else if(!isDeterministic() && !factor1.isDeterministic()) {
 			DevicePointerReference result = callCudaFunctionv2s1(addProduct_vs, size, realizations, getRandomVariableCuda(factor1).realizations, factor2);
 			return RandomVariableCuda.of(newTime, result, size());
@@ -1469,7 +1470,8 @@ public class RandomVariableCuda implements RandomVariable {
 		final Pointer kernelParameters = Pointer.to(arguments);
 
 		deviceExecutor.submit(new Runnable() { public void run() {
-			cuCtxSynchronize();
+			//cuCtxSynchronize();
+			// Launching on the same stream (default stream)
 			cuLaunchKernel(function,
 					gridSizeX,  1, 1,      // Grid dimension
 					blockSizeX, 1, 1,      // Block dimension
