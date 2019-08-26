@@ -55,6 +55,7 @@ public class LIBORMarketModelCalibrationTest {
 		return Arrays.asList(new Object[][] {
 			{ ProcessingUnit.GPU },
 			{ ProcessingUnit.CPU },
+			{ ProcessingUnit.GPU_WITH_CPU_RANDOM },
 		});
 	}
 
@@ -69,7 +70,8 @@ public class LIBORMarketModelCalibrationTest {
 
 	private enum ProcessingUnit {
 		CPU,
-		GPU
+		GPU,
+		GPU_WITH_CPU_RANDOM
 	}
 
 	private ProcessingUnit processingUnit;
@@ -193,13 +195,15 @@ public class LIBORMarketModelCalibrationTest {
 		switch(processingUnit) {
 		case CPU:
 			randomVariableFactory = new RandomVariableFloatFactory();
-			//			brownianMotion = new net.finmath.montecarlo.cuda.alternative.BrownianMotionCudaWithRandomVariableCuda(timeDiscretizationFromArray, numberOfFactors + 1, numberOfPaths, 31415 /* seed */);
 			brownianMotion = new net.finmath.montecarlo.BrownianMotionLazyInit(timeDiscretizationFromArray, numberOfFactors + 1, numberOfPaths, 31415 /* seed */, randomVariableFactory);
+			break;
+		case GPU_WITH_CPU_RANDOM:
+			randomVariableFactory = new RandomVariableCudaFactory();
+			brownianMotion = new net.finmath.montecarlo.cuda.alternative.BrownianMotionCudaWithRandomVariableCuda(timeDiscretizationFromArray, numberOfFactors + 1, numberOfPaths, 31415 /* seed */);
 			break;
 		case GPU:
 		default:
 			randomVariableFactory = new RandomVariableCudaFactory();
-			//			brownianMotion = new net.finmath.montecarlo.cuda.alternative.BrownianMotionCudaWithRandomVariableCuda(timeDiscretizationFromArray, numberOfFactors + 1, numberOfPaths, 31415 /* seed */);
 			brownianMotion = new net.finmath.montecarlo.BrownianMotionLazyInit(timeDiscretizationFromArray, numberOfFactors + 1, numberOfPaths, 31415 /* seed */, randomVariableFactory);
 			break;
 		}
