@@ -122,7 +122,7 @@ public class RandomVariableCuda implements RandomVariable {
 			}).start();
 		}
 
-		public synchronized void manage(DevicePointerReference wrapper, long size) {
+		private synchronized void manage(DevicePointerReference wrapper, long size) {
 			CUdeviceptr cuDevicePtr = wrapper.get();
 			if(logger.isLoggable(Level.FINEST)) {
 				logger.finest("Managing" + cuDevicePtr + " with " + wrapper + ". Size of reference map " + vectorsInUseReferenceMap.size());
@@ -141,7 +141,7 @@ public class RandomVariableCuda implements RandomVariable {
 			}
 		}
 
-		public synchronized CUdeviceptr getCUdeviceptr(final long size) {
+		public synchronized DevicePointerReference getCUdeviceptr(final long size) {
 			if(logger.isLoggable(Level.FINEST)) {
 				StringBuilder stringBuilder = new StringBuilder();
 				stringBuilder.append("Memory pool stats: ");
@@ -207,8 +207,7 @@ public class RandomVariableCuda implements RandomVariable {
 				}
 			}
 
-			if(cuDevicePtr != null) return cuDevicePtr;
-
+			if(cuDevicePtr == null)  {
 			// Still no pointer found, create new one
 			try {
 				cuDevicePtr =
@@ -238,8 +237,11 @@ public class RandomVariableCuda implements RandomVariable {
 				logger.severe("Failed to allocate device vector with size=" + size);
 				throw new OutOfMemoryError("Failed to allocate device vector with size=" + size);
 			}
-
-			return cuDevicePtr;
+			}
+			
+			DevicePointerReference devicePointerReference = new DevicePointerReference(cuDevicePtr);
+			manage(devicePointerReference, size);
+			return devicePointerReference;
 		}
 
 		public synchronized void clean() {
@@ -265,7 +267,6 @@ public class RandomVariableCuda implements RandomVariable {
 	}
 
 	private static DeviceMemoryPool deviceMemoryPool = new DeviceMemoryPool();
-
 
 	private static final long serialVersionUID = 7620120320663270600L;
 
@@ -443,10 +444,7 @@ public class RandomVariableCuda implements RandomVariable {
 
 
 	public static DevicePointerReference getCUdeviceptr(final long size) {
-		final CUdeviceptr cuDevicePtr = deviceMemoryPool.getCUdeviceptr(size);
-		DevicePointerReference devicePointerReference = new DevicePointerReference(cuDevicePtr);
-		deviceMemoryPool.manage(devicePointerReference, size);
-		return devicePointerReference;
+		return deviceMemoryPool.getCUdeviceptr(size);
 	}
 
 	/**
@@ -458,20 +456,19 @@ public class RandomVariableCuda implements RandomVariable {
 	private static DevicePointerReference createCUdeviceptr(final float[] values) {
 		synchronized (deviceMemoryPool)
 		{
-			final CUdeviceptr cuDevicePtr = deviceMemoryPool.getCUdeviceptr(values.length);
+			final DevicePointerReference devicePointerReference = deviceMemoryPool.getCUdeviceptr(values.length);
 			try {
 				deviceExecutor.submit(new Runnable() { public void run() {
 					cuCtxSynchronize();
-					JCudaDriver.cuMemcpyHtoD(cuDevicePtr, Pointer.to(values), (long)values.length * Sizeof.FLOAT);
+					JCudaDriver.cuMemcpyHtoD(devicePointerReference.get(), Pointer.to(values), (long)values.length * Sizeof.FLOAT);
 					cuCtxSynchronize();
 				}}).get();
 			} catch (InterruptedException | ExecutionException e) { throw new RuntimeException(e.getCause()); }
 
-			DevicePointerReference devicePointerReference = new DevicePointerReference(cuDevicePtr);
-			deviceMemoryPool.manage(devicePointerReference, values.length);
 			return devicePointerReference;
 		}
 	}
+
 	public static void clean() {
 		deviceMemoryPool.clean();
 	}
