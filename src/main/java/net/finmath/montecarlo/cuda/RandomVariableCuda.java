@@ -238,7 +238,7 @@ public class RandomVariableCuda implements RandomVariable {
 				}
 			}
 
-			if(devicePointer != null) {
+			if(devicePointer == null) {
 				// No pointer found, create new one
 				CUdeviceptr cuDevicePtr = null;
 				try {
