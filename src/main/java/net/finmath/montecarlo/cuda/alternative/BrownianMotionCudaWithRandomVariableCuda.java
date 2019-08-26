@@ -21,6 +21,7 @@ import net.finmath.montecarlo.AbstractRandomVariableFactory;
 import net.finmath.montecarlo.BrownianMotion;
 import net.finmath.montecarlo.RandomVariableFactory;
 import net.finmath.montecarlo.cuda.RandomVariableCuda;
+import net.finmath.montecarlo.cuda.RandomVariableCuda.DevicePointerRefence;
 import net.finmath.stochastic.RandomVariable;
 import net.finmath.time.TimeDiscretization;
 
@@ -170,7 +171,7 @@ public class BrownianMotionCudaWithRandomVariableCuda implements BrownianMotion,
 				// Generate n floats on device
 				CUdeviceptr realizations = RandomVariableCuda.getCUdeviceptr((long)numberOfPaths);
 				jcuda.jcurand.JCurand.curandGenerateNormal(generator, realizations, numberOfPaths, 0.0f /* mean */, sqrtOfTimeStep /* stddev */);
-				brownianIncrements[timeIndex][factor] = RandomVariableCuda.of(time, realizations, numberOfPaths);
+				brownianIncrements[timeIndex][factor] = RandomVariableCuda.of(time, new DevicePointerRefence(realizations), numberOfPaths);
 			}
 		}
 

@@ -67,7 +67,7 @@ import net.finmath.stochastic.RandomVariable;
  */
 public class RandomVariableCuda implements RandomVariable {
 
-	private static class DevicePointerRefence {
+	public static class DevicePointerRefence {
 		public CUdeviceptr devicePointer;
 
 		public DevicePointerRefence(CUdeviceptr devicePointer) {
