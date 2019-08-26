@@ -212,7 +212,7 @@ public class RandomVariableCuda implements RandomVariable {
 								return cuDevicePtr;
 							}}).get();
 				} catch (InterruptedException | ExecutionException e) {
-					logger.severe("Failed to allocate device vector with size=" + size);
+					logger.severe("Failed to allocate device vector with size=" + size + ". Cause: " + e.getCause());
 				}
 
 				if(cuDevicePtr == null) {
