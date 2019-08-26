@@ -1458,7 +1458,7 @@ public class RandomVariableCuda implements RandomVariable {
 	}
 
 	private void callCudaFunction(final CUfunction function, final Pointer[] arguments) {
-		final int blockSizeX = 512;
+		final int blockSizeX = 1024;
 		final int gridSizeX = (int)Math.ceil((double)size() / blockSizeX);
 		callCudaFunction(function, arguments, gridSizeX, blockSizeX, 0);
 	}
