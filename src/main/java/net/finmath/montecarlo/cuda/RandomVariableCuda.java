@@ -1654,8 +1654,7 @@ public class RandomVariableCuda implements RandomVariable {
 			// of pointers which point to the actual values.
 			final Pointer kernelParameters = Pointer.to(arguments);
 
-			try {
-				deviceExecutor.submit(new Runnable() { public void run() {
+			deviceExecutor.submit(new Runnable() { public void run() {
 					cuCtxSynchronize();
 					cuLaunchKernel(function,
 							gridSizeX,  1, 1,      // Grid dimension
@@ -1663,11 +1662,7 @@ public class RandomVariableCuda implements RandomVariable {
 							sharedMemorySize * Sizeof.FLOAT, null,               // Shared memory size and stream
 							kernelParameters, null // Kernel- and extra parameters
 							);
-				}}).get();
-			} catch (InterruptedException | ExecutionException e) {
-				e.printStackTrace();
-				throw new RuntimeException("Cuda calculation of " + function + " failed.");
-			}
+			}});
 		}
 	}
 }
