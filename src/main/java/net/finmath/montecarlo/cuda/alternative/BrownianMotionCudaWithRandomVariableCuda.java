@@ -13,7 +13,6 @@ import static jcuda.jcurand.curandRngType.CURAND_RNG_PSEUDO_MTGP32;
 import java.io.Serializable;
 
 import jcuda.LogLevel;
-import jcuda.driver.CUdeviceptr;
 import jcuda.jcurand.JCurand;
 import jcuda.jcurand.curandGenerator;
 import jcuda.runtime.JCuda;
@@ -78,11 +77,11 @@ public class BrownianMotionCudaWithRandomVariableCuda implements BrownianMotion,
 	 * @param randomVariableFactory Factory to be used to create random variable.
 	 */
 	public BrownianMotionCudaWithRandomVariableCuda(
-			TimeDiscretization timeDiscretization,
-			int numberOfFactors,
-			int numberOfPaths,
-			int seed,
-			AbstractRandomVariableFactory randomVariableFactory) {
+			final TimeDiscretization timeDiscretization,
+			final int numberOfFactors,
+			final int numberOfPaths,
+			final int seed,
+			final AbstractRandomVariableFactory randomVariableFactory) {
 		super();
 		this.timeDiscretization = timeDiscretization;
 		this.numberOfFactors	= numberOfFactors;
@@ -103,26 +102,26 @@ public class BrownianMotionCudaWithRandomVariableCuda implements BrownianMotion,
 	 * @param seed The seed of the random number generator.
 	 */
 	public BrownianMotionCudaWithRandomVariableCuda(
-			TimeDiscretization timeDiscretization,
-			int numberOfFactors,
-			int numberOfPaths,
-			int seed) {
+			final TimeDiscretization timeDiscretization,
+			final int numberOfFactors,
+			final int numberOfPaths,
+			final int seed) {
 		this(timeDiscretization, numberOfFactors, numberOfPaths, seed, new RandomVariableFactory());
 	}
 
 	@Override
-	public BrownianMotion getCloneWithModifiedSeed(int seed) {
+	public BrownianMotion getCloneWithModifiedSeed(final int seed) {
 		return new BrownianMotionCudaWithRandomVariableCuda(getTimeDiscretization(), getNumberOfFactors(), getNumberOfPaths(), seed);
 	}
 
 	@Override
-	public BrownianMotion getCloneWithModifiedTimeDiscretization(TimeDiscretization newTimeDiscretization) {
+	public BrownianMotion getCloneWithModifiedTimeDiscretization(final TimeDiscretization newTimeDiscretization) {
 		/// @TODO This can be improved: a complete recreation of the Brownian motion wouldn't be necessary!
 		return new BrownianMotionCudaWithRandomVariableCuda(newTimeDiscretization, getNumberOfFactors(), getNumberOfPaths(), getSeed());
 	}
 
 	@Override
-	public RandomVariable getBrownianIncrement(int timeIndex, int factor) {
+	public RandomVariable getBrownianIncrement(final int timeIndex, final int factor) {
 
 		// Thread safe lazy initialization
 		synchronized(brownianIncrementsLazyInitLock) {
@@ -149,9 +148,9 @@ public class BrownianMotionCudaWithRandomVariableCuda implements BrownianMotion,
 		JCuda.setLogLevel(LogLevel.LOG_DEBUG);
 
 		// Hack: It is important to init the context first. - Clean up.
-		RandomVariable rv = new RandomVariableCuda(0.0);
+		final RandomVariable rv = new RandomVariableCuda(0.0);
 
-		curandGenerator generator = new curandGenerator();
+		final curandGenerator generator = new curandGenerator();
 
 		// Create pseudo-random number generator
 		curandCreateGenerator(generator, CURAND_RNG_PSEUDO_MTGP32);
@@ -164,12 +163,12 @@ public class BrownianMotionCudaWithRandomVariableCuda implements BrownianMotion,
 
 		// Pre-calculate square roots of deltaT
 		for(int timeIndex=0; timeIndex<timeDiscretization.getNumberOfTimeSteps(); timeIndex++) {
-			double time = timeDiscretization.getTime(timeIndex+1);
-			float sqrtOfTimeStep = (float)Math.sqrt(timeDiscretization.getTimeStep(timeIndex));
+			final double time = timeDiscretization.getTime(timeIndex+1);
+			final float sqrtOfTimeStep = (float)Math.sqrt(timeDiscretization.getTimeStep(timeIndex));
 
 			for(int factor=0; factor<numberOfFactors; factor++) {
 				// Generate n floats on device
-				DevicePointerReference realizations = RandomVariableCuda.getCUdeviceptr((long)numberOfPaths);
+				final DevicePointerReference realizations = RandomVariableCuda.getCUdeviceptr((long)numberOfPaths);
 				jcuda.jcurand.JCurand.curandGenerateNormal(generator, realizations.get(), numberOfPaths, 0.0f /* mean */, sqrtOfTimeStep /* stddev */);
 				brownianIncrements[timeIndex][factor] = RandomVariableCuda.of(time, realizations, numberOfPaths);
 			}
@@ -195,7 +194,7 @@ public class BrownianMotionCudaWithRandomVariableCuda implements BrownianMotion,
 	}
 
 	@Override
-	public RandomVariable getRandomVariableForConstant(double value) {
+	public RandomVariable getRandomVariableForConstant(final double value) {
 		return new RandomVariableCuda(value);
 	}
 
@@ -215,11 +214,11 @@ public class BrownianMotionCudaWithRandomVariableCuda implements BrownianMotion,
 	}
 
 	@Override
-	public boolean equals(Object o) {
+	public boolean equals(final Object o) {
 		if (this == o) return true;
 		if (o == null || getClass() != o.getClass()) return false;
 
-		BrownianMotionCudaWithRandomVariableCuda that = (BrownianMotionCudaWithRandomVariableCuda) o;
+		final BrownianMotionCudaWithRandomVariableCuda that = (BrownianMotionCudaWithRandomVariableCuda) o;
 
 		if (numberOfFactors != that.numberOfFactors) return false;
 		if (numberOfPaths != that.numberOfPaths) return false;
@@ -230,7 +229,7 @@ public class BrownianMotionCudaWithRandomVariableCuda implements BrownianMotion,
 	}
 
 	@Override
-	public RandomVariable getIncrement(int timeIndex, int factor) {
+	public RandomVariable getIncrement(final int timeIndex, final int factor) {
 		return getBrownianIncrement(timeIndex, factor);
 	}
 

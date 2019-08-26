@@ -45,9 +45,9 @@ public class BrownianMotionTest {
 	static final DecimalFormat formatterSci4	= new DecimalFormat(" 0.0000E00;-0.0000E00");
 	static final DecimalFormat formatterSci1	= new DecimalFormat(" 0E00;-0.E00");
 
-	private String testCase;
+	private final String testCase;
 
-	public BrownianMotionTest(String testCase) {
+	public BrownianMotionTest(final String testCase) {
 		this.testCase = testCase;
 	}
 
@@ -58,17 +58,17 @@ public class BrownianMotionTest {
 	@Test
 	public void testBrownianMotion() {
 		// The parameters
-		int		seed		= 1234;//53252;
-		double	lastTime	= 1;
-		double	dt			= 0.1;
-		int		numberOfPaths = 1000000;
+		final int		seed		= 1234;//53252;
+		final double	lastTime	= 1;
+		final double	dt			= 0.1;
+		final int		numberOfPaths = 1000000;
 
 		System.out.print("Test of performance of " + String.format("%-40s", testCase) + "\t");
 
 		// Create the time discretization
-		TimeDiscretization timeDiscretization = new TimeDiscretizationFromArray(0.0, (int)(lastTime/dt), dt);
+		final TimeDiscretization timeDiscretization = new TimeDiscretizationFromArray(0.0, (int)(lastTime/dt), dt);
 
-		long millisStart = System.currentTimeMillis();
+		final long millisStart = System.currentTimeMillis();
 
 		for(int i=0; i<100; i++) {
 			if(i%10 == 0) {
@@ -106,15 +106,15 @@ public class BrownianMotionTest {
 				break;
 			}
 
-			RandomVariable brownianRealization = brownian.getBrownianIncrement(0, 0);
-			double mean		= brownianRealization.getAverage();
-			double variance	= brownianRealization.getVariance();
+			final RandomVariable brownianRealization = brownian.getBrownianIncrement(0, 0);
+			final double mean		= brownianRealization.getAverage();
+			final double variance	= brownianRealization.getVariance();
 
 			Assert.assertTrue(Math.abs(mean         ) < 3.0 * Math.pow(dt,0.5) / Math.pow(numberOfPaths,0.5));
 			Assert.assertTrue(Math.abs(variance - dt) < 3.0 * Math.pow(dt,1.0) / Math.pow(numberOfPaths,0.5));
 		}
 
-		long millisEnd = System.currentTimeMillis();
+		final long millisEnd = System.currentTimeMillis();
 
 		System.out.println("test took " + (millisEnd-millisStart)/1000.0 + " sec.");
 	}

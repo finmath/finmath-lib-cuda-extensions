@@ -27,29 +27,29 @@ public class JCudaUtils
 	 * @throws IOException If an I/O error occurs
 	 * @throws URISyntaxException
 	 */
-	public static String preparePtxFile(URL cuFileURL) throws IOException, URISyntaxException
+	public static String preparePtxFile(final URL cuFileURL) throws IOException, URISyntaxException
 	{
-		String cuFileName = Paths.get(cuFileURL.toURI()).toFile().getAbsolutePath();
+		final String cuFileName = Paths.get(cuFileURL.toURI()).toFile().getAbsolutePath();
 		int endIndex = cuFileName.lastIndexOf('.');
 		if (endIndex == -1)
 		{
 			endIndex = cuFileName.length()-1;
 		}
-		String ptxFileName = cuFileName.substring(0, endIndex+1)+"ptx";
-		File ptxFile = new File(ptxFileName);
+		final String ptxFileName = cuFileName.substring(0, endIndex+1)+"ptx";
+		final File ptxFile = new File(ptxFileName);
 		if (ptxFile.exists())
 			return ptxFileName;
 
-		File cuFile = new File(cuFileName);
+		final File cuFile = new File(cuFileName);
 		if (!cuFile.exists())
 			throw new IOException("Input file not found: "+cuFileName);
 
 		/*
 		 * Check for 64 bit or 32 bit
 		 */
-		String modelString = "-m"+System.getProperty("sun.arch.data.model");
+		final String modelString = "-m"+System.getProperty("sun.arch.data.model");
 
-		String[] command = {
+		final String[] command = {
 				"nvcc",
 				"-arch",
 				"sm_30",
@@ -64,18 +64,18 @@ public class JCudaUtils
 		//		String command = "nvcc " + modelString + " -ptx " + "" + cuFile.getPath() + " -o " + ptxFileName;
 
 		System.out.println("Executing\n"+Arrays.toString(command));
-		Process process = Runtime.getRuntime().exec(command);
+		final Process process = Runtime.getRuntime().exec(command);
 
-		String errorMessage =
+		final String errorMessage =
 				new String(toByteArray(process.getErrorStream()));
-		String outputMessage =
+		final String outputMessage =
 				new String(toByteArray(process.getInputStream()));
 		int exitValue = 0;
 		try
 		{
 			exitValue = process.waitFor();
 		}
-		catch (InterruptedException e)
+		catch (final InterruptedException e)
 		{
 			Thread.currentThread().interrupt();
 			throw new IOException(
@@ -102,14 +102,14 @@ public class JCudaUtils
 	 * @return The byte array containing the data from the input stream
 	 * @throws IOException If an I/O error occurs
 	 */
-	private static byte[] toByteArray(InputStream inputStream)
+	private static byte[] toByteArray(final InputStream inputStream)
 			throws IOException
 	{
-		ByteArrayOutputStream baos = new ByteArrayOutputStream();
-		byte buffer[] = new byte[8192];
+		final ByteArrayOutputStream baos = new ByteArrayOutputStream();
+		final byte buffer[] = new byte[8192];
 		while (true)
 		{
-			int read = inputStream.read(buffer);
+			final int read = inputStream.read(buffer);
 			if (read == -1)
 			{
 				break;

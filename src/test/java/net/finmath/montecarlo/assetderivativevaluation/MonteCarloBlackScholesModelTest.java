@@ -73,17 +73,17 @@ public class MonteCarloBlackScholesModelTest {
 	private final double	optionMaturity = 2.0;
 	private final double	optionStrike = 1.05;
 
-	private String testCase;
+	private final String testCase;
 	private BrownianMotion brownian;
 
-	public MonteCarloBlackScholesModelTest(String testCase) {
+	public MonteCarloBlackScholesModelTest(final String testCase) {
 		this.testCase = testCase;
 	}
 
 	@Before
 	public void setUp() {
 		// Create a time discretizeion
-		TimeDiscretization timeDiscretization = new TimeDiscretizationFromArray(0.0 /* initial */, numberOfTimeSteps, deltaT);
+		final TimeDiscretization timeDiscretization = new TimeDiscretizationFromArray(0.0 /* initial */, numberOfTimeSteps, deltaT);
 
 		switch(testCase) {
 		case "BrownianMotionLazyInit":
@@ -121,13 +121,13 @@ public class MonteCarloBlackScholesModelTest {
 
 	@Test
 	public void testProductImplementation() throws CalculationException {
-		long millisStart = System.currentTimeMillis();
+		final long millisStart = System.currentTimeMillis();
 
 		// Create a model
-		AbstractProcessModel model = new BlackScholesModel(initialValue, riskFreeRate, volatility);
+		final AbstractProcessModel model = new BlackScholesModel(initialValue, riskFreeRate, volatility);
 
 		// Create a corresponding MC process
-		MonteCarloProcessFromProcessModel process = new EulerSchemeFromProcessModel(brownian);
+		final MonteCarloProcessFromProcessModel process = new EulerSchemeFromProcessModel(brownian);
 
 		// Link model and process for delegation
 		process.setModel(model);
@@ -136,22 +136,22 @@ public class MonteCarloBlackScholesModelTest {
 		/*
 		 * Value a call option - directly
 		 */
-		TimeDiscretization timeDiscretization = brownian.getTimeDiscretization();
+		final TimeDiscretization timeDiscretization = brownian.getTimeDiscretization();
 
-		RandomVariable asset = process.getProcessValue(timeDiscretization.getTimeIndex(optionMaturity), assetIndex);
-		RandomVariable numeraireAtPayment = model.getNumeraire(optionMaturity);
-		RandomVariable numeraireAtEval = model.getNumeraire(0.0);
+		final RandomVariable asset = process.getProcessValue(timeDiscretization.getTimeIndex(optionMaturity), assetIndex);
+		final RandomVariable numeraireAtPayment = model.getNumeraire(optionMaturity);
+		final RandomVariable numeraireAtEval = model.getNumeraire(0.0);
 
-		RandomVariable payoff = asset.sub(optionStrike).floor(0.0);
-		double value = payoff.div(numeraireAtPayment).mult(numeraireAtEval).getAverage();
+		final RandomVariable payoff = asset.sub(optionStrike).floor(0.0);
+		final double value = payoff.div(numeraireAtPayment).mult(numeraireAtEval).getAverage();
 
-		double valueAnalytic = AnalyticFormulas.blackScholesOptionValue(initialValue, riskFreeRate, volatility, optionMaturity, optionStrike);
+		final double valueAnalytic = AnalyticFormulas.blackScholesOptionValue(initialValue, riskFreeRate, volatility, optionMaturity, optionStrike);
 
 		System.out.print(testCase + "\t");
 		System.out.print("   value Monte-Carlo = " + formatterReal4.format(value));
 		System.out.print("\t value analytic    = " + formatterReal4.format(valueAnalytic));
 
-		long millisEnd = System.currentTimeMillis();
+		final long millisEnd = System.currentTimeMillis();
 
 		System.out.println("\t calculation time = " + formatterReal2.format((millisEnd - millisStart)/1000.0) + " sec.");
 

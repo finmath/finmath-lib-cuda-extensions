@@ -19,12 +19,12 @@ public class RandomVariableFloatFactory extends AbstractRandomVariableFactory {
 	}
 
 	@Override
-	public RandomVariable createRandomVariable(double time, double value) {
+	public RandomVariable createRandomVariable(final double time, final double value) {
 		return new RandomVariableFromFloatArray(time, value);
 	}
 
 	@Override
-	public RandomVariable createRandomVariable(double time, double[] values) {
+	public RandomVariable createRandomVariable(final double time, final double[] values) {
 		return new RandomVariableFromFloatArray(time, values);
 	}
 }

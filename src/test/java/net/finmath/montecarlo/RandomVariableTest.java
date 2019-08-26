@@ -57,10 +57,10 @@ public class RandomVariableTest {
 		randomVariable = randomVariable.div(2.0);
 
 		// The random variable has average value 2.0
-		double average = randomVariable.getAverage();
+		final double average = randomVariable.getAverage();
 		Assert.assertTrue(average == 2.0);
 
-		double[] result = randomVariable.getRealizations();
+		final double[] result = randomVariable.getRealizations();
 
 		// The random variable has variance value 2.0 = (4 + 1 + 0 + 1 + 4) / 5
 		Assert.assertTrue(randomVariable.getVariance() == 2.0);
@@ -78,15 +78,15 @@ public class RandomVariableTest {
 
 	@Test
 	public void testRandomVariableAverage() throws InterruptedException {
-		int size = 100000;
-		float[] values = new float[size];
+		final int size = 100000;
+		final float[] values = new float[size];
 		for(int i=0;i<size; i++) {
 			values[i] = (float)i;
 		}
 
-		RandomVariable randomVariable = new RandomVariableCuda(0.0,values);
+		final RandomVariable randomVariable = new RandomVariableCuda(0.0,values);
 
-		double average = randomVariable.getAverage();
+		final double average = randomVariable.getAverage();
 
 		Assert.assertEquals((double)size*((double)size-1.0)/2.0/(double)size, average, 1E-2);
 	}
@@ -95,9 +95,9 @@ public class RandomVariableTest {
 	public void testRandomVariableArithmeticSqrtPow() {
 
 		// Create a stochastic random variable
-		RandomVariable randomVariable = new RandomVariableCuda(0.0, new double[] {3.0, 1.0, 0.0, 2.0, 4.0, 1.0/3.0} );
+		final RandomVariable randomVariable = new RandomVariableCuda(0.0, new double[] {3.0, 1.0, 0.0, 2.0, 4.0, 1.0/3.0} );
 
-		RandomVariable check = randomVariable.sqrt().sub(randomVariable.pow(0.5));
+		final RandomVariable check = randomVariable.sqrt().sub(randomVariable.pow(0.5));
 
 		// The random variable is identical 0.0
 		Assert.assertTrue(check.getAverage() == 0.0);
@@ -108,10 +108,10 @@ public class RandomVariableTest {
 	public void testRandomVariableArithmeticSquaredPow() {
 
 		// Create a stochastic random variable
-		RandomVariable randomVariable = new RandomVariableCuda(0.0,
+		final RandomVariable randomVariable = new RandomVariableCuda(0.0,
 				new double[] {3.0, 1.0, 0.0, 2.0, 4.0, 1.0/3.0} );
 
-		RandomVariable check = randomVariable.squared().sub(randomVariable.pow(2.0));
+		final RandomVariable check = randomVariable.squared().sub(randomVariable.pow(2.0));
 
 		// The random variable is identical 0.0
 		Assert.assertTrue(check.getAverage() == 0.0);
@@ -122,35 +122,35 @@ public class RandomVariableTest {
 	public void testRandomVariableStandardDeviation() {
 
 		// Create a stochastic random variable
-		RandomVariable randomVariable = new RandomVariableCuda(0.0,
+		final RandomVariable randomVariable = new RandomVariableCuda(0.0,
 				new double[] {3.0, 1.0, 0.0, 2.0, 4.0, 1.0/3.0} );
 
-		double check = randomVariable.getStandardDeviation() - Math.sqrt(randomVariable.getVariance());
+		final double check = randomVariable.getStandardDeviation() - Math.sqrt(randomVariable.getVariance());
 		Assert.assertTrue(check == 0.0);
 	}
 
 	@Test
 	public void testRandomVariableCuda() throws InterruptedException {
 
-		Random random = new Random();
+		final Random random = new Random();
 
 		for(int testRun=0; testRun<10; testRun++) {
-			int numberOfPath = 100000;
+			final int numberOfPath = 100000;
 			final double[] realizations = new double[numberOfPath];
 			for(int i=0; i<numberOfPath; i++) {
 				realizations[i]= random.nextDouble();
 			}
 
-			AbstractRandomVariableFactory[] rvf = { new RandomVariableFloatFactory(), new RandomVariableCudaFactory() };
+			final AbstractRandomVariableFactory[] rvf = { new RandomVariableFloatFactory(), new RandomVariableCudaFactory() };
 
-			BiFunction<AbstractRandomVariableFactory, BiFunction<RandomVariable,RandomVariable,RandomVariable>, Integer> hash = (rf, f) -> {
-				RandomVariable x = rf.createRandomVariable(0.0, realizations);
-				RandomVariable y = rf.createRandomVariable(0.0, realizations[0]);
-				double[] xr = f.apply(x,y).getRealizations();
+			final BiFunction<AbstractRandomVariableFactory, BiFunction<RandomVariable,RandomVariable,RandomVariable>, Integer> hash = (rf, f) -> {
+				final RandomVariable x = rf.createRandomVariable(0.0, realizations);
+				final RandomVariable y = rf.createRandomVariable(0.0, realizations[0]);
+				final double[] xr = f.apply(x,y).getRealizations();
 				return Arrays.hashCode(xr);
 			};
 
-			Consumer<BiFunction<RandomVariable,RandomVariable,RandomVariable>> test = f -> {
+			final Consumer<BiFunction<RandomVariable,RandomVariable,RandomVariable>> test = f -> {
 				if( hash.apply(rvf[0],f).intValue() != hash.apply(rvf[1],f).intValue() ) {
 					System.out.println(" - failed.");
 				}

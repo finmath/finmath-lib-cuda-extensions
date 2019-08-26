@@ -30,41 +30,41 @@ public class BrownianMotionMemoryTest {
 	@Test
 	public void testBrownianMotionMemory() {
 		// The parameters
-		int		seed		= 53252;
-		double	lastTime	= 1;
-		double	dt			= 0.1;
+		final int		seed		= 53252;
+		final double	lastTime	= 1;
+		final double	dt			= 0.1;
 
 		// Create the time discretization
-		TimeDiscretization timeDiscretization = new TimeDiscretizationFromArray(0.0, (int)(lastTime/dt), dt);
+		final TimeDiscretization timeDiscretization = new TimeDiscretizationFromArray(0.0, (int)(lastTime/dt), dt);
 
-		long millisStart = System.currentTimeMillis();
+		final long millisStart = System.currentTimeMillis();
 
 		System.out.println("The test generates BrownianMotionCudaWithRandomVariableCuda with different paths.");
 		System.out.println("You may observe that the RandomVariableCuda performs clean ups, if memory becomes below a certain level.\n");
 		for(int i=0; i<=100; i++) {
-			int numberOfPaths = 100000+10000*i;
-			long[] free = new long[1];
-			long[] total = new long[1];
+			final int numberOfPaths = 100000+10000*i;
+			final long[] free = new long[1];
+			final long[] total = new long[1];
 			jcuda.runtime.JCuda.cudaMemGetInfo(free, total);
 			System.out.println("Number of paths = " + numberOfPaths + "\tDevice free memory: " + formatterPercent.format((double)free[0]/(total[0])) + ".");
 
 			// Test the quality of the Brownian motion
-			BrownianMotion brownian = new BrownianMotionCudaWithRandomVariableCuda(
+			final BrownianMotion brownian = new BrownianMotionCudaWithRandomVariableCuda(
 					timeDiscretization,
 					1,
 					numberOfPaths,
 					seed
 					);
 
-			RandomVariable brownianRealization = brownian.getBrownianIncrement(0, 0);
-			double mean		= brownianRealization.getAverage();
-			double variance	= brownianRealization.getVariance();
+			final RandomVariable brownianRealization = brownian.getBrownianIncrement(0, 0);
+			final double mean		= brownianRealization.getAverage();
+			final double variance	= brownianRealization.getVariance();
 
 			Assert.assertTrue(Math.abs(mean         ) < 3.0 * Math.pow(dt,0.5) / Math.pow(numberOfPaths,0.5));
 			Assert.assertTrue(Math.abs(variance - dt) < 3.0 * Math.pow(dt,1.0) / Math.pow(numberOfPaths,0.5));
 		}
 
-		long millisEnd = System.currentTimeMillis();
+		final long millisEnd = System.currentTimeMillis();
 
 		System.out.println("Test took " + (millisEnd-millisStart)/1000.0 + " sec.");
 	}

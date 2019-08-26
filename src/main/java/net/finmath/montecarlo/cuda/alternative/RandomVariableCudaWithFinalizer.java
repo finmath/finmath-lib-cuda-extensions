@@ -112,7 +112,7 @@ public class RandomVariableCudaWithFinalizer implements RandomVariable {
 		String ptxFileName = null;
 		try {
 			ptxFileName = preparePtxFile("RandomVariableCudaKernel.cu");
-		} catch (IOException e) {
+		} catch (final IOException e) {
 			// TODO Auto-generated catch block
 			e.printStackTrace();
 		}
@@ -125,7 +125,7 @@ public class RandomVariableCudaWithFinalizer implements RandomVariable {
 		cuCtxCreate(context, 0, device);
 
 		// Load the ptx file.
-		CUmodule module = new CUmodule();
+		final CUmodule module = new CUmodule();
 		cuModuleLoad(module, ptxFileName);
 
 		// Obtain a function pointers
@@ -173,14 +173,14 @@ public class RandomVariableCudaWithFinalizer implements RandomVariable {
 		cuModuleGetFunction(reducePartial, module, "reducePartial");
 	}
 
-	public RandomVariableCudaWithFinalizer(double time, CUdeviceptr realizations, long size) {
+	public RandomVariableCudaWithFinalizer(final double time, final CUdeviceptr realizations, final long size) {
 		this.time = time;
 		this.realizations = realizations;
 		this.size = size;
 		this.valueIfNonStochastic = Double.NaN;
 
 		// Manage CUdeviceptr
-		WeakReference<RandomVariableCudaWithFinalizer> reference = new WeakReference<RandomVariableCudaWithFinalizer>(this, referenceQueue);
+		final WeakReference<RandomVariableCudaWithFinalizer> reference = new WeakReference<RandomVariableCudaWithFinalizer>(this, referenceQueue);
 		referenceMap.put(reference, realizations);
 	}
 
@@ -189,7 +189,7 @@ public class RandomVariableCudaWithFinalizer implements RandomVariable {
 	 *
 	 * @param value the value, a constant.
 	 */
-	public RandomVariableCudaWithFinalizer(double value) {
+	public RandomVariableCudaWithFinalizer(final double value) {
 		this(-Double.MAX_VALUE, value);
 	}
 
@@ -199,7 +199,7 @@ public class RandomVariableCudaWithFinalizer implements RandomVariable {
 	 * @param time the filtration time, set to 0.0 if not used.
 	 * @param value the value, a constant.
 	 */
-	public RandomVariableCudaWithFinalizer(double time, double value) {
+	public RandomVariableCudaWithFinalizer(final double time, final double value) {
 		super();
 		this.time = time;
 		this.realizations = null;
@@ -213,7 +213,7 @@ public class RandomVariableCudaWithFinalizer implements RandomVariable {
 	 * @param time the filtration time, set to 0.0 if not used.
 	 * @param realisations the vector of realizations.
 	 */
-	public RandomVariableCudaWithFinalizer(double time, float[] realisations) {
+	public RandomVariableCudaWithFinalizer(final double time, final float[] realisations) {
 		super();
 		this.time = time;
 		this.size = realisations.length;
@@ -227,18 +227,18 @@ public class RandomVariableCudaWithFinalizer implements RandomVariable {
 	 * @param time the filtration time, set to 0.0 if not used.
 	 * @param realisations the vector of realizations.
 	 */
-	public RandomVariableCudaWithFinalizer(double time, double[] realisations) {
+	public RandomVariableCudaWithFinalizer(final double time, final double[] realisations) {
 		this(time, getFloatArray(realisations));
 	}
 
-	private CUdeviceptr createCUdeviceptr(long size) {
-		CUdeviceptr cuDevicePtr = getCUdeviceptr(size);
+	private CUdeviceptr createCUdeviceptr(final long size) {
+		final CUdeviceptr cuDevicePtr = getCUdeviceptr(size);
 		return cuDevicePtr;
 	}
 
-	public static CUdeviceptr getCUdeviceptr(long size) {
+	public static CUdeviceptr getCUdeviceptr(final long size) {
 		CUdeviceptr cuDevicePtr = new CUdeviceptr();
-		int succ = JCudaDriver.cuMemAlloc(cuDevicePtr, size * Sizeof.FLOAT);
+		final int succ = JCudaDriver.cuMemAlloc(cuDevicePtr, size * Sizeof.FLOAT);
 		if(succ != 0) {
 			cuDevicePtr = null;
 			logger.finest("Failed creating device vector "+ cuDevicePtr + " with size=" + size);
@@ -256,8 +256,8 @@ public class RandomVariableCudaWithFinalizer implements RandomVariable {
 	 * @param values Host vector.
 	 * @return Pointer to device vector.
 	 */
-	private CUdeviceptr createCUdeviceptr(float[] values) {
-		CUdeviceptr cuDevicePtr = createCUdeviceptr((long)values.length);
+	private CUdeviceptr createCUdeviceptr(final float[] values) {
+		final CUdeviceptr cuDevicePtr = createCUdeviceptr((long)values.length);
 		JCudaDriver.cuMemcpyHtoD(cuDevicePtr, Pointer.to(values),
 				(long)values.length * Sizeof.FLOAT);
 		return cuDevicePtr;
@@ -273,16 +273,16 @@ public class RandomVariableCudaWithFinalizer implements RandomVariable {
 	}
 
 
-	private static float[] getFloatArray(double[] arrayOfDouble) {
-		float[] arrayOfFloat = new float[arrayOfDouble.length];
+	private static float[] getFloatArray(final double[] arrayOfDouble) {
+		final float[] arrayOfFloat = new float[arrayOfDouble.length];
 		for(int i=0; i<arrayOfDouble.length; i++) {
 			arrayOfFloat[i] = (float)arrayOfDouble[i];
 		}
 		return arrayOfFloat;
 	}
 
-	private static double[] getDoubleArray(float[] arrayOfFloat) {
-		double[] arrayOfDouble = new double[arrayOfFloat.length];
+	private static double[] getDoubleArray(final float[] arrayOfFloat) {
+		final double[] arrayOfDouble = new double[arrayOfFloat.length];
 		for(int i=0; i<arrayOfFloat.length; i++) {
 			arrayOfDouble[i] = arrayOfFloat[i];
 		}
@@ -290,7 +290,7 @@ public class RandomVariableCudaWithFinalizer implements RandomVariable {
 	}
 
 	@Override
-	public boolean equals(RandomVariable randomVariable) {
+	public boolean equals(final RandomVariable randomVariable) {
 		throw new UnsupportedOperationException();
 		/*
 		if(this.time != randomVariable.getFiltrationTime()) return false;
@@ -317,7 +317,7 @@ public class RandomVariableCudaWithFinalizer implements RandomVariable {
 	}
 
 	@Override
-	public double get(int pathOrState) {
+	public double get(final int pathOrState) {
 		if(isDeterministic())   return valueIfNonStochastic;
 		else               		throw new UnsupportedOperationException();
 	}
@@ -361,7 +361,7 @@ public class RandomVariableCudaWithFinalizer implements RandomVariable {
 	}
 
 	@Override
-	public double getAverage(RandomVariable probabilities) {
+	public double getAverage(final RandomVariable probabilities) {
 		throw new UnsupportedOperationException();
 		/*
 		if(isDeterministic())	return valueIfNonStochastic;
@@ -387,12 +387,12 @@ public class RandomVariableCudaWithFinalizer implements RandomVariable {
 		if(isDeterministic())	return 0.0;
 		if(size() == 0)			return Double.NaN;
 
-		double average = getAverage();
+		final double average = getAverage();
 		return this.squared().getAverage() - average*average;
 	}
 
 	@Override
-	public double getVariance(RandomVariable probabilities) {
+	public double getVariance(final RandomVariable probabilities) {
 		throw new UnsupportedOperationException();
 		/*
 		if(isDeterministic())	return 0.0;
@@ -434,7 +434,7 @@ public class RandomVariableCudaWithFinalizer implements RandomVariable {
 	}
 
 	@Override
-	public double getStandardDeviation(RandomVariable probabilities) {
+	public double getStandardDeviation(final RandomVariable probabilities) {
 		if(isDeterministic())	return 0.0;
 		if(size() == 0)			return Double.NaN;
 
@@ -450,7 +450,7 @@ public class RandomVariableCudaWithFinalizer implements RandomVariable {
 	}
 
 	@Override
-	public double getStandardError(RandomVariable probabilities) {
+	public double getStandardError(final RandomVariable probabilities) {
 		if(isDeterministic())	return 0.0;
 		if(size() == 0)			return Double.NaN;
 
@@ -458,7 +458,7 @@ public class RandomVariableCudaWithFinalizer implements RandomVariable {
 	}
 
 	@Override
-	public double getQuantile(double quantile) {
+	public double getQuantile(final double quantile) {
 		if(isDeterministic())	return valueIfNonStochastic;
 		if(size() == 0)			return Double.NaN;
 
@@ -474,7 +474,7 @@ public class RandomVariableCudaWithFinalizer implements RandomVariable {
 	}
 
 	@Override
-	public double getQuantile(double quantile, RandomVariable probabilities) {
+	public double getQuantile(final double quantile, final RandomVariable probabilities) {
 		if(isDeterministic())	return valueIfNonStochastic;
 		if(size() == 0)			return Double.NaN;
 
@@ -482,7 +482,7 @@ public class RandomVariableCudaWithFinalizer implements RandomVariable {
 	}
 
 	@Override
-	public double getQuantileExpectation(double quantileStart, double quantileEnd) {
+	public double getQuantileExpectation(final double quantileStart, final double quantileEnd) {
 		if(isDeterministic())	return valueIfNonStochastic;
 		if(size() == 0)			return Double.NaN;
 		if(quantileStart > quantileEnd) return getQuantileExpectation(quantileEnd, quantileStart);
@@ -506,7 +506,7 @@ public class RandomVariableCudaWithFinalizer implements RandomVariable {
 	}
 
 	@Override
-	public double[] getHistogram(double[] intervalPoints)
+	public double[] getHistogram(final double[] intervalPoints)
 	{
 		throw new UnsupportedOperationException();
 		/*
@@ -552,7 +552,7 @@ public class RandomVariableCudaWithFinalizer implements RandomVariable {
 	}
 
 	@Override
-	public double[][] getHistogram(int numberOfPoints, double standardDeviations) {
+	public double[][] getHistogram(final int numberOfPoints, final double standardDeviations) {
 		throw new UnsupportedOperationException();
 		/*
 		double[] intervalPoints = new double[numberOfPoints];
@@ -580,10 +580,10 @@ public class RandomVariableCudaWithFinalizer implements RandomVariable {
 		return realizations == null;
 	}
 
-	public RandomVariable expand(int numberOfPaths) {
+	public RandomVariable expand(final int numberOfPaths) {
 		if(isDeterministic()) {
 			// Expand random variable to a vector of path values
-			float[] clone = new float[numberOfPaths];
+			final float[] clone = new float[numberOfPaths];
 			java.util.Arrays.fill(clone,(float)valueIfNonStochastic);
 			return new RandomVariableCudaWithFinalizer(time,clone);
 
@@ -611,7 +611,7 @@ public class RandomVariableCudaWithFinalizer implements RandomVariable {
 	@Override
 	public double[] getRealizations() {
 		if(isDeterministic()) {
-			double[] result = new double[1];
+			final double[] result = new double[1];
 			result[0] = get(0);
 			return result;
 		} else
@@ -619,7 +619,7 @@ public class RandomVariableCudaWithFinalizer implements RandomVariable {
 	}
 
 	@Override
-	public RandomVariable apply(DoubleUnaryOperator function) {
+	public RandomVariable apply(final DoubleUnaryOperator function) {
 		throw new UnsupportedOperationException();
 		/*
 		if(isDeterministic()) {
@@ -635,22 +635,22 @@ public class RandomVariableCudaWithFinalizer implements RandomVariable {
 	}
 
 	@Override
-	public RandomVariable apply(DoubleBinaryOperator operator, RandomVariable argument) {
+	public RandomVariable apply(final DoubleBinaryOperator operator, final RandomVariable argument) {
 		throw new UnsupportedOperationException();
 	}
 
 	@Override
-	public RandomVariable apply(DoubleTernaryOperator operator, RandomVariable argument1, RandomVariable argument2) {
+	public RandomVariable apply(final DoubleTernaryOperator operator, final RandomVariable argument1, final RandomVariable argument2) {
 		throw new UnsupportedOperationException();
 	}
 
-	public RandomVariable cap(double cap) {
+	public RandomVariable cap(final double cap) {
 		if(isDeterministic()) {
-			double newValueIfNonStochastic = Math.min(valueIfNonStochastic,cap);
+			final double newValueIfNonStochastic = Math.min(valueIfNonStochastic,cap);
 			return new RandomVariableCudaWithFinalizer(time, newValueIfNonStochastic);
 		}
 		else {
-			CUdeviceptr result = callCudaFunction(capByScalar, new Pointer[] {
+			final CUdeviceptr result = callCudaFunction(capByScalar, new Pointer[] {
 					Pointer.to(new int[] { size() }),
 					Pointer.to(realizations),
 					Pointer.to(new float[] { (float)cap }),
@@ -665,13 +665,13 @@ public class RandomVariableCudaWithFinalizer implements RandomVariable {
 	 * @see net.finmath.stochastic.RandomVariable#floor(double)
 	 */
 	@Override
-	public RandomVariable floor(double floor) {
+	public RandomVariable floor(final double floor) {
 		if(isDeterministic()) {
-			double newValueIfNonStochastic = Math.max(valueIfNonStochastic,floor);
+			final double newValueIfNonStochastic = Math.max(valueIfNonStochastic,floor);
 			return new RandomVariableCudaWithFinalizer(time, newValueIfNonStochastic);
 		}
 		else {
-			CUdeviceptr result = callCudaFunction(floorByScalar, new Pointer[] {
+			final CUdeviceptr result = callCudaFunction(floorByScalar, new Pointer[] {
 					Pointer.to(new int[] { size() }),
 					Pointer.to(realizations),
 					Pointer.to(new float[] { (float)floor }),
@@ -683,13 +683,13 @@ public class RandomVariableCudaWithFinalizer implements RandomVariable {
 	}
 
 	@Override
-	public RandomVariable add(double value) {
+	public RandomVariable add(final double value) {
 		if(isDeterministic()) {
-			double newValueIfNonStochastic = valueIfNonStochastic + value;
+			final double newValueIfNonStochastic = valueIfNonStochastic + value;
 			return new RandomVariableCudaWithFinalizer(time, newValueIfNonStochastic);
 		}
 		else {
-			CUdeviceptr result = callCudaFunction(addScalar, new Pointer[] {
+			final CUdeviceptr result = callCudaFunction(addScalar, new Pointer[] {
 					Pointer.to(new int[] { size() }),
 					Pointer.to(realizations),
 					Pointer.to(new float[] { (float)value }),
@@ -701,13 +701,13 @@ public class RandomVariableCudaWithFinalizer implements RandomVariable {
 	}
 
 	@Override
-	public RandomVariable sub(double value) {
+	public RandomVariable sub(final double value) {
 		if(isDeterministic()) {
-			double newValueIfNonStochastic = valueIfNonStochastic - value;
+			final double newValueIfNonStochastic = valueIfNonStochastic - value;
 			return new RandomVariableCudaWithFinalizer(time, newValueIfNonStochastic);
 		}
 		else {
-			CUdeviceptr result = callCudaFunction(subScalar, new Pointer[] {
+			final CUdeviceptr result = callCudaFunction(subScalar, new Pointer[] {
 					Pointer.to(new int[] { size() }),
 					Pointer.to(realizations),
 					Pointer.to(new float[] { (float)value }),
@@ -719,13 +719,13 @@ public class RandomVariableCudaWithFinalizer implements RandomVariable {
 	}
 
 	@Override
-	public RandomVariable mult(double value) {
+	public RandomVariable mult(final double value) {
 		if(isDeterministic()) {
-			double newValueIfNonStochastic = valueIfNonStochastic * value;
+			final double newValueIfNonStochastic = valueIfNonStochastic * value;
 			return new RandomVariableCudaWithFinalizer(time, newValueIfNonStochastic);
 		}
 		else {
-			CUdeviceptr result = callCudaFunction(multScalar, new Pointer[] {
+			final CUdeviceptr result = callCudaFunction(multScalar, new Pointer[] {
 					Pointer.to(new int[] { size() }),
 					Pointer.to(realizations),
 					Pointer.to(new float[] { (float)value }),
@@ -737,13 +737,13 @@ public class RandomVariableCudaWithFinalizer implements RandomVariable {
 	}
 
 	@Override
-	public RandomVariable div(double value) {
+	public RandomVariable div(final double value) {
 		if(isDeterministic()) {
-			double newValueIfNonStochastic = valueIfNonStochastic / value;
+			final double newValueIfNonStochastic = valueIfNonStochastic / value;
 			return new RandomVariableCudaWithFinalizer(time, newValueIfNonStochastic);
 		}
 		else {
-			CUdeviceptr result = callCudaFunction(divScalar, new Pointer[] {
+			final CUdeviceptr result = callCudaFunction(divScalar, new Pointer[] {
 					Pointer.to(new int[] { size() }),
 					Pointer.to(realizations),
 					Pointer.to(new float[] { (float)value }),
@@ -754,13 +754,13 @@ public class RandomVariableCudaWithFinalizer implements RandomVariable {
 	}
 
 	@Override
-	public RandomVariable pow(double exponent) {
+	public RandomVariable pow(final double exponent) {
 		if(isDeterministic()) {
-			double newValueIfNonStochastic = Math.pow(valueIfNonStochastic,exponent);
+			final double newValueIfNonStochastic = Math.pow(valueIfNonStochastic,exponent);
 			return new RandomVariableCudaWithFinalizer(time, newValueIfNonStochastic);
 		}
 		else {
-			CUdeviceptr result = callCudaFunction(cuPow, new Pointer[] {
+			final CUdeviceptr result = callCudaFunction(cuPow, new Pointer[] {
 					Pointer.to(new int[] { size() }),
 					Pointer.to(realizations),
 					Pointer.to(new float[] { (float)exponent }),
@@ -773,7 +773,7 @@ public class RandomVariableCudaWithFinalizer implements RandomVariable {
 	@Override
 	public RandomVariable squared() {
 		if(isDeterministic()) {
-			double newValueIfNonStochastic = valueIfNonStochastic * valueIfNonStochastic;
+			final double newValueIfNonStochastic = valueIfNonStochastic * valueIfNonStochastic;
 			return new RandomVariableCudaWithFinalizer(time, newValueIfNonStochastic);
 		} else
 			return this.mult(this);
@@ -782,11 +782,11 @@ public class RandomVariableCudaWithFinalizer implements RandomVariable {
 	@Override
 	public RandomVariable sqrt() {
 		if(isDeterministic()) {
-			double newValueIfNonStochastic = Math.sqrt(valueIfNonStochastic);
+			final double newValueIfNonStochastic = Math.sqrt(valueIfNonStochastic);
 			return new RandomVariableCudaWithFinalizer(time, newValueIfNonStochastic);
 		}
 		else {
-			CUdeviceptr result = callCudaFunction(cuSqrt, new Pointer[] {
+			final CUdeviceptr result = callCudaFunction(cuSqrt, new Pointer[] {
 					Pointer.to(new int[] { size() }),
 					Pointer.to(realizations),
 					new Pointer()}
@@ -801,11 +801,11 @@ public class RandomVariableCudaWithFinalizer implements RandomVariable {
 	 */
 	public RandomVariableCudaWithFinalizer exp() {
 		if(isDeterministic()) {
-			double newValueIfNonStochastic = Math.exp(valueIfNonStochastic);
+			final double newValueIfNonStochastic = Math.exp(valueIfNonStochastic);
 			return new RandomVariableCudaWithFinalizer(time, newValueIfNonStochastic);
 		}
 		else {
-			CUdeviceptr result = callCudaFunction(cuExp, new Pointer[] {
+			final CUdeviceptr result = callCudaFunction(cuExp, new Pointer[] {
 					Pointer.to(new int[] { size() }),
 					Pointer.to(realizations),
 					new Pointer()}
@@ -817,11 +817,11 @@ public class RandomVariableCudaWithFinalizer implements RandomVariable {
 
 	public RandomVariableCudaWithFinalizer log() {
 		if(isDeterministic()) {
-			double newValueIfNonStochastic = Math.log(valueIfNonStochastic);
+			final double newValueIfNonStochastic = Math.log(valueIfNonStochastic);
 			return new RandomVariableCudaWithFinalizer(time, newValueIfNonStochastic);
 		}
 		else {
-			CUdeviceptr result = callCudaFunction(cuLog, new Pointer[] {
+			final CUdeviceptr result = callCudaFunction(cuLog, new Pointer[] {
 					Pointer.to(new int[] { size() }),
 					Pointer.to(realizations),
 					new Pointer()}
@@ -861,17 +861,17 @@ public class RandomVariableCudaWithFinalizer implements RandomVariable {
 		 */
 	}
 
-	public RandomVariable add(RandomVariable randomVariable) {
+	public RandomVariable add(final RandomVariable randomVariable) {
 		// Set time of this random variable to maximum of time with respect to which measurability is known.
-		double newTime = Math.max(time, randomVariable.getFiltrationTime());
+		final double newTime = Math.max(time, randomVariable.getFiltrationTime());
 
 		if(isDeterministic() && randomVariable.isDeterministic()) {
-			double newValueIfNonStochastic = valueIfNonStochastic + randomVariable.get(0);
+			final double newValueIfNonStochastic = valueIfNonStochastic + randomVariable.get(0);
 			return new RandomVariableCudaWithFinalizer(newTime, newValueIfNonStochastic);
 		}
 		else if(isDeterministic()) return randomVariable.add(this);
 		else {
-			CUdeviceptr result = callCudaFunction(add, new Pointer[] {
+			final CUdeviceptr result = callCudaFunction(add, new Pointer[] {
 					Pointer.to(new int[] { size() }),
 					Pointer.to(realizations),
 					Pointer.to(((RandomVariableCudaWithFinalizer)randomVariable).realizations),
@@ -885,23 +885,23 @@ public class RandomVariableCudaWithFinalizer implements RandomVariable {
 	/* (non-Javadoc)
 	 * @see net.finmath.stochastic.RandomVariable#sub(net.finmath.stochastic.RandomVariable)
 	 */
-	public RandomVariable sub(RandomVariable randomVariable) {
+	public RandomVariable sub(final RandomVariable randomVariable) {
 		// Set time of this random variable to maximum of time with respect to which measurability is known.
-		double newTime = Math.max(time, randomVariable.getFiltrationTime());
+		final double newTime = Math.max(time, randomVariable.getFiltrationTime());
 
 		if(isDeterministic() && randomVariable.isDeterministic()) {
-			double newValueIfNonStochastic = valueIfNonStochastic - randomVariable.get(0);
+			final double newValueIfNonStochastic = valueIfNonStochastic - randomVariable.get(0);
 			return new RandomVariableCudaWithFinalizer(newTime, newValueIfNonStochastic);
 		}
 		else if(isDeterministic()) {
-			double[] newRealizations = new double[Math.max(size(), randomVariable.size())];
+			final double[] newRealizations = new double[Math.max(size(), randomVariable.size())];
 			for(int i=0; i<newRealizations.length; i++) {
 				newRealizations[i]		 = valueIfNonStochastic - randomVariable.get(i);
 			}
 			return new RandomVariableCudaWithFinalizer(newTime, newRealizations);
 		}
 		else {
-			CUdeviceptr result = callCudaFunction(sub, new Pointer[] {
+			final CUdeviceptr result = callCudaFunction(sub, new Pointer[] {
 					Pointer.to(new int[] { size() }),
 					Pointer.to(realizations),
 					Pointer.to(((RandomVariableCudaWithFinalizer)randomVariable).realizations),
@@ -915,23 +915,23 @@ public class RandomVariableCudaWithFinalizer implements RandomVariable {
 	/* (non-Javadoc)
 	 * @see net.finmath.stochastic.RandomVariable#mult(net.finmath.stochastic.RandomVariable)
 	 */
-	public RandomVariable mult(RandomVariable randomVariable) {
+	public RandomVariable mult(final RandomVariable randomVariable) {
 		// Set time of this random variable to maximum of time with respect to which measurability is known.
-		double newTime = Math.max(time, randomVariable.getFiltrationTime());
+		final double newTime = Math.max(time, randomVariable.getFiltrationTime());
 
 		if(isDeterministic() && randomVariable.isDeterministic()) {
-			double newValueIfNonStochastic = valueIfNonStochastic * randomVariable.get(0);
+			final double newValueIfNonStochastic = valueIfNonStochastic * randomVariable.get(0);
 			return new RandomVariableCudaWithFinalizer(newTime, newValueIfNonStochastic);
 		}
 		else if(isDeterministic()) {
-			float[] newRealizations = new float[Math.max(size(), randomVariable.size())];
+			final float[] newRealizations = new float[Math.max(size(), randomVariable.size())];
 			for(int i=0; i<newRealizations.length; i++) {
 				newRealizations[i]		 = (float) (valueIfNonStochastic * randomVariable.get(i));
 			}
 			return new RandomVariableCudaWithFinalizer(newTime, newRealizations);
 		}
 		else {
-			CUdeviceptr result = callCudaFunction(mult, new Pointer[] {
+			final CUdeviceptr result = callCudaFunction(mult, new Pointer[] {
 					Pointer.to(new int[] { size() }),
 					Pointer.to(realizations),
 					Pointer.to(((RandomVariableCudaWithFinalizer)randomVariable).realizations),
@@ -945,23 +945,23 @@ public class RandomVariableCudaWithFinalizer implements RandomVariable {
 	/* (non-Javadoc)
 	 * @see net.finmath.stochastic.RandomVariable#div(net.finmath.stochastic.RandomVariable)
 	 */
-	public RandomVariable div(RandomVariable randomVariable) {
+	public RandomVariable div(final RandomVariable randomVariable) {
 		// Set time of this random variable to maximum of time with respect to which measurability is known.
-		double newTime = Math.max(time, randomVariable.getFiltrationTime());
+		final double newTime = Math.max(time, randomVariable.getFiltrationTime());
 
 		if(isDeterministic() && randomVariable.isDeterministic()) {
-			double newValueIfNonStochastic = valueIfNonStochastic / randomVariable.get(0);
+			final double newValueIfNonStochastic = valueIfNonStochastic / randomVariable.get(0);
 			return new RandomVariableCudaWithFinalizer(newTime, newValueIfNonStochastic);
 		}
 		else if(isDeterministic()) {
-			double[] newRealizations = new double[Math.max(size(), randomVariable.size())];
+			final double[] newRealizations = new double[Math.max(size(), randomVariable.size())];
 			for(int i=0; i<newRealizations.length; i++) {
 				newRealizations[i]		 = valueIfNonStochastic / randomVariable.get(i);
 			}
 			return new RandomVariableCudaWithFinalizer(newTime, newRealizations);
 		}
 		else {
-			CUdeviceptr result = callCudaFunction(cuDiv, new Pointer[] {
+			final CUdeviceptr result = callCudaFunction(cuDiv, new Pointer[] {
 					Pointer.to(new int[] { size() }),
 					Pointer.to(realizations),
 					Pointer.to(((RandomVariableCudaWithFinalizer)randomVariable).realizations),
@@ -974,11 +974,11 @@ public class RandomVariableCudaWithFinalizer implements RandomVariable {
 
 	public RandomVariable invert() {
 		if(isDeterministic()) {
-			double newValueIfNonStochastic = 1.0/valueIfNonStochastic;
+			final double newValueIfNonStochastic = 1.0/valueIfNonStochastic;
 			return new RandomVariableCudaWithFinalizer(time, newValueIfNonStochastic);
 		}
 		else {
-			CUdeviceptr result = callCudaFunction(invert, new Pointer[] {
+			final CUdeviceptr result = callCudaFunction(invert, new Pointer[] {
 					Pointer.to(new int[] { size() }),
 					Pointer.to(realizations),
 					new Pointer()}
@@ -990,11 +990,11 @@ public class RandomVariableCudaWithFinalizer implements RandomVariable {
 
 	public RandomVariable abs() {
 		if(isDeterministic()) {
-			double newValueIfNonStochastic = Math.abs(valueIfNonStochastic);
+			final double newValueIfNonStochastic = Math.abs(valueIfNonStochastic);
 			return new RandomVariableCudaWithFinalizer(time, newValueIfNonStochastic);
 		}
 		else {
-			CUdeviceptr result = callCudaFunction(cuAbs, new Pointer[] {
+			final CUdeviceptr result = callCudaFunction(cuAbs, new Pointer[] {
 					Pointer.to(new int[] { size() }),
 					Pointer.to(realizations),
 					new Pointer()}
@@ -1004,17 +1004,17 @@ public class RandomVariableCudaWithFinalizer implements RandomVariable {
 		}
 	}
 
-	public RandomVariable cap(RandomVariable randomVariable) {
+	public RandomVariable cap(final RandomVariable randomVariable) {
 		// Set time of this random variable to maximum of time with respect to which measurability is known.
-		double newTime = Math.max(time, randomVariable.getFiltrationTime());
+		final double newTime = Math.max(time, randomVariable.getFiltrationTime());
 
 		if(isDeterministic() && randomVariable.isDeterministic()) {
-			double newValueIfNonStochastic = Math.min(valueIfNonStochastic, randomVariable.get(0));
+			final double newValueIfNonStochastic = Math.min(valueIfNonStochastic, randomVariable.get(0));
 			return new RandomVariableCudaWithFinalizer(newTime, newValueIfNonStochastic);
 		}
 		else if(isDeterministic()) return randomVariable.cap(this);
 		else {
-			CUdeviceptr result = callCudaFunction(cap, new Pointer[] {
+			final CUdeviceptr result = callCudaFunction(cap, new Pointer[] {
 					Pointer.to(new int[] { size() }),
 					Pointer.to(realizations),
 					Pointer.to(((RandomVariableCudaWithFinalizer)randomVariable).realizations),
@@ -1025,17 +1025,17 @@ public class RandomVariableCudaWithFinalizer implements RandomVariable {
 		}
 	}
 
-	public RandomVariable floor(RandomVariable randomVariable) {
+	public RandomVariable floor(final RandomVariable randomVariable) {
 		// Set time of this random variable to maximum of time with respect to which measurability is known.
-		double newTime = Math.max(time, randomVariable.getFiltrationTime());
+		final double newTime = Math.max(time, randomVariable.getFiltrationTime());
 
 		if(isDeterministic() && randomVariable.isDeterministic()) {
-			double newValueIfNonStochastic = Math.max(valueIfNonStochastic, randomVariable.get(0));
+			final double newValueIfNonStochastic = Math.max(valueIfNonStochastic, randomVariable.get(0));
 			return new RandomVariableCudaWithFinalizer(newTime, newValueIfNonStochastic);
 		}
 		else if(isDeterministic()) return randomVariable.floor(this);
 		else {
-			CUdeviceptr result = callCudaFunction(cuFloor, new Pointer[] {
+			final CUdeviceptr result = callCudaFunction(cuFloor, new Pointer[] {
 					Pointer.to(new int[] { size() }),
 					Pointer.to(realizations),
 					Pointer.to(((RandomVariableCudaWithFinalizer)randomVariable).realizations),
@@ -1047,22 +1047,22 @@ public class RandomVariableCudaWithFinalizer implements RandomVariable {
 	}
 
 
-	public RandomVariable accrue(RandomVariable rate, double periodLength) {
+	public RandomVariable accrue(final RandomVariable rate, final double periodLength) {
 		// Set time of this random variable to maximum of time with respect to which measurability is known.
-		double newTime = Math.max(time, rate.getFiltrationTime());
+		final double newTime = Math.max(time, rate.getFiltrationTime());
 
 		if(isDeterministic() && rate.isDeterministic()) {
-			double newValueIfNonStochastic = valueIfNonStochastic * (1 + rate.get(0) * periodLength);
+			final double newValueIfNonStochastic = valueIfNonStochastic * (1 + rate.get(0) * periodLength);
 			return new RandomVariableCudaWithFinalizer(newTime, newValueIfNonStochastic);
 		}
 		else if(isDeterministic() && !rate.isDeterministic())
 			return rate.mult(periodLength*valueIfNonStochastic).add(valueIfNonStochastic);
 		else if(!isDeterministic() && rate.isDeterministic()) {
-			double rateValue = rate.get(0);
+			final double rateValue = rate.get(0);
 			return this.mult((1 + rateValue * periodLength));
 		}
 		else {
-			CUdeviceptr result = callCudaFunction(accrue, new Pointer[] {
+			final CUdeviceptr result = callCudaFunction(accrue, new Pointer[] {
 					Pointer.to(new int[] { size() }),
 					Pointer.to(realizations),
 					Pointer.to(((RandomVariableCudaWithFinalizer)rate).realizations),
@@ -1074,12 +1074,12 @@ public class RandomVariableCudaWithFinalizer implements RandomVariable {
 		}
 	}
 
-	public RandomVariable discount(RandomVariable rate, double periodLength) {
+	public RandomVariable discount(final RandomVariable rate, final double periodLength) {
 		// Set time of this random variable to maximum of time with respect to which measurability is known.
-		double newTime = Math.max(time, rate.getFiltrationTime());
+		final double newTime = Math.max(time, rate.getFiltrationTime());
 
 		if(isDeterministic() && rate.isDeterministic()) {
-			double newValueIfNonStochastic = valueIfNonStochastic / (1 + rate.get(0) * periodLength);
+			final double newValueIfNonStochastic = valueIfNonStochastic / (1 + rate.get(0) * periodLength);
 			return new RandomVariableCudaWithFinalizer(newTime, newValueIfNonStochastic);
 		}
 		else if(isDeterministic() && !rate.isDeterministic()) {
@@ -1087,11 +1087,11 @@ public class RandomVariableCudaWithFinalizer implements RandomVariable {
 			return rate.mult(periodLength/valueIfNonStochastic).add(1.0/valueIfNonStochastic).invert();
 		}
 		else if(!isDeterministic() && rate.isDeterministic()) {
-			double rateValue = rate.get(0);
+			final double rateValue = rate.get(0);
 			return this.div((1.0 + rateValue * periodLength));
 		}
 		else {
-			CUdeviceptr result = callCudaFunction(discount, new Pointer[] {
+			final CUdeviceptr result = callCudaFunction(discount, new Pointer[] {
 					Pointer.to(new int[] { size() }),
 					Pointer.to(realizations),
 					Pointer.to(((RandomVariableCudaWithFinalizer)rate).realizations),
@@ -1128,19 +1128,19 @@ public class RandomVariableCudaWithFinalizer implements RandomVariable {
 	}
 
 	@Override
-	public RandomVariable bus(RandomVariable randomVariable) {
+	public RandomVariable bus(final RandomVariable randomVariable) {
 		// TODO Auto-generated method stub
 		return null;
 	}
 
 	@Override
-	public RandomVariable vid(RandomVariable randomVariable) {
+	public RandomVariable vid(final RandomVariable randomVariable) {
 		// TODO Auto-generated method stub
 		return null;
 	}
 
 	@Override
-	public RandomVariable choose(RandomVariable valueIfTriggerNonNegative, RandomVariable valueIfTriggerNegative) {
+	public RandomVariable choose(final RandomVariable valueIfTriggerNonNegative, final RandomVariable valueIfTriggerNegative) {
 		// TODO Auto-generated method stub
 		return null;
 	}
@@ -1149,7 +1149,7 @@ public class RandomVariableCudaWithFinalizer implements RandomVariable {
 	 * @see net.finmath.stochastic.RandomVariable#addProduct(net.finmath.stochastic.RandomVariable, double)
 	 */
 	@Override
-	public RandomVariable addProduct(RandomVariable factor1, double factor2) {
+	public RandomVariable addProduct(final RandomVariable factor1, final double factor2) {
 		// TODO Auto-generated method stub
 		return null;
 	}
@@ -1158,7 +1158,7 @@ public class RandomVariableCudaWithFinalizer implements RandomVariable {
 	 * @see net.finmath.stochastic.RandomVariable#addProduct(net.finmath.stochastic.RandomVariable, net.finmath.stochastic.RandomVariable)
 	 */
 	@Override
-	public RandomVariable addProduct(RandomVariable factor1, RandomVariable factor2) {
+	public RandomVariable addProduct(final RandomVariable factor1, final RandomVariable factor2) {
 		// TODO Auto-generated method stub
 		return null;
 	}
@@ -1167,7 +1167,7 @@ public class RandomVariableCudaWithFinalizer implements RandomVariable {
 	 * @see net.finmath.stochastic.RandomVariable#addRatio(net.finmath.stochastic.RandomVariable, net.finmath.stochastic.RandomVariable)
 	 */
 	@Override
-	public RandomVariable addRatio(RandomVariable numerator, RandomVariable denominator) {
+	public RandomVariable addRatio(final RandomVariable numerator, final RandomVariable denominator) {
 		// TODO Auto-generated method stub
 		return null;
 	}
@@ -1176,7 +1176,7 @@ public class RandomVariableCudaWithFinalizer implements RandomVariable {
 	 * @see net.finmath.stochastic.RandomVariable#subRatio(net.finmath.stochastic.RandomVariable, net.finmath.stochastic.RandomVariable)
 	 */
 	@Override
-	public RandomVariable subRatio(RandomVariable numerator, RandomVariable denominator) {
+	public RandomVariable subRatio(final RandomVariable numerator, final RandomVariable denominator) {
 		// TODO Auto-generated method stub
 		return null;
 	}
@@ -1201,10 +1201,10 @@ public class RandomVariableCudaWithFinalizer implements RandomVariable {
 		return reduced.getRealizations()[0];
 	}
 
-	private RandomVariableCudaWithFinalizer reduceBySize(int bySize) {
-		int blockSizeX = bySize;
-		int gridSizeX = (int)Math.ceil((double)size()/2 / blockSizeX);
-		CUdeviceptr reduceVector = getCUdeviceptr(gridSizeX);
+	private RandomVariableCudaWithFinalizer reduceBySize(final int bySize) {
+		final int blockSizeX = bySize;
+		final int gridSizeX = (int)Math.ceil((double)size()/2 / blockSizeX);
+		final CUdeviceptr reduceVector = getCUdeviceptr(gridSizeX);
 
 		callCudaFunction(reducePartial, new Pointer[] {
 				Pointer.to(new int[] { size() }),
@@ -1215,25 +1215,25 @@ public class RandomVariableCudaWithFinalizer implements RandomVariable {
 		return new RandomVariableCudaWithFinalizer(0.0, reduceVector, gridSizeX);
 	}
 
-	private CUdeviceptr callCudaFunction(CUfunction function, Pointer[] arguments) {
+	private CUdeviceptr callCudaFunction(final CUfunction function, final Pointer[] arguments) {
 		// Allocate device output memory
-		CUdeviceptr result = getCUdeviceptr((long)size());
+		final CUdeviceptr result = getCUdeviceptr((long)size());
 		arguments[arguments.length-1] = Pointer.to(result);
 
-		int blockSizeX = 256;
-		int gridSizeX = (int)Math.ceil((double)size() / blockSizeX);
+		final int blockSizeX = 256;
+		final int gridSizeX = (int)Math.ceil((double)size() / blockSizeX);
 		callCudaFunction(function, arguments, gridSizeX, blockSizeX, 0);
 		return result;
 	}
 
-	private CUdeviceptr callCudaFunction(final CUfunction function, Pointer[] arguments, final int gridSizeX, final int blockSizeX, final int sharedMemorySize) {
+	private CUdeviceptr callCudaFunction(final CUfunction function, final Pointer[] arguments, final int gridSizeX, final int blockSizeX, final int sharedMemorySize) {
 		// Allocate device output memory
-		CUdeviceptr result = getCUdeviceptr((long)size());
+		final CUdeviceptr result = getCUdeviceptr((long)size());
 		arguments[arguments.length-1] = Pointer.to(result);
 
 		// Set up the kernel parameters: A pointer to an array
 		// of pointers which point to the actual values.
-		Pointer kernelParameters = Pointer.to(arguments);
+		final Pointer kernelParameters = Pointer.to(arguments);
 
 		// Call the kernel function.
 		cuLaunchKernel(function,
@@ -1256,39 +1256,39 @@ public class RandomVariableCudaWithFinalizer implements RandomVariable {
 	 * @return The name of the PTX file
 	 * @throws IOException If an I/O error occurs
 	 */
-	private static String preparePtxFile(String cuFileName) throws IOException
+	private static String preparePtxFile(final String cuFileName) throws IOException
 	{
 		int endIndex = cuFileName.lastIndexOf('.');
 		if (endIndex == -1)
 		{
 			endIndex = cuFileName.length()-1;
 		}
-		String ptxFileName = cuFileName.substring(0, endIndex+1)+"ptx";
-		File ptxFile = new File(ptxFileName);
+		final String ptxFileName = cuFileName.substring(0, endIndex+1)+"ptx";
+		final File ptxFile = new File(ptxFileName);
 		if (ptxFile.exists())
 			return ptxFileName;
 
-		File cuFile = new File(cuFileName);
+		final File cuFile = new File(cuFileName);
 		if (!cuFile.exists())
 			throw new IOException("Input file not found: "+cuFileName);
-		String modelString = "-m"+System.getProperty("sun.arch.data.model");
-		String command =
+		final String modelString = "-m"+System.getProperty("sun.arch.data.model");
+		final String command =
 				"nvcc " + modelString + " -ptx "+
 						cuFile.getPath()+" -o "+ptxFileName;
 
 		System.out.println("Executing\n"+command);
-		Process process = Runtime.getRuntime().exec(command);
+		final Process process = Runtime.getRuntime().exec(command);
 
-		String errorMessage =
+		final String errorMessage =
 				new String(toByteArray(process.getErrorStream()));
-		String outputMessage =
+		final String outputMessage =
 				new String(toByteArray(process.getInputStream()));
 		int exitValue = 0;
 		try
 		{
 			exitValue = process.waitFor();
 		}
-		catch (InterruptedException e)
+		catch (final InterruptedException e)
 		{
 			Thread.currentThread().interrupt();
 			throw new IOException(
@@ -1315,14 +1315,14 @@ public class RandomVariableCudaWithFinalizer implements RandomVariable {
 	 * @return The byte array containing the data from the input stream
 	 * @throws IOException If an I/O error occurs
 	 */
-	private static byte[] toByteArray(InputStream inputStream)
+	private static byte[] toByteArray(final InputStream inputStream)
 			throws IOException
 	{
-		ByteArrayOutputStream baos = new ByteArrayOutputStream();
-		byte buffer[] = new byte[8192];
+		final ByteArrayOutputStream baos = new ByteArrayOutputStream();
+		final byte buffer[] = new byte[8192];
 		while (true)
 		{
-			int read = inputStream.read(buffer);
+			final int read = inputStream.read(buffer);
 			if (read == -1)
 			{
 				break;

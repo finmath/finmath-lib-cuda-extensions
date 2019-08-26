@@ -67,11 +67,11 @@ public class BrownianMotionJavaRandom implements BrownianMotion, Serializable {
 	 * @param randomVariableFactory Factory to be used to create random variable.
 	 */
 	public BrownianMotionJavaRandom(
-			TimeDiscretization timeDiscretization,
-			int numberOfFactors,
-			int numberOfPaths,
-			int seed,
-			AbstractRandomVariableFactory randomVariableFactory) {
+			final TimeDiscretization timeDiscretization,
+			final int numberOfFactors,
+			final int numberOfPaths,
+			final int seed,
+			final AbstractRandomVariableFactory randomVariableFactory) {
 		super();
 		this.timeDiscretization = timeDiscretization;
 		this.numberOfFactors	= numberOfFactors;
@@ -92,26 +92,26 @@ public class BrownianMotionJavaRandom implements BrownianMotion, Serializable {
 	 * @param seed The seed of the random number generator.
 	 */
 	public BrownianMotionJavaRandom(
-			TimeDiscretization timeDiscretization,
-			int numberOfFactors,
-			int numberOfPaths,
-			int seed) {
+			final TimeDiscretization timeDiscretization,
+			final int numberOfFactors,
+			final int numberOfPaths,
+			final int seed) {
 		this(timeDiscretization, numberOfFactors, numberOfPaths, seed, new RandomVariableFactory());
 	}
 
 	@Override
-	public BrownianMotion getCloneWithModifiedSeed(int seed) {
+	public BrownianMotion getCloneWithModifiedSeed(final int seed) {
 		return new BrownianMotionJavaRandom(getTimeDiscretization(), getNumberOfFactors(), getNumberOfPaths(), seed);
 	}
 
 	@Override
-	public BrownianMotion getCloneWithModifiedTimeDiscretization(TimeDiscretization newTimeDiscretization) {
+	public BrownianMotion getCloneWithModifiedTimeDiscretization(final TimeDiscretization newTimeDiscretization) {
 		/// @TODO This can be improved: a complete recreation of the Brownian motion wouldn't be necessary!
 		return new BrownianMotionJavaRandom(newTimeDiscretization, getNumberOfFactors(), getNumberOfPaths(), getSeed());
 	}
 
 	@Override
-	public RandomVariable getBrownianIncrement(int timeIndex, int factor) {
+	public RandomVariable getBrownianIncrement(final int timeIndex, final int factor) {
 
 		// Thread safe lazy initialization
 		synchronized(brownianIncrementsLazyInitLock) {
@@ -133,13 +133,13 @@ public class BrownianMotionJavaRandom implements BrownianMotion, Serializable {
 		if(brownianIncrements != null) return;	// Nothing to do
 
 		// Create random number sequence generator
-		Random random = new Random(seed);
+		final Random random = new Random(seed);
 
 		// Allocate memory
-		double[][][] brownianIncrementsArray = new double[timeDiscretization.getNumberOfTimeSteps()][numberOfFactors][numberOfPaths];
+		final double[][][] brownianIncrementsArray = new double[timeDiscretization.getNumberOfTimeSteps()][numberOfFactors][numberOfPaths];
 
 		// Pre-calculate square roots of deltaT
-		double[] sqrtOfTimeStep = new double[timeDiscretization.getNumberOfTimeSteps()];
+		final double[] sqrtOfTimeStep = new double[timeDiscretization.getNumberOfTimeSteps()];
 		for(int timeIndex=0; timeIndex<sqrtOfTimeStep.length; timeIndex++) {
 			sqrtOfTimeStep[timeIndex] = Math.sqrt(timeDiscretization.getTimeStep(timeIndex));
 		}
@@ -151,12 +151,12 @@ public class BrownianMotionJavaRandom implements BrownianMotion, Serializable {
 		 * Since we want to generate independent streams (paths), the loop over path is the outer loop.
 		 */
 		for(int timeIndex=0; timeIndex<timeDiscretization.getNumberOfTimeSteps(); timeIndex++) {
-			double sqrtDeltaT = sqrtOfTimeStep[timeIndex];
+			final double sqrtDeltaT = sqrtOfTimeStep[timeIndex];
 			// Generate uncorrelated Brownian increment
 			for(int factor=0; factor<numberOfFactors; factor++) {
-				double[] randomVariableValues = brownianIncrementsArray[timeIndex][factor];
+				final double[] randomVariableValues = brownianIncrementsArray[timeIndex][factor];
 				for(int path=0; path<numberOfPaths; path++) {
-					double uniformIncrement = random.nextDouble();
+					final double uniformIncrement = random.nextDouble();
 					randomVariableValues[path] = net.finmath.functions.NormalDistribution.inverseCumulativeDistribution(uniformIncrement) * sqrtDeltaT;
 				}
 			}
@@ -167,7 +167,7 @@ public class BrownianMotionJavaRandom implements BrownianMotion, Serializable {
 
 		// Wrap the values in RandomVariableFromDoubleArray objects
 		for(int timeIndex=0; timeIndex<timeDiscretization.getNumberOfTimeSteps(); timeIndex++) {
-			double time = timeDiscretization.getTime(timeIndex+1);
+			final double time = timeDiscretization.getTime(timeIndex+1);
 			for(int factor=0; factor<numberOfFactors; factor++) {
 				brownianIncrements[timeIndex][factor] =
 						randomVariableFactory.createRandomVariable(time, brownianIncrementsArray[timeIndex][factor]);
@@ -191,7 +191,7 @@ public class BrownianMotionJavaRandom implements BrownianMotion, Serializable {
 	}
 
 	@Override
-	public RandomVariable getRandomVariableForConstant(double value) {
+	public RandomVariable getRandomVariableForConstant(final double value) {
 		return randomVariableFactory.createRandomVariable(value);
 	}
 
@@ -211,11 +211,11 @@ public class BrownianMotionJavaRandom implements BrownianMotion, Serializable {
 	}
 
 	@Override
-	public boolean equals(Object o) {
+	public boolean equals(final Object o) {
 		if (this == o) return true;
 		if (o == null || getClass() != o.getClass()) return false;
 
-		BrownianMotionJavaRandom that = (BrownianMotionJavaRandom) o;
+		final BrownianMotionJavaRandom that = (BrownianMotionJavaRandom) o;
 
 		if (numberOfFactors != that.numberOfFactors) return false;
 		if (numberOfPaths != that.numberOfPaths) return false;
@@ -226,7 +226,7 @@ public class BrownianMotionJavaRandom implements BrownianMotion, Serializable {
 	}
 
 	@Override
-	public RandomVariable getIncrement(int timeIndex, int factor) {
+	public RandomVariable getIncrement(final int timeIndex, final int factor) {
 		return getBrownianIncrement(timeIndex, factor);
 	}
 
