@@ -109,6 +109,18 @@ Remark:
 
 There is also a unit test performing a brute force Monte-Carlo calibration of a LIBOR Market Model with stochastic volatility on the CPU and the GPU. Note however that the unit test uses a too small size for the number of simulation paths, such that the GPU code is no improvement over the CPU code. The unit test shows that CPU and GPU give consistent results.
 
+The performance of a brute-force Monte-Carlo calibration with 81920 paths are given below. Note: if the number of paths is increased, the GPU time remains almost the same (given that the GPU has sufficient memory), while the CPU time grows linearly. This is due to the fact that the GPU performance has a large part of management overhead (which will be reduced in future versions).
+
+```
+Running net.finmath.montecarlo.interestrates.LIBORMarketModelCalibrationTest
+
+Calibration to Swaptions using GPU    RMS Error.....: 0.198%    calculation time =  67.49 sec.
+Calibration to Swaptions using CPU    RMS Error.....: 0.198%    calculation time = 353.88 sec.
+
+```
+LIBOR Market Model with stochastic volatility, 6 factors, 81920 paths, 
+
+
 ## References
 
 * [finmath lib Project documentation](http://finmath.net/finmath-lib/)
