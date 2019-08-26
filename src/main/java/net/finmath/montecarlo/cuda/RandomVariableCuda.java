@@ -112,7 +112,7 @@ public class RandomVariableCuda implements RandomVariable {
 					while(true) {
 						System.gc();
 						try {
-							Thread.sleep(100);
+							Thread.sleep(1000);
 						} catch (InterruptedException e) {
 							// TODO Auto-generated catch block
 							e.printStackTrace();
@@ -122,24 +122,9 @@ public class RandomVariableCuda implements RandomVariable {
 			}).start();
 		}
 
-		private synchronized void manage(DevicePointerReference devicePointerReference, long size) {
-			CUdeviceptr cuDevicePtr = devicePointerReference.get();
-			if(logger.isLoggable(Level.FINEST)) {
-				logger.finest("Managing" + cuDevicePtr + " with " + devicePointerReference + ". Size of reference map " + vectorsInUseReferenceMap.size());
-			}
-
-			ReferenceQueue<DevicePointerReference> vectorsToRecycleReferenceQueue = vectorsToRecycleReferenceQueueMap.get(new Integer((int)size));
-			if(vectorsToRecycleReferenceQueue == null) {
-				logger.fine("Creating reference queue for vector size " + size);
-				vectorsToRecycleReferenceQueueMap.put(new Integer((int)size), vectorsToRecycleReferenceQueue = new ReferenceQueue<DevicePointerReference>());
-			}
-			// Manage CUdeviceptr
-			WeakReference<DevicePointerReference> reference = new WeakReference<DevicePointerReference>(devicePointerReference, vectorsToRecycleReferenceQueue);
-			vectorsInUseReferenceMap.put(reference, cuDevicePtr);
-			if(logger.isLoggable(Level.FINEST)) {
-				logger.finest("Created weak reference " + reference + ". Size of reference map " + vectorsInUseReferenceMap.size());
-			}
-		}
+		private float deviceFreeMemPercentageLast = 100;
+		private int deviceFreeMemCheck = 100;
+		private int deviceFreeMemCheckLevel = 100;
 
 		public synchronized DevicePointerReference getCUdeviceptr(final long size) {
 			if(logger.isLoggable(Level.FINEST)) {
@@ -170,7 +155,12 @@ public class RandomVariableCuda implements RandomVariable {
 				cuDevicePtr = vectorsInUseReferenceMap.remove(reference);
 			}
 			else {
-				float deviceFreeMemPercentage = getDeviceFreeMemPercentage();
+				float deviceFreeMemPercentage = deviceFreeMemPercentageLast;
+				if(deviceFreeMemCheck++ > deviceFreeMemCheckLevel) {
+					deviceFreeMemPercentage = getDeviceFreeMemPercentage();
+					deviceFreeMemPercentageLast = deviceFreeMemPercentage;
+					deviceFreeMemCheck = 0;
+				}
 				logger.finest("Device free memory " + deviceFreeMemPercentage + "%");
 
 				// No pointer found, try GC if we are above a critical level
@@ -224,9 +214,6 @@ public class RandomVariableCuda implements RandomVariable {
 
 								logger.warning("Failed creating device vector "+ cuDevicePtr + " with size=" + size + " with error "+ cudaErrorName + ": " + cudaErrorDescription);
 							}
-							else {
-								logger.finest("Creating device vector "+ cuDevicePtr + " with size=" + size);
-							}
 							cuCtxSynchronize();
 							return cuDevicePtr;
 						}}).get();
@@ -240,8 +227,15 @@ public class RandomVariableCuda implements RandomVariable {
 			}
 			}
 			
+			/* manage the pointer*/
 			DevicePointerReference devicePointerReference = new DevicePointerReference(cuDevicePtr);
-			manage(devicePointerReference, size);
+
+			WeakReference<DevicePointerReference> newReference = new WeakReference<DevicePointerReference>(devicePointerReference, vectorsToRecycleReferenceQueue);
+			vectorsInUseReferenceMap.put(newReference, cuDevicePtr);
+			if(logger.isLoggable(Level.FINEST)) {
+				logger.finest("Created weak reference " + newReference + ". Size of reference map " + vectorsInUseReferenceMap.size());
+			}
+
 			return devicePointerReference;
 		}
 
