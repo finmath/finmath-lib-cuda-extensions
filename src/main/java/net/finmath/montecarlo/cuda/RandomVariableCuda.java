@@ -21,8 +21,10 @@ import java.lang.ref.WeakReference;
 import java.net.URISyntaxException;
 import java.net.URL;
 import java.util.Map;
+import java.util.Queue;
 import java.util.concurrent.Callable;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.ConcurrentLinkedQueue;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
@@ -74,14 +76,43 @@ public class RandomVariableCuda implements RandomVariable {
 	 * a recycling of the device vector.
 	 */
 	public static class DevicePointerReference {
-		public CUdeviceptr devicePointer;
+		private final DevicePointer devicePointer;
 
-		public DevicePointerReference(CUdeviceptr devicePointer) {
+		public DevicePointerReference(CUdeviceptr devicePointer, long size) {
+			this.devicePointer = new DevicePointer(devicePointer, size);
+		}
+
+		public CUdeviceptr get() {
+			return devicePointer.get();
+		}
+
+		public DevicePointer getDevicePointer() {
+			return devicePointer;
+		}
+
+		public long size() {
+			return devicePointer.size();
+		}
+	}
+
+	/**
+	 * An object wrapping a cuda device pointer with meta data.
+	 */
+	public static class DevicePointer {
+		private final CUdeviceptr devicePointer;
+		private final long size;
+
+		public DevicePointer(CUdeviceptr devicePointer, long size) {
 			this.devicePointer = devicePointer;
+			this.size = size;
 		}
 
 		public CUdeviceptr get() {
 			return devicePointer;
+		}
+
+		public long size() {
+			return size;
 		}
 	}
 
@@ -98,43 +129,49 @@ public class RandomVariableCuda implements RandomVariable {
 	 *
 	 */
 	private static class DeviceMemoryPool {
-		private final static Map<Integer, ReferenceQueue<DevicePointerReference>>		vectorsToRecycleReferenceQueueMap	= new ConcurrentHashMap<Integer, ReferenceQueue<DevicePointerReference>>();
-		private final static Map<WeakReference<DevicePointerReference>, CUdeviceptr>	vectorsInUseReferenceMap			= new ConcurrentHashMap<WeakReference<DevicePointerReference>, CUdeviceptr>();
+		private final static ReferenceQueue<DevicePointerReference> devicePointersToRecycle = new ReferenceQueue<DevicePointerReference>();
+		private final static Map<Integer, Queue<DevicePointer>>		vectorsToRecycleReferenceQueueMap	= new ConcurrentHashMap<Integer, Queue<DevicePointer>>();
+		private final static Map<WeakReference<DevicePointerReference>, DevicePointer>	vectorsInUseReferenceMap			= new ConcurrentHashMap<WeakReference<DevicePointerReference>, DevicePointer>();
 		private final static float	vectorsRecyclerPercentageFreeToStartGC		= 0.10f;		// should be set by monitoring GPU mem
 		private final static float	vectorsRecyclerPercentageFreeToWaitForGC	= 0.05f;		// should be set by monitoring GPU mem
 		private final static long	vectorsRecyclerMaxTimeOutMillis			= 300;
 
 		// Thread to collect weak references - will be worked on for a future version.
+		static void recycle(int timeOut) {
+			try {
+				System.gc();
+				Reference<? extends DevicePointerReference> devicePointerReference = devicePointersToRecycle.remove(timeOut);
+				DevicePointer devicePointer =  vectorsInUseReferenceMap.remove(devicePointerReference);
+				Queue<DevicePointer> devicePointerToRecycleForGivenSize = vectorsToRecycleReferenceQueueMap.get((int)devicePointer.size);
+				if(devicePointerToRecycleForGivenSize == null) {
+					vectorsToRecycleReferenceQueueMap.put((int)devicePointer.size, devicePointerToRecycleForGivenSize = new ConcurrentLinkedQueue<DevicePointer>());
+				}
+				devicePointerToRecycleForGivenSize.add(devicePointer);
+			} catch (IllegalArgumentException | InterruptedException e1) {
+				// TODO Auto-generated catch block
+				e1.printStackTrace();
+			}
+		}
+
 		static {
 			new Thread(new Runnable() {
 				@Override
 				public void run() {
 					while(true) {
-						System.gc();
-						try {
-							Thread.sleep(100);
-						} catch (InterruptedException e) {
-							// TODO Auto-generated catch block
-							e.printStackTrace();
-						}
+						recycle(100);
 					}
 				}
 			}).start();
 		}
 
-		private synchronized void manage(DevicePointerReference devicePointerReference, long size) {
-			CUdeviceptr cuDevicePtr = devicePointerReference.get();
+		private synchronized void manage(DevicePointerReference devicePointerReference) {
+			DevicePointer cuDevicePtr = devicePointerReference.getDevicePointer();
 			if(logger.isLoggable(Level.FINEST)) {
 				logger.finest("Managing" + cuDevicePtr + " with " + devicePointerReference + ". Size of reference map " + vectorsInUseReferenceMap.size());
 			}
 
-			ReferenceQueue<DevicePointerReference> vectorsToRecycleReferenceQueue = vectorsToRecycleReferenceQueueMap.get(new Integer((int)size));
-			if(vectorsToRecycleReferenceQueue == null) {
-				logger.fine("Creating reference queue for vector size " + size);
-				vectorsToRecycleReferenceQueueMap.put(new Integer((int)size), vectorsToRecycleReferenceQueue = new ReferenceQueue<DevicePointerReference>());
-			}
 			// Manage CUdeviceptr
-			WeakReference<DevicePointerReference> reference = new WeakReference<DevicePointerReference>(devicePointerReference, vectorsToRecycleReferenceQueue);
+			WeakReference<DevicePointerReference> reference = new WeakReference<DevicePointerReference>(devicePointerReference, devicePointersToRecycle);
 			vectorsInUseReferenceMap.put(reference, cuDevicePtr);
 			if(logger.isLoggable(Level.FINEST)) {
 				logger.finest("Created weak reference " + reference + ". Size of reference map " + vectorsInUseReferenceMap.size());
@@ -142,6 +179,7 @@ public class RandomVariableCuda implements RandomVariable {
 		}
 
 		public synchronized DevicePointerReference getCUdeviceptr(final long size) {
+			/*
 			if(logger.isLoggable(Level.FINEST)) {
 				StringBuilder stringBuilder = new StringBuilder();
 				stringBuilder.append("Memory pool stats: ");
@@ -152,53 +190,43 @@ public class RandomVariableCuda implements RandomVariable {
 				stringBuilder.append("  total number of vectors: " + vectorsInUseReferenceMap.size());
 				logger.finest(stringBuilder.toString());
 			}
-
-			CUdeviceptr cuDevicePtr = null;
+			 */
 
 			// Check for object to recycle
-			ReferenceQueue<DevicePointerReference> vectorsToRecycleReferenceQueue = vectorsToRecycleReferenceQueueMap.get(new Integer((int)size));
-			if(vectorsToRecycleReferenceQueue == null) {
-				logger.info("Creating reference queue for vector size " + size);
-				vectorsToRecycleReferenceQueueMap.put(new Integer((int)size), vectorsToRecycleReferenceQueue = new ReferenceQueue<DevicePointerReference>());
-			}
+			Queue<DevicePointer> vectorsToRecycleReferenceQueue = vectorsToRecycleReferenceQueueMap.get(new Integer((int)size));
+			DevicePointer devicePointer = vectorsToRecycleReferenceQueue != null ? vectorsToRecycleReferenceQueue.poll() : null;
 
-			Reference<? extends DevicePointerReference> reference = vectorsToRecycleReferenceQueue.poll();
-			if(reference != null) {
+			if(devicePointer != null) {
 				if(logger.isLoggable(Level.FINEST)) {
-					logger.finest("Recycling (1) device pointer " + cuDevicePtr + " from " + reference);
+					logger.finest("Recycling (1) device pointer " + devicePointer.get() + " from " + devicePointer);
 				}
-				cuDevicePtr = vectorsInUseReferenceMap.remove(reference);
 			}
 			else {
 				float deviceFreeMemPercentage = getDeviceFreeMemPercentage();
 				logger.finest("Device free memory " + deviceFreeMemPercentage + "%");
 
 				// No pointer found, try GC if we are above a critical level
-				if(reference == null && deviceFreeMemPercentage < vectorsRecyclerPercentageFreeToStartGC) {
-					try {
-						System.gc();
-						reference = vectorsToRecycleReferenceQueue.remove(1);
-					} catch (IllegalArgumentException | InterruptedException e) {}
+				if(devicePointer == null && deviceFreeMemPercentage < vectorsRecyclerPercentageFreeToStartGC) {
+					recycle(1);
+					vectorsToRecycleReferenceQueue = vectorsToRecycleReferenceQueueMap.get(new Integer((int)size));
+					devicePointer = vectorsToRecycleReferenceQueue != null ? vectorsToRecycleReferenceQueue.poll() : null;
 				}
 
 				// Wait for GC
-				if(reference == null && deviceFreeMemPercentage < vectorsRecyclerPercentageFreeToWaitForGC) {
-
+				if(devicePointer == null && deviceFreeMemPercentage < vectorsRecyclerPercentageFreeToWaitForGC) {
 					/*
 					 * Try to obtain a reference after GC, retry with waits for 1 ms, 10 ms, 100 ms, ...
 					 */
-					System.gc();
 					long timeOut = 1;
-					while(reference == null && timeOut < vectorsRecyclerMaxTimeOutMillis) {
-						try {
-							reference = vectorsToRecycleReferenceQueue.remove(timeOut);
-							timeOut *= 4;
-						} catch (IllegalArgumentException | InterruptedException e) {}
+					while(devicePointer == null && timeOut < vectorsRecyclerMaxTimeOutMillis) {
+						recycle((int)timeOut);
+						vectorsToRecycleReferenceQueue = vectorsToRecycleReferenceQueueMap.get(new Integer((int)size));
+						devicePointer = vectorsToRecycleReferenceQueue != null ? vectorsToRecycleReferenceQueue.poll() : null;
+						timeOut *= 4;
 					}
 
-					if(reference != null) {
-						logger.finest("Recycling (2) device pointer " + cuDevicePtr + " from " + reference);
-						cuDevicePtr = vectorsInUseReferenceMap.remove(reference);
+					if(devicePointer != null) {
+						logger.finest("Recycling (2) device pointer " + devicePointer.get() + " from " + devicePointer);
 					}
 					else {
 						// Still no pointer found for requested size, consider cleaning all (also other sizes)
@@ -208,50 +236,53 @@ public class RandomVariableCuda implements RandomVariable {
 				}
 			}
 
-			if(cuDevicePtr == null)  {
-			// Still no pointer found, create new one
-			try {
-				cuDevicePtr =
-						deviceExecutor.submit(new Callable<CUdeviceptr>() { public CUdeviceptr call() {
-							CUdeviceptr cuDevicePtr = new CUdeviceptr();
-							int succ = JCudaDriver.cuMemAlloc(cuDevicePtr, size * Sizeof.FLOAT);
-							if(succ != 0) {
-								cuDevicePtr = null;
-								String[] cudaErrorName = new String[1];
-								JCudaDriver.cuGetErrorName(succ, cudaErrorName);
-								String[] cudaErrorDescription = new String[1];
-								JCudaDriver.cuGetErrorString(succ, cudaErrorDescription);
+			if(devicePointer != null) {
+				// No pointer found, create new one
+				CUdeviceptr cuDevicePtr = null;
+				try {
+					cuDevicePtr =
+							deviceExecutor.submit(new Callable<CUdeviceptr>() { public CUdeviceptr call() {
+								CUdeviceptr cuDevicePtr = new CUdeviceptr();
+								int succ = JCudaDriver.cuMemAlloc(cuDevicePtr, size * Sizeof.FLOAT);
+								if(succ != 0) {
+									cuDevicePtr = null;
+									String[] cudaErrorName = new String[1];
+									JCudaDriver.cuGetErrorName(succ, cudaErrorName);
+									String[] cudaErrorDescription = new String[1];
+									JCudaDriver.cuGetErrorString(succ, cudaErrorDescription);
 
-								logger.warning("Failed creating device vector "+ cuDevicePtr + " with size=" + size + " with error "+ cudaErrorName + ": " + cudaErrorDescription);
-							}
-							else {
-								logger.finest("Creating device vector "+ cuDevicePtr + " with size=" + size);
-							}
-							cuCtxSynchronize();
-							return cuDevicePtr;
-						}}).get();
-			} catch (InterruptedException | ExecutionException e) {
-				logger.severe("Failed to allocate device vector with size=" + size);
+									logger.warning("Failed creating device vector "+ cuDevicePtr + " with size=" + size + " with error "+ cudaErrorName + ": " + cudaErrorDescription);
+								}
+								else {
+									logger.finest("Creating device vector "+ cuDevicePtr + " with size=" + size);
+								}
+								cuCtxSynchronize();
+								return cuDevicePtr;
+							}}).get();
+				} catch (InterruptedException | ExecutionException e) {
+					logger.severe("Failed to allocate device vector with size=" + size);
+				}
+
+				if(cuDevicePtr != null) devicePointer = new DevicePointer(cuDevicePtr, size);
 			}
 
-			if(cuDevicePtr == null) {
+			if(devicePointer == null) {
 				logger.severe("Failed to allocate device vector with size=" + size);
 				throw new OutOfMemoryError("Failed to allocate device vector with size=" + size);
 			}
-			}
 			
-			DevicePointerReference devicePointerReference = new DevicePointerReference(cuDevicePtr);
-			manage(devicePointerReference, size);
+			DevicePointerReference devicePointerReference = new DevicePointerReference(devicePointer.devicePointer, size);
+			manage(devicePointerReference);
 			return devicePointerReference;
 		}
 
 		public synchronized void clean() {
 			// Clean up all remaining pointers
-			for(ReferenceQueue<DevicePointerReference> vectorsToRecycleReferenceQueue : vectorsToRecycleReferenceQueueMap.values()) {
-				Reference<? extends DevicePointerReference> reference;
+			for(Queue<DevicePointer> vectorsToRecycleReferenceQueue : vectorsToRecycleReferenceQueueMap.values()) {
+				DevicePointer reference;
 				while((reference = vectorsToRecycleReferenceQueue.poll()) != null) {
-					final CUdeviceptr cuDevicePtr = vectorsInUseReferenceMap.remove(reference);
-					logger.finest("Freeing device pointer " + cuDevicePtr + " from " + reference);
+					final CUdeviceptr cuDevicePtr = reference.get();
+					logger.finest("Freeing device pointer " + reference.get() + " from " + reference);
 					try {
 						deviceExecutor.submit(new Runnable() { public void run() {
 							cuCtxSynchronize();
@@ -1487,13 +1518,13 @@ public class RandomVariableCuda implements RandomVariable {
 			final Pointer kernelParameters = Pointer.to(arguments);
 
 			deviceExecutor.submit(new Runnable() { public void run() {
-					cuCtxSynchronize();
-					cuLaunchKernel(function,
-							gridSizeX,  1, 1,      // Grid dimension
-							blockSizeX, 1, 1,      // Block dimension
-							sharedMemorySize * Sizeof.FLOAT, null,               // Shared memory size and stream
-							kernelParameters, null // Kernel- and extra parameters
-							);
+				cuCtxSynchronize();
+				cuLaunchKernel(function,
+						gridSizeX,  1, 1,      // Grid dimension
+						blockSizeX, 1, 1,      // Block dimension
+						sharedMemorySize * Sizeof.FLOAT, null,               // Shared memory size and stream
+						kernelParameters, null // Kernel- and extra parameters
+						);
 			}});
 		}
 	}
