@@ -157,7 +157,7 @@ public class RandomVariableCuda implements RandomVariable {
 				if(reference == null && deviceFreeMemPercentage < vectorsRecyclerPercentageFreeToStartGC) {
 					System.gc();
 
-					if(logger.isLoggable(Level.FINE)) {
+					if(logger.isLoggable(Level.FINEST)) {
 						logger.fine("Device free memory " + deviceFreeMemPercentage*100 + "%");
 					}
 
@@ -188,7 +188,7 @@ public class RandomVariableCuda implements RandomVariable {
 					}
 					else {
 						// Still no pointer found for requested size, consider cleaning all (also other sizes)
-						logger.info("Last resort: Cleaning all unused vectors on device.");
+						logger.info("Last resort: Cleaning all unused vectors on device. Device free memory " + deviceFreeMemPercentage*100 + "%");
 						clean();
 					}
 				}
