@@ -122,10 +122,6 @@ public class RandomVariableCuda implements RandomVariable {
 			}).start();
 		}
 
-		private float deviceFreeMemPercentageLast = 100;
-		private int deviceFreeMemCheck = 100;
-		private int deviceFreeMemCheckLevel = 100;
-
 		public synchronized DevicePointerReference getCUdeviceptr(final long size) {
 			if(logger.isLoggable(Level.FINEST)) {
 				StringBuilder stringBuilder = new StringBuilder();
@@ -155,14 +151,11 @@ public class RandomVariableCuda implements RandomVariable {
 				cuDevicePtr = vectorsInUseReferenceMap.remove(reference);
 			}
 			else {
-				float deviceFreeMemPercentage = deviceFreeMemPercentageLast;
-				if(deviceFreeMemCheck++ > deviceFreeMemCheckLevel) {
-					deviceFreeMemPercentage = getDeviceFreeMemPercentage();
-					deviceFreeMemPercentageLast = deviceFreeMemPercentage;
-					deviceFreeMemCheck = 0;
+				float deviceFreeMemPercentage = getDeviceFreeMemPercentage();
+				if(logger.isLoggable(Level.FINEST)) {
+					logger.finest("Device free memory " + deviceFreeMemPercentage + "%");
 				}
-				logger.finest("Device free memory " + deviceFreeMemPercentage + "%");
-
+				
 				// No pointer found, try GC if we are above a critical level
 				if(reference == null && deviceFreeMemPercentage < vectorsRecyclerPercentageFreeToStartGC) {
 					try {
