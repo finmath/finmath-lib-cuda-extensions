@@ -214,7 +214,6 @@ public class RandomVariableCuda implements RandomVariable {
 
 								logger.warning("Failed creating device vector "+ cuDevicePtr + " with size=" + size + " with error "+ cudaErrorName + ": " + cudaErrorDescription);
 							}
-							cuCtxSynchronize();
 							return cuDevicePtr;
 						}}).get();
 			} catch (InterruptedException | ExecutionException e) {
@@ -336,7 +335,8 @@ public class RandomVariableCuda implements RandomVariable {
 				// Initialize the driver and create a context for the first device.
 				cuInit(0);
 				cuDeviceGet(device, 0);
-				cuCtxCreate(context, jcuda.driver.CUctx_flags.CU_CTX_SCHED_BLOCKING_SYNC, device);
+//				cuCtxCreate(context, jcuda.driver.CUctx_flags.CU_CTX_SCHED_BLOCKING_SYNC, device);
+				cuCtxCreate(context, jcuda.driver.CUctx_flags.CU_CTX_SCHED_AUTO, device);
 
 				// Load the ptx file.
 				cuModuleLoad(module, ptxFileName2);
@@ -456,7 +456,6 @@ public class RandomVariableCuda implements RandomVariable {
 				deviceExecutor.submit(new Runnable() { public void run() {
 					cuCtxSynchronize();
 					JCudaDriver.cuMemcpyHtoD(devicePointerReference.get(), Pointer.to(values), (long)values.length * Sizeof.FLOAT);
-					cuCtxSynchronize();
 				}}).get();
 			} catch (InterruptedException | ExecutionException e) { throw new RuntimeException(e.getCause()); }
 
@@ -1467,15 +1466,12 @@ public class RandomVariableCuda implements RandomVariable {
 	}
 
 	private void callCudaFunction(CUfunction function, Pointer[] arguments) {
-		synchronized (deviceMemoryPool) {
 			int blockSizeX = 512;
 			int gridSizeX = (int)Math.ceil((double)size() / blockSizeX);
 			callCudaFunction(function, arguments, gridSizeX, blockSizeX, 0);
-		}
 	}
 
 	private void callCudaFunction(final CUfunction function, Pointer[] arguments, final int gridSizeX, final int blockSizeX, final int sharedMemorySize) {
-		synchronized (deviceMemoryPool) {
 			// Set up the kernel parameters: A pointer to an array
 			// of pointers which point to the actual values.
 			final Pointer kernelParameters = Pointer.to(arguments);
@@ -1489,6 +1485,5 @@ public class RandomVariableCuda implements RandomVariable {
 							kernelParameters, null // Kernel- and extra parameters
 							);
 			}});
-		}
 	}
 }
