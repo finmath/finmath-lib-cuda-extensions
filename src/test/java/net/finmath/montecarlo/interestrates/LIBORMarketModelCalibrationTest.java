@@ -61,7 +61,7 @@ public class LIBORMarketModelCalibrationTest {
 
 	private final int numberOfPaths		= 100000;
 	private final int numberOfFactors	= 5;
-	private static final int maxIterations = 30;
+	private static final int maxIterations = 25;
 
 	private static final DecimalFormat formatterReal2		= new DecimalFormat(" 0.00");
 	private static final DecimalFormat formatterValue		= new DecimalFormat(" ##0.000%;-##0.000%", new DecimalFormatSymbols(Locale.ENGLISH));
