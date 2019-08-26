@@ -137,19 +137,14 @@ public class RandomVariableCuda implements RandomVariable {
 		private final static long	vectorsRecyclerMaxTimeOutMillis			= 300;
 
 		// Thread to collect weak references - will be worked on for a future version.
-		static void recycle(int timeOut) {
-			try {
+		static void recycle() {
 				System.gc();
-				Reference<? extends DevicePointerReference> devicePointerReference = devicePointersToRecycle.remove(timeOut);
-				if(devicePointerReference != null) {
+				Reference<? extends DevicePointerReference> devicePointerReference;
+				while((devicePointerReference = devicePointersToRecycle.poll()) != null) {
 					DevicePointer devicePointer =  vectorsInUseReferenceMap.remove(devicePointerReference);
 					Queue<DevicePointer> devicePointerToRecycleForGivenSize = vectorsToRecycleReferenceQueueMap.computeIfAbsent((int)devicePointer.size, size -> new ConcurrentLinkedQueue<DevicePointer>());
 					devicePointerToRecycleForGivenSize.add(devicePointer);
 				}
-			} catch (IllegalArgumentException | InterruptedException e1) {
-				// TODO Auto-generated catch block
-				e1.printStackTrace();
-			}
 		}
 
 		static {
@@ -157,7 +152,13 @@ public class RandomVariableCuda implements RandomVariable {
 				@Override
 				public void run() {
 					while(true) {
-						recycle(100);
+						recycle();
+						try {
+							Thread.sleep(100);
+						} catch (InterruptedException e) {
+							// TODO Auto-generated catch block
+							e.printStackTrace();
+						}
 					}
 				}
 			}).start();
@@ -206,7 +207,7 @@ public class RandomVariableCuda implements RandomVariable {
 
 				// No pointer found, try GC if we are above a critical level
 				if(devicePointer == null && deviceFreeMemPercentage < vectorsRecyclerPercentageFreeToStartGC) {
-					recycle(1);
+					recycle();
 					vectorsToRecycleReferenceQueue = vectorsToRecycleReferenceQueueMap.get(new Integer((int)size));
 					devicePointer = vectorsToRecycleReferenceQueue != null ? vectorsToRecycleReferenceQueue.poll() : null;
 				}
@@ -218,9 +219,15 @@ public class RandomVariableCuda implements RandomVariable {
 					 */
 					long timeOut = 1;
 					while(devicePointer == null && timeOut < vectorsRecyclerMaxTimeOutMillis) {
-						recycle((int)timeOut);
+						recycle();
 						vectorsToRecycleReferenceQueue = vectorsToRecycleReferenceQueueMap.get(new Integer((int)size));
 						devicePointer = vectorsToRecycleReferenceQueue != null ? vectorsToRecycleReferenceQueue.poll() : null;
+						try {
+							Thread.sleep(timeOut);
+						} catch (InterruptedException e) {
+							// TODO Auto-generated catch block
+							e.printStackTrace();
+						}
 						timeOut *= 4;
 					}
 
