@@ -136,14 +136,30 @@ public class RandomVariableCuda implements RandomVariable {
 		private final static float	vectorsRecyclerPercentageFreeToWaitForGC	= 0.05f;		// should be set by monitoring GPU mem
 		private final static long	vectorsRecyclerMaxTimeOutMillis			= 300;
 
+		static void recycle(Reference<? extends DevicePointerReference> devicePointerReference) {
+			DevicePointer devicePointer =  vectorsInUseReferenceMap.remove(devicePointerReference);
+			Queue<DevicePointer> devicePointerToRecycleForGivenSize = vectorsToRecycleReferenceQueueMap.computeIfAbsent((int)devicePointer.size, size -> new ConcurrentLinkedQueue<DevicePointer>());
+			devicePointerToRecycleForGivenSize.add(devicePointer);
+		}
+
 		// Thread to collect weak references - will be worked on for a future version.
-		static void recycle() {
+		static void recycle(int timeOut) {
 			System.gc();
+			if(timeOut > 0) {
+				try {
+					Reference<? extends DevicePointerReference> devicePointerReference = devicePointersToRecycle.remove(timeOut);
+					DevicePointer devicePointer =  vectorsInUseReferenceMap.remove(devicePointerReference);
+					Queue<DevicePointer> devicePointerToRecycleForGivenSize = vectorsToRecycleReferenceQueueMap.computeIfAbsent((int)devicePointer.size, size -> new ConcurrentLinkedQueue<DevicePointer>());
+					devicePointerToRecycleForGivenSize.add(devicePointer);
+				} catch (InterruptedException e) {
+					// TODO Auto-generated catch block
+					e.printStackTrace();
+				}
+			}
+
 			Reference<? extends DevicePointerReference> devicePointerReference;
 			while((devicePointerReference = devicePointersToRecycle.poll()) != null) {
-				DevicePointer devicePointer =  vectorsInUseReferenceMap.remove(devicePointerReference);
-				Queue<DevicePointer> devicePointerToRecycleForGivenSize = vectorsToRecycleReferenceQueueMap.computeIfAbsent((int)devicePointer.size, size -> new ConcurrentLinkedQueue<DevicePointer>());
-				devicePointerToRecycleForGivenSize.add(devicePointer);
+				recycle(devicePointerReference);
 			}
 		}
 
@@ -152,29 +168,7 @@ public class RandomVariableCuda implements RandomVariable {
 				@Override
 				public void run() {
 					while(true) {
-						System.gc();
-						try {
-							Thread.sleep(100);
-						} catch (InterruptedException e) {
-							// TODO Auto-generated catch block
-							e.printStackTrace();
-						}
-					}
-				}
-			}).start();
-
-			new Thread(new Runnable() {
-				@Override
-				public void run() {
-					while(true) {
-						Reference<? extends DevicePointerReference> devicePointerReference;
-						try {
-							devicePointerReference = devicePointersToRecycle.remove();
-							DevicePointer devicePointer =  vectorsInUseReferenceMap.remove(devicePointerReference);
-							Queue<DevicePointer> devicePointerToRecycleForGivenSize = vectorsToRecycleReferenceQueueMap.computeIfAbsent((int)devicePointer.size, size -> new ConcurrentLinkedQueue<DevicePointer>());
-							devicePointerToRecycleForGivenSize.add(devicePointer);
-						} catch (InterruptedException e) {
-						}
+						recycle(1000);
 					}
 				}
 			}).start();
@@ -223,7 +217,7 @@ public class RandomVariableCuda implements RandomVariable {
 
 				// No pointer found, try GC if we are above a critical level
 				if(devicePointer == null && deviceFreeMemPercentage < vectorsRecyclerPercentageFreeToStartGC) {
-					recycle();
+					recycle(0);
 					vectorsToRecycleReferenceQueue = vectorsToRecycleReferenceQueueMap.get(new Integer((int)size));
 					devicePointer = vectorsToRecycleReferenceQueue != null ? vectorsToRecycleReferenceQueue.poll() : null;
 				}
@@ -233,17 +227,11 @@ public class RandomVariableCuda implements RandomVariable {
 					/*
 					 * Try to obtain a reference after GC, retry with waits for 1 ms, 10 ms, 100 ms, ...
 					 */
-					long timeOut = 1;
+					int timeOut = 1;
 					while(devicePointer == null && timeOut < vectorsRecyclerMaxTimeOutMillis) {
-						recycle();
+						recycle(timeOut);
 						vectorsToRecycleReferenceQueue = vectorsToRecycleReferenceQueueMap.get(new Integer((int)size));
 						devicePointer = vectorsToRecycleReferenceQueue != null ? vectorsToRecycleReferenceQueue.poll() : null;
-						try {
-							Thread.sleep(timeOut);
-						} catch (InterruptedException e) {
-							// TODO Auto-generated catch block
-							e.printStackTrace();
-						}
 						timeOut *= 4;
 					}
 
