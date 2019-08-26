@@ -78,8 +78,8 @@ public class RandomVariableCuda implements RandomVariable {
 	public static class DevicePointerReference {
 		private final DevicePointer devicePointer;
 
-		public DevicePointerReference(CUdeviceptr devicePointer, long size) {
-			this.devicePointer = new DevicePointer(devicePointer, size);
+		public DevicePointerReference(DevicePointer devicePointer) {
+			this.devicePointer = devicePointer;
 		}
 
 		public CUdeviceptr get() {
@@ -270,7 +270,7 @@ public class RandomVariableCuda implements RandomVariable {
 				throw new OutOfMemoryError("Failed to allocate device vector with size=" + size);
 			}
 
-			DevicePointerReference devicePointerReference = new DevicePointerReference(devicePointer.devicePointer, size);
+			DevicePointerReference devicePointerReference = new DevicePointerReference(devicePointer);
 			manage(devicePointerReference);
 			return devicePointerReference;
 		}
