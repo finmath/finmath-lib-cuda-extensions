@@ -138,13 +138,13 @@ public class RandomVariableCuda implements RandomVariable {
 
 		// Thread to collect weak references - will be worked on for a future version.
 		static void recycle() {
-				System.gc();
-				Reference<? extends DevicePointerReference> devicePointerReference;
-				while((devicePointerReference = devicePointersToRecycle.poll()) != null) {
-					DevicePointer devicePointer =  vectorsInUseReferenceMap.remove(devicePointerReference);
-					Queue<DevicePointer> devicePointerToRecycleForGivenSize = vectorsToRecycleReferenceQueueMap.computeIfAbsent((int)devicePointer.size, size -> new ConcurrentLinkedQueue<DevicePointer>());
-					devicePointerToRecycleForGivenSize.add(devicePointer);
-				}
+			System.gc();
+			Reference<? extends DevicePointerReference> devicePointerReference;
+			while((devicePointerReference = devicePointersToRecycle.poll()) != null) {
+				DevicePointer devicePointer =  vectorsInUseReferenceMap.remove(devicePointerReference);
+				Queue<DevicePointer> devicePointerToRecycleForGivenSize = vectorsToRecycleReferenceQueueMap.computeIfAbsent((int)devicePointer.size, size -> new ConcurrentLinkedQueue<DevicePointer>());
+				devicePointerToRecycleForGivenSize.add(devicePointer);
+			}
 		}
 
 		static {
@@ -152,12 +152,28 @@ public class RandomVariableCuda implements RandomVariable {
 				@Override
 				public void run() {
 					while(true) {
-						recycle();
+						System.gc();
 						try {
 							Thread.sleep(100);
 						} catch (InterruptedException e) {
 							// TODO Auto-generated catch block
 							e.printStackTrace();
+						}
+					}
+				}
+			}).start();
+
+			new Thread(new Runnable() {
+				@Override
+				public void run() {
+					while(true) {
+						Reference<? extends DevicePointerReference> devicePointerReference;
+						try {
+							devicePointerReference = devicePointersToRecycle.remove();
+							DevicePointer devicePointer =  vectorsInUseReferenceMap.remove(devicePointerReference);
+							Queue<DevicePointer> devicePointerToRecycleForGivenSize = vectorsToRecycleReferenceQueueMap.computeIfAbsent((int)devicePointer.size, size -> new ConcurrentLinkedQueue<DevicePointer>());
+							devicePointerToRecycleForGivenSize.add(devicePointer);
+						} catch (InterruptedException e) {
 						}
 					}
 				}
