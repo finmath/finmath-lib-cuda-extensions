@@ -71,7 +71,6 @@ public class RandomVariableCuda implements RandomVariable {
 		public CUdeviceptr devicePointer;
 
 		public DevicePointerRefence(CUdeviceptr devicePointer) {
-			super();
 			this.devicePointer = devicePointer;
 		}
 
@@ -1401,7 +1400,7 @@ public class RandomVariableCuda implements RandomVariable {
 	private DevicePointerRefence callCudaFunctionv1s0(CUfunction function, long resultSize, DevicePointerRefence argument1) {
 		synchronized (deviceMemoryPool) {
 			CUdeviceptr result = getCUdeviceptr(resultSize);
-			callCudaFunction(addProduct, new Pointer[] {
+			callCudaFunction(function, new Pointer[] {
 					Pointer.to(new int[] { (int)resultSize }),
 					Pointer.to(argument1.get()),
 					Pointer.to(result) }
@@ -1413,7 +1412,7 @@ public class RandomVariableCuda implements RandomVariable {
 	private DevicePointerRefence callCudaFunctionv2s0(CUfunction function, long resultSize, DevicePointerRefence argument1, DevicePointerRefence argument2) {
 		synchronized (deviceMemoryPool) {
 			CUdeviceptr result = getCUdeviceptr(resultSize);
-			callCudaFunction(addProduct, new Pointer[] {
+			callCudaFunction(function, new Pointer[] {
 					Pointer.to(new int[] { (int)resultSize }),
 					Pointer.to(argument1.get()),
 					Pointer.to(argument2.get()),
@@ -1426,7 +1425,7 @@ public class RandomVariableCuda implements RandomVariable {
 	private DevicePointerRefence callCudaFunctionv3s0(CUfunction function, long resultSize, DevicePointerRefence argument1, DevicePointerRefence argument2, DevicePointerRefence argument3) {
 		synchronized (deviceMemoryPool) {
 			CUdeviceptr result = getCUdeviceptr(resultSize);
-			callCudaFunction(addProduct, new Pointer[] {
+			callCudaFunction(function, new Pointer[] {
 					Pointer.to(new int[] { (int)resultSize }),
 					Pointer.to(argument1.get()),
 					Pointer.to(argument2.get()),
@@ -1440,7 +1439,7 @@ public class RandomVariableCuda implements RandomVariable {
 	private DevicePointerRefence callCudaFunctionv1s1(CUfunction function, long resultSize, DevicePointerRefence argument1, double value) {
 		synchronized (deviceMemoryPool) {
 			CUdeviceptr result = getCUdeviceptr(resultSize);
-			callCudaFunction(addProduct, new Pointer[] {
+			callCudaFunction(function, new Pointer[] {
 					Pointer.to(new int[] { (int)resultSize }),
 					Pointer.to(argument1.get()),
 					Pointer.to(new float[] { (float)value }),
@@ -1453,7 +1452,7 @@ public class RandomVariableCuda implements RandomVariable {
 	private DevicePointerRefence callCudaFunctionv2s1(CUfunction function, long resultSize, DevicePointerRefence argument1, DevicePointerRefence argument2, double value) {
 		synchronized (deviceMemoryPool) {
 			CUdeviceptr result = getCUdeviceptr(resultSize);
-			callCudaFunction(addProduct, new Pointer[] {
+			callCudaFunction(function, new Pointer[] {
 					Pointer.to(new int[] { (int)resultSize }),
 					Pointer.to(argument1.get()),
 					Pointer.to(argument2.get()),
