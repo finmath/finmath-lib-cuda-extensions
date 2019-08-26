@@ -155,7 +155,7 @@ public class RandomVariableCuda implements RandomVariable {
 				if(logger.isLoggable(Level.FINEST)) {
 					logger.finest("Device free memory " + deviceFreeMemPercentage + "%");
 				}
-				
+
 				// No pointer found, try GC if we are above a critical level
 				if(reference == null && deviceFreeMemPercentage < vectorsRecyclerPercentageFreeToStartGC) {
 					try {
@@ -180,7 +180,9 @@ public class RandomVariableCuda implements RandomVariable {
 					}
 
 					if(reference != null) {
-						logger.finest("Recycling (2) device pointer " + cuDevicePtr + " from " + reference);
+						if(logger.isLoggable(Level.FINEST)) {
+							logger.finest("Recycling (2) device pointer " + cuDevicePtr + " from " + reference);
+						}
 						cuDevicePtr = vectorsInUseReferenceMap.remove(reference);
 					}
 					else {
@@ -192,41 +194,38 @@ public class RandomVariableCuda implements RandomVariable {
 			}
 
 			if(cuDevicePtr == null)  {
-			// Still no pointer found, create new one
-			try {
-				cuDevicePtr =
-						deviceExecutor.submit(new Callable<CUdeviceptr>() { public CUdeviceptr call() {
-							CUdeviceptr cuDevicePtr = new CUdeviceptr();
-							int succ = JCudaDriver.cuMemAlloc(cuDevicePtr, size * Sizeof.FLOAT);
-							if(succ != 0) {
-								cuDevicePtr = null;
-								String[] cudaErrorName = new String[1];
-								JCudaDriver.cuGetErrorName(succ, cudaErrorName);
-								String[] cudaErrorDescription = new String[1];
-								JCudaDriver.cuGetErrorString(succ, cudaErrorDescription);
+				// Still no pointer found, create new one
+				try {
+					cuDevicePtr =
+							deviceExecutor.submit(new Callable<CUdeviceptr>() { public CUdeviceptr call() {
+								CUdeviceptr cuDevicePtr = new CUdeviceptr();
+								int succ = JCudaDriver.cuMemAlloc(cuDevicePtr, size * Sizeof.FLOAT);
+								if(succ != 0) {
+									cuDevicePtr = null;
+									String[] cudaErrorName = new String[1];
+									JCudaDriver.cuGetErrorName(succ, cudaErrorName);
+									String[] cudaErrorDescription = new String[1];
+									JCudaDriver.cuGetErrorString(succ, cudaErrorDescription);
 
-								logger.warning("Failed creating device vector "+ cuDevicePtr + " with size=" + size + " with error "+ cudaErrorName + ": " + cudaErrorDescription);
-							}
-							return cuDevicePtr;
-						}}).get();
-			} catch (InterruptedException | ExecutionException e) {
-				logger.severe("Failed to allocate device vector with size=" + size);
+									logger.warning("Failed creating device vector "+ cuDevicePtr + " with size=" + size + " with error "+ cudaErrorName + ": " + cudaErrorDescription);
+								}
+								return cuDevicePtr;
+							}}).get();
+				} catch (InterruptedException | ExecutionException e) {
+					logger.severe("Failed to allocate device vector with size=" + size);
+				}
+
+				if(cuDevicePtr == null) {
+					logger.severe("Failed to allocate device vector with size=" + size);
+					throw new OutOfMemoryError("Failed to allocate device vector with size=" + size);
+				}
 			}
 
-			if(cuDevicePtr == null) {
-				logger.severe("Failed to allocate device vector with size=" + size);
-				throw new OutOfMemoryError("Failed to allocate device vector with size=" + size);
-			}
-			}
-			
-			/* manage the pointer*/
+			/*
+			 * Manage the pointer
+			 */
 			DevicePointerReference devicePointerReference = new DevicePointerReference(cuDevicePtr);
-
-			WeakReference<DevicePointerReference> newReference = new WeakReference<DevicePointerReference>(devicePointerReference, vectorsToRecycleReferenceQueue);
-			vectorsInUseReferenceMap.put(newReference, cuDevicePtr);
-			if(logger.isLoggable(Level.FINEST)) {
-				logger.finest("Created weak reference " + newReference + ". Size of reference map " + vectorsInUseReferenceMap.size());
-			}
+			vectorsInUseReferenceMap.put(new WeakReference<DevicePointerReference>(devicePointerReference, vectorsToRecycleReferenceQueue), cuDevicePtr);
 
 			return devicePointerReference;
 		}
@@ -250,7 +249,6 @@ public class RandomVariableCuda implements RandomVariable {
 				}
 			}
 		}
-
 	}
 
 	private static DeviceMemoryPool deviceMemoryPool = new DeviceMemoryPool();
@@ -328,7 +326,7 @@ public class RandomVariableCuda implements RandomVariable {
 				// Initialize the driver and create a context for the first device.
 				cuInit(0);
 				cuDeviceGet(device, 0);
-//				cuCtxCreate(context, jcuda.driver.CUctx_flags.CU_CTX_SCHED_BLOCKING_SYNC, device);
+				//				cuCtxCreate(context, jcuda.driver.CUctx_flags.CU_CTX_SCHED_BLOCKING_SYNC, device);
 				cuCtxCreate(context, jcuda.driver.CUctx_flags.CU_CTX_SCHED_AUTO, device);
 
 				// Load the ptx file.
@@ -1459,24 +1457,24 @@ public class RandomVariableCuda implements RandomVariable {
 	}
 
 	private void callCudaFunction(CUfunction function, Pointer[] arguments) {
-			int blockSizeX = 512;
-			int gridSizeX = (int)Math.ceil((double)size() / blockSizeX);
-			callCudaFunction(function, arguments, gridSizeX, blockSizeX, 0);
+		int blockSizeX = 512;
+		int gridSizeX = (int)Math.ceil((double)size() / blockSizeX);
+		callCudaFunction(function, arguments, gridSizeX, blockSizeX, 0);
 	}
 
 	private void callCudaFunction(final CUfunction function, Pointer[] arguments, final int gridSizeX, final int blockSizeX, final int sharedMemorySize) {
-			// Set up the kernel parameters: A pointer to an array
-			// of pointers which point to the actual values.
-			final Pointer kernelParameters = Pointer.to(arguments);
+		// Set up the kernel parameters: A pointer to an array
+		// of pointers which point to the actual values.
+		final Pointer kernelParameters = Pointer.to(arguments);
 
-			deviceExecutor.submit(new Runnable() { public void run() {
-					cuCtxSynchronize();
-					cuLaunchKernel(function,
-							gridSizeX,  1, 1,      // Grid dimension
-							blockSizeX, 1, 1,      // Block dimension
-							sharedMemorySize * Sizeof.FLOAT, null,               // Shared memory size and stream
-							kernelParameters, null // Kernel- and extra parameters
-							);
-			}});
+		deviceExecutor.submit(new Runnable() { public void run() {
+			cuCtxSynchronize();
+			cuLaunchKernel(function,
+					gridSizeX,  1, 1,      // Grid dimension
+					blockSizeX, 1, 1,      // Block dimension
+					sharedMemorySize * Sizeof.FLOAT, null,               // Shared memory size and stream
+					kernelParameters, null // Kernel- and extra parameters
+					);
+		}});
 	}
 }
