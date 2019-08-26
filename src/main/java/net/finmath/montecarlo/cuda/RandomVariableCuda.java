@@ -158,7 +158,7 @@ public class RandomVariableCuda implements RandomVariable {
 					System.gc();
 
 					if(logger.isLoggable(Level.FINE)) {
-						logger.fine("Device free memory " + deviceFreeMemPercentage + "%");
+						logger.fine("Device free memory " + deviceFreeMemPercentage*100 + "%");
 					}
 
 					try {
