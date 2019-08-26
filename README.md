@@ -4,7 +4,7 @@
 **Enabling finmath lib with Cuda via jCuda. - Running finmath lib models on a GPU**
 - - - -
 
-The finmath lib cuda extensions provide a Cuda implementation of the finmath lib interfaces `RandomVariable` and `BrownianMotion` compatible with finmath lib 4.0.12 or later.
+The *finmath lib cuda extensions* provide a Cuda implementation of the [finmath lib](http://finmath.net/finmath-lib/) interfaces `RandomVariable` and `BrownianMotion` compatible with finmath lib 4.0.12 or later.
 
 ### RandomVariable ###
 
@@ -24,7 +24,7 @@ finmath-lib-cuda-extensions is distributed through the central Maven repository.
 
     <groupId>net.finmath</groupId>
     <artifactId>finmath-lib-cuda-extensions</artifactId>
-    <version>4.0.3</version>
+    <version>4.0.5</version>
 
 ## Example
 
@@ -114,11 +114,11 @@ The performance of a brute-force Monte-Carlo calibration with 81920 paths are gi
 ```
 Running net.finmath.montecarlo.interestrates.LIBORMarketModelCalibrationTest
 
-Calibration to Swaptions using GPU    RMS Error.....: 0.198%    calculation time =  67.49 sec.
-Calibration to Swaptions using CPU    RMS Error.....: 0.198%    calculation time = 353.88 sec.
+Calibration to Swaptions using CPU    RMS Error.....: 0.198%    calculation time = 495.04 sec.
+Calibration to Swaptions using GPU    RMS Error.....: 0.198%    calculation time =  66.90 sec.
 
 ```
-LIBOR Market Model with stochastic volatility, 6 factors, 81920 paths, 
+(LIBOR Market Model with stochastic volatility, 6 factors, 81920 paths)
 
 
 ## References
