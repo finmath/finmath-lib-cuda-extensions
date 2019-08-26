@@ -167,7 +167,7 @@ __global__ void cap(int n, float *a, float *b, float *result)
 }
 
 extern "C"
-__global__ void cuFloor(int n, float *a, float *b, float *result)
+__global__ void floor(int n, float *a, float *b, float *result)
 {
     int i = blockIdx.x * blockDim.x + threadIdx.x;
     if (i<n)

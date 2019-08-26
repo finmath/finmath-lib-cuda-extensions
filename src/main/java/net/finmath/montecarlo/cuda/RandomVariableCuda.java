@@ -291,7 +291,7 @@ public class RandomVariableCuda implements RandomVariable {
 	private final static CUfunction invert = new CUfunction();
 	private final static CUfunction cuAbs = new CUfunction();
 	private final static CUfunction cap = new CUfunction();
-	private final static CUfunction cuFloor = new CUfunction();
+	private final static CUfunction floor = new CUfunction();
 	private final static CUfunction add = new CUfunction();
 	private final static CUfunction sub = new CUfunction();
 	private final static CUfunction mult = new CUfunction();
@@ -348,7 +348,7 @@ public class RandomVariableCuda implements RandomVariable {
 				cuModuleGetFunction(invert, module, "invert");
 				cuModuleGetFunction(cuAbs, module, "cuAbs");
 				cuModuleGetFunction(cap, module, "cap");
-				cuModuleGetFunction(cuFloor, module, "cuFloor");
+				cuModuleGetFunction(floor, module, "floor");
 				cuModuleGetFunction(add, module, "add");
 				cuModuleGetFunction(sub, module, "sub");
 				cuModuleGetFunction(mult, module, "mult");
@@ -1238,7 +1238,7 @@ public class RandomVariableCuda implements RandomVariable {
 		else if(randomVariable.isDeterministic())
 			return this.floor(randomVariable.doubleValue());
 		else {
-			DevicePointerReference result = callCudaFunctionv2s0(cuFloor, size, realizations, getRandomVariableCuda(randomVariable).realizations);
+			DevicePointerReference result = callCudaFunctionv2s0(floor, size, realizations, getRandomVariableCuda(randomVariable).realizations);
 			return RandomVariableCuda.of(newTime, result, size());
 		}
 	}
