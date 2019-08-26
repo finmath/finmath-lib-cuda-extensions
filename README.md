@@ -12,7 +12,7 @@ A `RandomVariableCudaFactory` is provided, which can be injected in any finmath 
 
 The implementation supports type priorities (see http://ssrn.com/abstract=3246127 ) and the default priority of `RandomVariableCuda` is 20. For example: operators involving CPU and GPU vectors will result in GPU vectors.
 
-The `RandomVariableCudaFactory` can be combined with AAD wrappers, to allow algorithmic differentiation together with calculations performed on the GPU. For the type priority: objects allowing for algorithmic differentiation (AAD) have higher priority, AAD on GPU has higher priority than AAD on CPU.
+The `RandomVariableCudaFactory` can be combined with *algorithmic differentiation* AAD wrappers, for example `RandomVariableDifferentiableAAD`, to allow algorithmic differentiation together with calculations performed on the GPU. For the type priority: objects allowing for algorithmic differentiation (AAD) have higher priority, AAD on GPU has higher priority than AAD on CPU.
 
 ### BrownianMotion ###
 
@@ -25,7 +25,6 @@ finmath-lib-cuda-extensions is distributed through the central Maven repository.
     <groupId>net.finmath</groupId>
     <artifactId>finmath-lib-cuda-extensions</artifactId>
     <version>4.0.3</version>
-
 
 ## Example
 
@@ -48,9 +47,13 @@ double[] result = randomVariable.getRealizations();
 ```
 (note: the result is always double, since different implementation may support float or double on the device).
 
-## Installation
+## Installation / Build
+
+Binary distribution is available via Maven central.
 
 You have to have NVidia Cuda 10.0 installed. (If you like to use a different version, you can try to switch the JCuda version in the Maven pom.xml).
+
+To build the project yourself and run the unit tests from the source repository:
 
 To obtain and build the finmath-lib-cuda-extensions then do
 ```
@@ -58,7 +61,7 @@ git clone https://github.com/cfries/finmath-lib-cuda-extensions.git
 cd finmath-lib-cuda-extensions
 mvn clean package
 ```
-If everything goes well, you will see unit test  run. Note that some of the tests may fail if the device (GPU) has not enough memory. 
+If everything goes well, you will see unit test run. Note that some of the tests may fail if the device (GPU) has not enough memory. 
 
 ## Trying on Amazon EC2
 
