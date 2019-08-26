@@ -148,13 +148,8 @@ public class RandomVariableCuda implements RandomVariable {
 			if(timeOut > 0) {
 				try {
 					Reference<? extends DevicePointerReference> devicePointerReference = devicePointersToRecycle.remove(timeOut);
-					DevicePointer devicePointer =  vectorsInUseReferenceMap.remove(devicePointerReference);
-					Queue<DevicePointer> devicePointerToRecycleForGivenSize = vectorsToRecycleReferenceQueueMap.computeIfAbsent((int)devicePointer.size, size -> new ConcurrentLinkedQueue<DevicePointer>());
-					devicePointerToRecycleForGivenSize.add(devicePointer);
-				} catch (InterruptedException e) {
-					// TODO Auto-generated catch block
-					e.printStackTrace();
-				}
+					if(devicePointerReference != null) recycle(devicePointerReference);
+				} catch (InterruptedException e) { }
 			}
 
 			Reference<? extends DevicePointerReference> devicePointerReference;
