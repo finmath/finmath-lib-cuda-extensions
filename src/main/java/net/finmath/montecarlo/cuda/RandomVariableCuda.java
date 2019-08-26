@@ -112,7 +112,7 @@ public class RandomVariableCuda implements RandomVariable {
 					while(true) {
 						System.gc();
 						try {
-							Thread.sleep(1000);
+							Thread.sleep(100);
 						} catch (InterruptedException e) {
 							// TODO Auto-generated catch block
 							e.printStackTrace();
@@ -122,10 +122,10 @@ public class RandomVariableCuda implements RandomVariable {
 			}).start();
 		}
 
-		private synchronized void manage(DevicePointerReference wrapper, long size) {
-			CUdeviceptr cuDevicePtr = wrapper.get();
+		private synchronized void manage(DevicePointerReference devicePointerReference, long size) {
+			CUdeviceptr cuDevicePtr = devicePointerReference.get();
 			if(logger.isLoggable(Level.FINEST)) {
-				logger.finest("Managing" + cuDevicePtr + " with " + wrapper + ". Size of reference map " + vectorsInUseReferenceMap.size());
+				logger.finest("Managing" + cuDevicePtr + " with " + devicePointerReference + ". Size of reference map " + vectorsInUseReferenceMap.size());
 			}
 
 			ReferenceQueue<DevicePointerReference> vectorsToRecycleReferenceQueue = vectorsToRecycleReferenceQueueMap.get(new Integer((int)size));
@@ -134,7 +134,7 @@ public class RandomVariableCuda implements RandomVariable {
 				vectorsToRecycleReferenceQueueMap.put(new Integer((int)size), vectorsToRecycleReferenceQueue = new ReferenceQueue<DevicePointerReference>());
 			}
 			// Manage CUdeviceptr
-			WeakReference<DevicePointerReference> reference = new WeakReference<DevicePointerReference>(wrapper, vectorsToRecycleReferenceQueue);
+			WeakReference<DevicePointerReference> reference = new WeakReference<DevicePointerReference>(devicePointerReference, vectorsToRecycleReferenceQueue);
 			vectorsInUseReferenceMap.put(reference, cuDevicePtr);
 			if(logger.isLoggable(Level.FINEST)) {
 				logger.finest("Created weak reference " + reference + ". Size of reference map " + vectorsInUseReferenceMap.size());
@@ -164,11 +164,12 @@ public class RandomVariableCuda implements RandomVariable {
 
 			Reference<? extends DevicePointerReference> reference = vectorsToRecycleReferenceQueue.poll();
 			if(reference != null) {
-				logger.finest("Recycling (1) device pointer " + cuDevicePtr + " from " + reference);
+				if(logger.isLoggable(Level.FINEST)) {
+					logger.finest("Recycling (1) device pointer " + cuDevicePtr + " from " + reference);
+				}
 				cuDevicePtr = vectorsInUseReferenceMap.remove(reference);
 			}
 			else {
-
 				float deviceFreeMemPercentage = getDeviceFreeMemPercentage();
 				logger.finest("Device free memory " + deviceFreeMemPercentage + "%");
 
