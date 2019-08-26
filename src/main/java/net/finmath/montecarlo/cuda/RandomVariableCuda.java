@@ -480,7 +480,7 @@ public class RandomVariableCuda implements RandomVariable {
 				return freeRate;
 			}}).get();
 		} catch (InterruptedException | ExecutionException e) {
-			return freeRate = Float.NaN;
+			return freeRate = 0;
 		}
 		return freeRate;
 	}
