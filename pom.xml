@@ -11,7 +11,7 @@
 
 	<groupId>net.finmath</groupId>
 	<artifactId>finmath-lib-cuda-extensions</artifactId>
-	<version>4.0.4-SNAPSHOT</version>
+	<version>4.0.4</version>
 	<packaging>jar</packaging>
 
 	<name>finmath-lib-cuda-extensions</name>
