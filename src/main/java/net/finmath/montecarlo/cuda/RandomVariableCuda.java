@@ -985,7 +985,7 @@ public class RandomVariableCuda implements RandomVariable {
 			return new RandomVariableCuda(time, newValueIfNonStochastic);
 		}
 		else {
-			DevicePointerRefence result = callCudaFunctionv1s0(vidScalar, size, realizations);
+			DevicePointerRefence result = callCudaFunctionv1s0(cuSqrt, size, realizations);
 			return RandomVariableCuda.of(time, result, size());
 		}
 	}
