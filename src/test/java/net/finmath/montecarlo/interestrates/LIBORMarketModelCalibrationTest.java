@@ -61,7 +61,7 @@ public class LIBORMarketModelCalibrationTest {
 
 	private final int numberOfPaths		= 81920;
 	private final int numberOfFactors	= 5;
-	private static final int maxIterations = 25;
+	private static final int maxIterations = 30;
 
 	private static final DecimalFormat formatterReal2		= new DecimalFormat(" 0.00");
 	private static final DecimalFormat formatterValue		= new DecimalFormat(" ##0.000%;-##0.000%", new DecimalFormatSymbols(Locale.ENGLISH));
@@ -195,16 +195,16 @@ public class LIBORMarketModelCalibrationTest {
 		switch(processingUnit) {
 		case CPU:
 			randomVariableFactory = new RandomVariableFloatFactory();
-			brownianMotion = new net.finmath.montecarlo.BrownianMotionLazyInit(timeDiscretizationFromArray, numberOfFactors + 1, numberOfPaths, 31415 /* seed */, randomVariableFactory);
+			brownianMotion = new net.finmath.montecarlo.BrownianMotionLazyInit(timeDiscretizationFromArray, numberOfFactors + 1, numberOfPaths, 314151 /* seed */, randomVariableFactory);
 			break;
 		case GPU:
 			randomVariableFactory = new RandomVariableCudaFactory();
-			brownianMotion = new net.finmath.montecarlo.cuda.alternative.BrownianMotionCudaWithRandomVariableCuda(timeDiscretizationFromArray, numberOfFactors + 1, numberOfPaths, 31415 /* seed */);
+			brownianMotion = new net.finmath.montecarlo.cuda.alternative.BrownianMotionCudaWithRandomVariableCuda(timeDiscretizationFromArray, numberOfFactors + 1, numberOfPaths, 314151 /* seed */);
 			break;
 		case GPU_WITH_CPU_RANDOM:
 		default:
 			randomVariableFactory = new RandomVariableCudaFactory();
-			brownianMotion = new net.finmath.montecarlo.BrownianMotionLazyInit(timeDiscretizationFromArray, numberOfFactors + 1, numberOfPaths, 31415 /* seed */, randomVariableFactory);
+			brownianMotion = new net.finmath.montecarlo.BrownianMotionLazyInit(timeDiscretizationFromArray, numberOfFactors + 1, numberOfPaths, 314151 /* seed */, randomVariableFactory);
 			break;
 		}
 
@@ -216,7 +216,7 @@ public class LIBORMarketModelCalibrationTest {
 		// Create blended local volatility model with fixed parameter 0.0 (that is "lognormal").
 		final AbstractLIBORCovarianceModelParametric covarianceModelBlended = new BlendedLocalVolatilityModel(covarianceModelParametric, forwardCurve, 0.2, true);
 		// Create stochastic scaling (pass brownianMotionView2 to it)
-		final AbstractLIBORCovarianceModelParametric covarianceModelStochasticParametric = new LIBORCovarianceModelStochasticVolatility(covarianceModelBlended, brownianMotionView2, 0.15, -0.70, true);
+		final AbstractLIBORCovarianceModelParametric covarianceModelStochasticParametric = new LIBORCovarianceModelStochasticVolatility(covarianceModelBlended, brownianMotionView2, 0.15, 0.20, true);
 
 		// Set model properties
 		final Map<String, Object> properties = new HashMap<String, Object>();
