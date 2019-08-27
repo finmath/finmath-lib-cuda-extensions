@@ -168,7 +168,7 @@ public class BrownianMotionCudaWithRandomVariableCuda implements BrownianMotion,
 
 			for(int factor=0; factor<numberOfFactors; factor++) {
 				// Generate n floats on device
-				final DevicePointerReference realizations = RandomVariableCuda.getCUdeviceptr((long)numberOfPaths);
+				final DevicePointerReference realizations = RandomVariableCuda.getDevicePointer((long)numberOfPaths);
 				jcuda.jcurand.JCurand.curandGenerateNormal(generator, realizations.get(), numberOfPaths, 0.0f /* mean */, sqrtOfTimeStep /* stddev */);
 				brownianIncrements[timeIndex][factor] = RandomVariableCuda.of(time, realizations, numberOfPaths);
 			}
