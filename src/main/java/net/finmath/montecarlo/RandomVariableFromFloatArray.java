@@ -311,12 +311,12 @@ public class RandomVariableFromFloatArray implements RandomVariable {
 		/*
 		 * Kahan summation on realizations[i]
 		 */
-		float sum = 0.0f;								// Running sum
-		float error = 0.0f;								// Running error compensation
+		double sum = 0.0;								// Running sum
+		double error = 0.0;								// Running error compensation
 		for(int i=0; i<realizations.length; i++)  {
-			final float value = realizations[i] - error;		// Error corrected value
-			final float newSum = sum + value;				// New sum
-			error = (newSum - sum) - value;				// New numerical error
+			final double value = (double)realizations[i] - error;		// Error corrected value
+			final double newSum = sum + value;							// New sum
+			error = (newSum - sum) - value;								// New numerical error
 			sum	= newSum;
 		}
 		return sum/realizations.length;
