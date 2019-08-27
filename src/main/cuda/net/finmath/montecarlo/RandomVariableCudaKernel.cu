@@ -291,19 +291,24 @@ __global__ void reducePartial(int size, void *data, void *result) {
 	float *fdata = (float*) data;
 	float *sum = (float*) result;
 
-	extern __shared__ float sdata[];
+	extern __shared__ double sdata[];
+	double* s2data = sdata + blockDim.x;
+	double* cdata = s2data + blockDim.x;
 
 	// perform first level of reduction,
 	// reading from global memory, writing to shared memory unsigned int tid = threadIdx.x;
 	unsigned int tid = threadIdx.x;
 	unsigned int i = blockIdx.x*(blockDim.x*2) + threadIdx.x;
-	sdata[tid] = (i < size ? fdata[i] : 0) + (i+blockDim.x < size ? fdata[i+blockDim.x] : 0);
+	sdata[tid] = (double)(i < size ? fdata[i] : 0) + (double)(i+blockDim.x < size ? fdata[i+blockDim.x] : 0);
+	cdata[tid] = sdata[tid] - (double)(i < size ? fdata[i] : 0) - (double)(i+blockDim.x < size ? fdata[i+blockDim.x] : 0);
 	__syncthreads();
 
 	// do reduction in shared mem
 	for (unsigned int s=blockDim.x/2; s>0; s>>=1) {
 		if (tid < s) {
-			sdata[tid] += sdata[tid + s];
+			s2data[tid] = sdata[tid] + sdata[tid + s] - cdata[tid] - cdata[tid+s];
+			cdata[tid] = (s2data[tid] - sdata[tid]) - sdata[tid + s];
+			sdata[tid] = s2data[tid];
 		}
 		__syncthreads();
 	}
