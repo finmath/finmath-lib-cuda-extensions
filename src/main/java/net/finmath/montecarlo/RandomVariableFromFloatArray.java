@@ -147,10 +147,6 @@ public class RandomVariableFromFloatArray implements RandomVariable {
 	/**
 	 * Create a stochastic random variable.
 	 *
-	 * Important: The realizations array is not cloned (no defensive copy is made).
-	 *
-	 * @TODO A future version should perform a defensive copy.
-	 *
 	 * @param time the filtration time, set to 0.0 if not used.
 	 * @param realisations the vector of realizations.
 	 * @param typePriority The priority of this type in construction of result types. See "operator type priority" for details.
