@@ -92,10 +92,10 @@ Test of performance of BrownianMotionCudaWithRandomVariableCuda	..........test t
 
 ```
 Running net.finmath.montecarlo.assetderivativevaluation.MonteCarloBlackScholesModelTest
-BrownianMotionLazyInit                      value Monte-Carlo =  0.1898	 value analytic    =  0.1899	 calculation time =  4.00 sec.
-BrownianMotionJavaRandom                    value Monte-Carlo =  0.1901	 value analytic    =  0.1899	 calculation time =  5.19 sec.
-BrownianMotionCudaWithHostRandomVariable    value Monte-Carlo =  0.1898	 value analytic    =  0.1899	 calculation time =  2.50 sec.
-BrownianMotionCudaWithRandomVariableCuda    value Monte-Carlo =  0.1898	 value analytic    =  0.1899	 calculation time =  0.09 sec.
+BrownianMotionLazyInit                    calculation time =  4.00 sec   value Monte-Carlo =  0.1898	 value analytic    =  0.1899.
+BrownianMotionJavaRandom                  calculation time =  5.19 sec   value Monte-Carlo =  0.1901	 value analytic    =  0.1899	.
+BrownianMotionCudaWithHostRandomVariable  calculation time =  2.50 sec   value Monte-Carlo =  0.1898	 value analytic    =  0.1899.
+BrownianMotionCudaWithRandomVariableCuda  calculation time =  0.09 sec   value Monte-Carlo =  0.1898	 value analytic    =  0.1899	.
 ```
 
 Remark:
@@ -109,17 +109,30 @@ Remark:
 
 There is also a unit test performing a brute force Monte-Carlo calibration of a LIBOR Market Model with stochastic volatility on the CPU and the GPU. Note however that the unit test uses a too small size for the number of simulation paths, such that the GPU code is no improvement over the CPU code. The unit test shows that CPU and GPU give consistent results.
 
-The performance of a brute-force Monte-Carlo calibration with 81920 paths are given below. Note: if the number of paths is increased, the GPU time remains almost the same (given that the GPU has sufficient memory), while the CPU time grows linearly. This is due to the fact that the GPU performance has a large part of management overhead (which will be reduced in future versions).
+The performance of a brute-force Monte-Carlo calibration with 80K and 160K paths are given below. Note: if the number of paths is increased, the GPU time remains almost the same (given that the GPU has sufficient memory), while the CPU time grows linearly. This is due to the fact that the GPU performance has a large part of fixed management overhead (which will be reduced in future versions).
+
+The CPU version was run on a an Intel i7-7800X 3.5 GHz using multi-threadded calibration.
+THe GPU version was run on an nVidia GeForce GTX 1080.
+
+#### LMM with 81,920 paths
 
 ```
 Running net.finmath.montecarlo.interestrates.LIBORMarketModelCalibrationTest
 
-Calibration to Swaptions using CPU    RMS Error.....: 0.198%    calculation time = 495.04 sec.
-Calibration to Swaptions using GPU    RMS Error.....: 0.198%    calculation time =  66.90 sec.
-
+Calibration to Swaptions using CPU    calculation time = 364.42 sec    RMS Error.....: 0.198%.
+Calibration to Swaptions using GPU    calculation time =  49.46 sec    RMS Error.....: 0.198%.
 ```
 (LIBOR Market Model with stochastic volatility, 6 factors, 81920 paths)
 
+#### LMM with 163,840 paths
+
+```
+Running net.finmath.montecarlo.interestrates.LIBORMarketModelCalibrationTest
+
+Calibration to Swaptions using CPU    calculation time = 719.33 sec    RMS Error.....: 0.480%.
+Calibration to Swaptions using GPU    calculation time =  51.70 sec    RMS Error.....: 0.480%.
+```
+(LIBOR Market Model with stochastic volatility, 6 factors, 163840 paths)
 
 ## References
 
