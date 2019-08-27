@@ -366,17 +366,44 @@ public class RandomVariableCuda implements RandomVariable {
 		}
 	}
 
-	public static RandomVariableCuda of(final double time, final DevicePointerReference realizations, final long size) {
-		final RandomVariableCuda randomVariableCuda = new RandomVariableCuda(time, realizations, size);
+	/**
+	 * Create a <code>RandomVariableCuda</code>.
+	 * 
+	 * @param time the filtration time, set to 0.0 if not used.
+	 * @param realizations A <code>DevicePointerReference</code> referencing a {@link CUdeviceptr} with the given size. Use {@link #getCUdeviceptr(long)} to create one.
+	 * @param size The size of the vector associated with <code>DevicePointerReference</code>.
+	 * @param typePriority The priority of this type in construction of result types. See "operator type priority" for details.
+	 */
+	public static RandomVariableCuda of(final double time, final DevicePointerReference realizations, final long size, final int typePriority) {
+		final RandomVariableCuda randomVariableCuda = new RandomVariableCuda(time, realizations, size, typePriority);
 		return randomVariableCuda;
 	}
 
-	private RandomVariableCuda(final double time, final DevicePointerReference realizations, final long size) {
+	/**
+	 * Create a <code>RandomVariableCuda</code>.
+	 * 
+	 * @param time the filtration time, set to 0.0 if not used.
+	 * @param realizations A <code>DevicePointerReference</code> referencing a {@link CUdeviceptr} with the given size. Use {@link #getCUdeviceptr(long)} to create one.
+	 * @param size The size of the vector associated with <code>DevicePointerReference</code>.
+	 * @param typePriority The priority of this type in construction of result types. See "operator type priority" for details.
+	 */
+	public static RandomVariableCuda of(final double time, final DevicePointerReference realizations, final long size) {
+		final RandomVariableCuda randomVariableCuda = new RandomVariableCuda(time, realizations, size, typePriorityDefault);
+		return randomVariableCuda;
+	}
+
+	/**
+	 * @param time the filtration time, set to 0.0 if not used.
+	 * @param realizations A <code>DevicePointerReference</code> referencing a {@link CUdeviceptr} with the given size. Use {@link #getCUdeviceptr(long)} to create one.
+	 * @param size The size of the vector associated with <code>DevicePointerReference</code>.
+	 * @param typePriority The priority of this type in construction of result types. See "operator type priority" for details.
+	 */
+	private RandomVariableCuda(final double time, final DevicePointerReference realizations, final long size, final int typePriority) {
 		this.time = time;
 		this.realizations = realizations;
 		this.size = size;
 		this.valueIfNonStochastic = Double.NaN;
-		this.typePriority = typePriorityDefault;
+		this.typePriority = typePriority;
 	}
 
 	/**
@@ -393,14 +420,35 @@ public class RandomVariableCuda implements RandomVariable {
 	 *
 	 * @param time the filtration time, set to 0.0 if not used.
 	 * @param value the value, a constant.
+	 * @param typePriority The priority of this type in construction of result types. See "operator type priority" for details.
 	 */
-	public RandomVariableCuda(final double time, final double value) {
-		super();
+	public RandomVariableCuda(final double time, final double value, final int typePriority) {
 		this.time = time;
 		this.realizations = null;
 		this.size = 1;
 		this.valueIfNonStochastic = value;
-		this.typePriority = typePriorityDefault;
+		this.typePriority = typePriority;
+	}
+
+	/**
+	 * Create a stochastic random variable.
+	 *
+	 * @param time the filtration time, set to 0.0 if not used.
+	 * @param realisations the vector of realizations.
+	 * @param typePriority The priority of this type in construction of result types. See "operator type priority" for details.
+	 */
+	public RandomVariableCuda(final double time, final float[] realisations, final int typePriority) {
+		this(time, getDevicePointer(realisations), realisations.length, typePriority);
+	}
+
+	/**
+	 * Create a non stochastic random variable, i.e. a constant.
+	 *
+	 * @param time the filtration time, set to 0.0 if not used.
+	 * @param value the value, a constant.
+	 */
+	public RandomVariableCuda(final double time, final double value) {
+		this(time, value, typePriorityDefault);
 	}
 
 	/**
@@ -410,7 +458,7 @@ public class RandomVariableCuda implements RandomVariable {
 	 * @param realisations the vector of realizations.
 	 */
 	public RandomVariableCuda(final double time, final float[] realisations) {
-		this(time, getDevicePointer(realisations), realisations.length);
+		this(time, getDevicePointer(realisations), realisations.length, typePriorityDefault);
 	}
 
 	/**
