@@ -639,7 +639,8 @@ public class RandomVariableCuda implements RandomVariable {
 
 		return (new RandomVariableFromFloatArray(getFiltrationTime(), realizationsOnHostMemory)).getAverage();
 		*/
-		return reduceToDouble().getAverage();
+		RandomVariable reduced = reduceToDouble();
+		return reduced.getAverage() * reduced.size() / size();		// Temp hack @FIXME @TODO
 		//return  reduce()/size();
 	}
 
