@@ -105,6 +105,8 @@ public class RandomVariableCuda implements RandomVariable {
 		private final static float	vectorsRecyclerPercentageFreeToWaitForGC	= 0.05f;		// should be set by monitoring GPU mem
 		private final static long	vectorsRecyclerMaxTimeOutMillis			= 1000;
 
+		private volatile static float deviceFreeMemPercentage = getDeviceFreeMemPercentage();
+		
 		// Thread to collect weak references - will be worked on for a future version.
 		static {
 			new Thread(new Runnable() {
@@ -152,25 +154,27 @@ public class RandomVariableCuda implements RandomVariable {
 
 				if(reference != null) {
 					if(logger.isLoggable(Level.FINEST)) {
-						logger.finest("Recycling (1.2) device pointer " + cuDevicePtr + " from " + reference);
+						logger.finest("Recycling (2) device pointer " + cuDevicePtr + " from " + reference);
 					}
 					cuDevicePtr = vectorsInUseReferenceMap.remove(reference);
 				}
 				else {
-					final float deviceFreeMemPercentage = getDeviceFreeMemPercentage();
-
 					// No pointer found, try GC if we are above a critical level
-					if(deviceFreeMemPercentage < vectorsRecyclerPercentageFreeToStartGC && deviceFreeMemPercentage >= vectorsRecyclerPercentageFreeToWaitForGC) {
-						System.runFinalization();
-						System.gc();
-
+					if(deviceFreeMemPercentage < vectorsRecyclerPercentageFreeToStartGC) {
 						if(logger.isLoggable(Level.FINEST)) {
-							logger.fine("Device free memory " + deviceFreeMemPercentage*100 + "%");
+							logger.finest("Device free memory " + deviceFreeMemPercentage*100 + "%");
 						}
 
-						try {
-							reference = vectorsToRecycleReferenceQueue.remove(1);
-						} catch (IllegalArgumentException | InterruptedException e) {}
+						System.runFinalization();
+						System.gc();
+						reference = vectorsToRecycleReferenceQueue.poll();
+
+						if(reference != null) {
+							if(logger.isLoggable(Level.FINEST)) {
+								logger.finest("Recycling (3) device pointer " + cuDevicePtr + " from " + reference);
+							}
+							cuDevicePtr = vectorsInUseReferenceMap.remove(reference);
+						}
 					}
 
 					if(reference == null && deviceFreeMemPercentage < vectorsRecyclerPercentageFreeToWaitForGC) {
@@ -198,6 +202,7 @@ public class RandomVariableCuda implements RandomVariable {
 							// Still no pointer found for requested size, consider cleaning all (also other sizes)
 							logger.info("Last resort: Cleaning all unused vectors on device. Device free memory " + deviceFreeMemPercentage*100 + "%");
 							clean();
+							deviceFreeMemPercentage = getDeviceFreeMemPercentage();
 						}
 					}
 				}
@@ -224,6 +229,8 @@ public class RandomVariableCuda implements RandomVariable {
 				} catch (InterruptedException | ExecutionException e) {
 					logger.severe("Failed to allocate device vector with size=" + size + ". Cause: " + e.getCause());
 				}
+
+				deviceFreeMemPercentage = getDeviceFreeMemPercentage();
 
 				if(cuDevicePtr == null) {
 					logger.severe("Failed to allocate device vector with size=" + size);
