@@ -305,6 +305,7 @@ public class RandomVariableCuda implements RandomVariable {
 	private final static CUfunction addProduct = new CUfunction();
 	private final static CUfunction addProduct_vs = new CUfunction();		// add the product of a vector and a scalar
 	private final static CUfunction reducePartial = new CUfunction();
+	private final static CUfunction reduceFloatVectorToDoubleScalar = new CUfunction();
 
 	private final static int reduceGridSize = 1024;
 
@@ -362,6 +363,7 @@ public class RandomVariableCuda implements RandomVariable {
 				cuModuleGetFunction(addProduct, module, "addProduct");
 				cuModuleGetFunction(addProduct_vs, module, "addProduct_vs");
 				cuModuleGetFunction(reducePartial, module, "reducePartial");
+				cuModuleGetFunction(reduceFloatVectorToDoubleScalar, module, "reduceFloatVectorToDoubleScalar");
 			}});
 		}
 	}
@@ -624,6 +626,7 @@ public class RandomVariableCuda implements RandomVariable {
 		if(size() == 0)			return Double.NaN;
 
 		// TODO: Use kernel
+		/*
 		final float[] realizationsOnHostMemory = new float[(int)size];
 		try {
 			deviceExecutor.submit(new Runnable() { public void run() {
@@ -634,6 +637,8 @@ public class RandomVariableCuda implements RandomVariable {
 		} catch (InterruptedException | ExecutionException e) { throw new RuntimeException(e.getCause()); }
 
 		return (new RandomVariableFromFloatArray(getFiltrationTime(), realizationsOnHostMemory)).getAverage();
+		*/
+		return reduceToDouble()/size();
 		//return  reduce()/size();
 	}
 
@@ -1415,6 +1420,34 @@ public class RandomVariableCuda implements RandomVariable {
 	 * Cuda specific implementations
 	 */
 
+
+	private double reduceToDouble() {
+
+		final int blockSizeX = reduceGridSize;
+		final int gridSizeX = (int)Math.ceil((double)size()/2 / blockSizeX);
+
+		final DevicePointerReference reduceVector = getDevicePointer(2);
+
+		callCudaFunction(reduceFloatVectorToDoubleScalar, new Pointer[] {
+				Pointer.to(new int[] { size() }),
+				Pointer.to(realizations.get()),
+				Pointer.to(reduceVector.get())},
+				gridSizeX, blockSizeX, blockSizeX*2*3);
+
+		final double[] result = new double[1];
+		try {
+			deviceExecutor.submit(new Runnable() { public void run() {
+				cuCtxSynchronize();
+				cuMemcpyDtoH(Pointer.to(result), reduceVector.get(), 1 * Sizeof.DOUBLE);
+				cuCtxSynchronize();
+			}}).get();
+		} catch (InterruptedException | ExecutionException e) {
+			throw new RuntimeException(e.getCause());
+		}
+
+		return result[0];
+	}
+
 	private double reduce() {
 		if(this.isDeterministic()) return valueIfNonStochastic;
 
@@ -1426,7 +1459,7 @@ public class RandomVariableCuda implements RandomVariable {
 	}
 
 	private RandomVariableCuda reduceBySize(final int bySize) {
-//		synchronized (deviceMemoryPool)
+		//		synchronized (deviceMemoryPool)
 		{
 
 			final int blockSizeX = bySize;
@@ -1444,7 +1477,7 @@ public class RandomVariableCuda implements RandomVariable {
 	}
 
 	private DevicePointerReference callCudaFunctionv1s0(final CUfunction function, final long resultSize, final DevicePointerReference argument1) {
-//		synchronized (deviceMemoryPool)
+		//		synchronized (deviceMemoryPool)
 		{
 			final DevicePointerReference result = getDevicePointer(resultSize);
 			callCudaFunction(function, new Pointer[] {
@@ -1457,7 +1490,7 @@ public class RandomVariableCuda implements RandomVariable {
 	}
 
 	private DevicePointerReference callCudaFunctionv2s0(final CUfunction function, final long resultSize, final DevicePointerReference argument1, final DevicePointerReference argument2) {
-//		synchronized (deviceMemoryPool)
+		//		synchronized (deviceMemoryPool)
 		{
 			final DevicePointerReference result = getDevicePointer(resultSize);
 			callCudaFunction(function, new Pointer[] {
@@ -1471,7 +1504,7 @@ public class RandomVariableCuda implements RandomVariable {
 	}
 
 	private DevicePointerReference callCudaFunctionv3s0(final CUfunction function, final long resultSize, final DevicePointerReference argument1, final DevicePointerReference argument2, final DevicePointerReference argument3) {
-//		synchronized (deviceMemoryPool)
+		//		synchronized (deviceMemoryPool)
 		{
 			final DevicePointerReference result = getDevicePointer(resultSize);
 			callCudaFunction(function, new Pointer[] {
@@ -1486,7 +1519,7 @@ public class RandomVariableCuda implements RandomVariable {
 	}
 
 	private DevicePointerReference callCudaFunctionv1s1(final CUfunction function, final long resultSize, final DevicePointerReference argument1, final double value) {
-//		synchronized (deviceMemoryPool)
+		//		synchronized (deviceMemoryPool)
 		{
 			final DevicePointerReference result = getDevicePointer(resultSize);
 			callCudaFunction(function, new Pointer[] {
@@ -1500,7 +1533,7 @@ public class RandomVariableCuda implements RandomVariable {
 	}
 
 	private DevicePointerReference callCudaFunctionv2s1(final CUfunction function, final long resultSize, final DevicePointerReference argument1, final DevicePointerReference argument2, final double value) {
-//		synchronized (deviceMemoryPool)
+		//		synchronized (deviceMemoryPool)
 		{
 			final DevicePointerReference result = getDevicePointer(resultSize);
 			callCudaFunction(function, new Pointer[] {
