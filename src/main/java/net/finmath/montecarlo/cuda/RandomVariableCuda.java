@@ -106,7 +106,7 @@ public class RandomVariableCuda implements RandomVariable {
 		private final static long	vectorsRecyclerMaxTimeOutMillis			= 1000;
 
 		private volatile static float deviceFreeMemPercentage = getDeviceFreeMemPercentage();
-		
+
 		// Thread to collect weak references - will be worked on for a future version.
 		static {
 			new Thread(new Runnable() {
@@ -153,31 +153,28 @@ public class RandomVariableCuda implements RandomVariable {
 				reference = vectorsToRecycleReferenceQueue.poll();
 
 				if(reference != null) {
+					cuDevicePtr = vectorsInUseReferenceMap.remove(reference);
 					if(logger.isLoggable(Level.FINEST)) {
 						logger.finest("Recycling (2) device pointer " + cuDevicePtr + " from " + reference);
 					}
-					cuDevicePtr = vectorsInUseReferenceMap.remove(reference);
 				}
-				else {
+				else if(deviceFreeMemPercentage < vectorsRecyclerPercentageFreeToStartGC) {
 					// No pointer found, try GC if we are above a critical level
-					if(deviceFreeMemPercentage < vectorsRecyclerPercentageFreeToStartGC) {
-						if(logger.isLoggable(Level.FINEST)) {
-							logger.finest("Device free memory " + deviceFreeMemPercentage*100 + "%");
-						}
-
-						System.runFinalization();
-						System.gc();
-						reference = vectorsToRecycleReferenceQueue.poll();
-
-						if(reference != null) {
-							if(logger.isLoggable(Level.FINEST)) {
-								logger.finest("Recycling (3) device pointer " + cuDevicePtr + " from " + reference);
-							}
-							cuDevicePtr = vectorsInUseReferenceMap.remove(reference);
-						}
+					if(logger.isLoggable(Level.FINEST)) {
+						logger.finest("Device free memory " + deviceFreeMemPercentage*100 + "%");
 					}
 
-					if(reference == null && deviceFreeMemPercentage < vectorsRecyclerPercentageFreeToWaitForGC) {
+					System.runFinalization();
+					System.gc();
+					reference = vectorsToRecycleReferenceQueue.poll();
+
+					if(reference != null) {
+						cuDevicePtr = vectorsInUseReferenceMap.remove(reference);
+						if(logger.isLoggable(Level.FINEST)) {
+							logger.finest("Recycling (3) device pointer " + cuDevicePtr + " from " + reference);
+						}
+					}
+					else if(deviceFreeMemPercentage < vectorsRecyclerPercentageFreeToWaitForGC) {
 						/*
 						 * Try to obtain a reference after GC, retry with waits for 1 ms, 10 ms, 100 ms, ...
 						 */
@@ -193,10 +190,10 @@ public class RandomVariableCuda implements RandomVariable {
 						}
 
 						if(reference != null) {
+							cuDevicePtr = vectorsInUseReferenceMap.remove(reference);
 							if(logger.isLoggable(Level.FINEST)) {
 								logger.finest("Recycling (2) device pointer " + cuDevicePtr + " from " + reference);
 							}
-							cuDevicePtr = vectorsInUseReferenceMap.remove(reference);
 						}
 						else {
 							// Still no pointer found for requested size, consider cleaning all (also other sizes)
