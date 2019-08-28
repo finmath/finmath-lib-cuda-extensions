@@ -150,7 +150,13 @@ public class RandomVariableCuda implements RandomVariable {
 			else synchronized(this) {
 				reference = vectorsToRecycleReferenceQueue.poll();
 
-				if(reference == null) {
+				if(reference != null) {
+					if(logger.isLoggable(Level.FINEST)) {
+						logger.finest("Recycling (1.2) device pointer " + cuDevicePtr + " from " + reference);
+					}
+					cuDevicePtr = vectorsInUseReferenceMap.remove(reference);
+				}
+				else {
 					final float deviceFreeMemPercentage = getDeviceFreeMemPercentage();
 
 					// No pointer found, try GC if we are above a critical level
@@ -166,7 +172,8 @@ public class RandomVariableCuda implements RandomVariable {
 							reference = vectorsToRecycleReferenceQueue.remove(1);
 						} catch (IllegalArgumentException | InterruptedException e) {}
 					}
-					else if(reference == null && deviceFreeMemPercentage < vectorsRecyclerPercentageFreeToWaitForGC) {
+
+					if(reference == null && deviceFreeMemPercentage < vectorsRecyclerPercentageFreeToWaitForGC) {
 						/*
 						 * Try to obtain a reference after GC, retry with waits for 1 ms, 10 ms, 100 ms, ...
 						 */
