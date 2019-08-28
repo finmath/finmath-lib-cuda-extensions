@@ -296,8 +296,6 @@ __global__ void reduceFloatVectorToDoubleScalar(int size, void *data, double *re
 	unsigned int tid = threadIdx.x;
 	unsigned int i = blockIdx.x*(blockDim.x*2) + threadIdx.x;
 
-	if(i==0) result[0] = 0;
-	
 	sdata[tid] = (double)(i < size ? fdata[i] : 0) + (double)(i+blockDim.x < size ? fdata[i+blockDim.x] : 0);
 	cdata[tid] = sdata[tid] - (double)(i < size ? fdata[i] : 0) - (double)(i+blockDim.x < size ? fdata[i+blockDim.x] : 0);
 	__syncthreads();

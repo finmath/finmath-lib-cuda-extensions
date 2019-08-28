@@ -1428,13 +1428,23 @@ public class RandomVariableCuda implements RandomVariable {
 
 		final DevicePointerReference reduceVector = getDevicePointer(2);
 
+		final double[] result = new double[1];
+		try {
+			deviceExecutor.submit(new Runnable() { public void run() {
+				cuCtxSynchronize();
+				JCudaDriver.cuMemcpyHtoD(reduceVector.get(), Pointer.to(result), 1 * Sizeof.DOUBLE);
+				cuCtxSynchronize();
+			}}).get();
+		} catch (InterruptedException | ExecutionException e) {
+			throw new RuntimeException(e.getCause());
+		}
+
 		callCudaFunction(reduceFloatVectorToDoubleScalar, new Pointer[] {
 				Pointer.to(new int[] { size() }),
 				Pointer.to(realizations.get()),
 				Pointer.to(reduceVector.get())},
 				gridSizeX, blockSizeX, blockSizeX*2*3);
 
-		final double[] result = new double[1];
 		try {
 			deviceExecutor.submit(new Runnable() { public void run() {
 				cuCtxSynchronize();
