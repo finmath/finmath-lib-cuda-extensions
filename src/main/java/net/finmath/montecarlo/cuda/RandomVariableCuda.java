@@ -627,7 +627,6 @@ public class RandomVariableCuda implements RandomVariable {
 		if(size() == 0)			return Double.NaN;
 
 		// TODO: Use kernel
-		/*
 		final float[] realizationsOnHostMemory = new float[(int)size];
 		try {
 			deviceExecutor.submit(new Runnable() { public void run() {
@@ -638,9 +637,9 @@ public class RandomVariableCuda implements RandomVariable {
 		} catch (InterruptedException | ExecutionException e) { throw new RuntimeException(e.getCause()); }
 
 		return (new RandomVariableFromFloatArray(getFiltrationTime(), realizationsOnHostMemory)).getAverage();
-		*/
-		RandomVariable reduced = reduceToDouble();
-		return reduced.getAverage() * reduced.size() / size();		// Temp hack @FIXME @TODO
+
+		//RandomVariable reduced = reduceToDouble();
+		//return reduced.getAverage() * reduced.size() / size();		// Temp hack @FIXME @TODO
 		//return  reduce()/size();
 	}
 
