@@ -105,7 +105,7 @@ public class RandomVariableCuda implements RandomVariable {
 		private final static float	vectorsRecyclerPercentageFreeToWaitForGC	= 0.05f;		// should be set by monitoring GPU mem
 		private final static long	vectorsRecyclerMaxTimeOutMillis			= 1000;
 
-		private volatile static float deviceFreeMemPercentage = getDeviceFreeMemPercentage();
+		private volatile static float deviceFreeMemPercentage = 1.0f;	// Dummy
 
 		// Thread to collect weak references - will be worked on for a future version.
 		static {
@@ -144,10 +144,10 @@ public class RandomVariableCuda implements RandomVariable {
 
 			Reference<? extends DevicePointerReference> reference = vectorsToRecycleReferenceQueue.poll();
 			if(reference != null) {
+				cuDevicePtr = vectorsInUseReferenceMap.remove(reference);
 				if(logger.isLoggable(Level.FINEST)) {
 					logger.finest("Recycling (1) device pointer " + cuDevicePtr + " from " + reference);
 				}
-				cuDevicePtr = vectorsInUseReferenceMap.remove(reference);
 			}
 			else synchronized(this) {
 				reference = vectorsToRecycleReferenceQueue.poll();
