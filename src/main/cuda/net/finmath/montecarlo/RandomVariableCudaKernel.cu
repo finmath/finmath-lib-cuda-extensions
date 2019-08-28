@@ -310,9 +310,8 @@ __global__ void reduceFloatVectorToDoubleScalar(int size, void *data, double *re
 		__syncthreads();
 	}
 
-	// Sum up all block values in global mem "result"
-	if (tid == 0)
-		atomicAdd(result, sdata[0]);
+	// write result for this block to global mem
+	if (tid == 0) result[blockIdx.x] = sdata[0];
 }
 
 /*

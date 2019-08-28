@@ -43,6 +43,7 @@ import jcuda.driver.CUfunction;
 import jcuda.driver.CUmodule;
 import jcuda.driver.JCudaDriver;
 import net.finmath.functions.DoubleTernaryOperator;
+import net.finmath.montecarlo.RandomVariableFromDoubleArray;
 import net.finmath.montecarlo.RandomVariableFromFloatArray;
 import net.finmath.stochastic.RandomVariable;
 
@@ -638,7 +639,7 @@ public class RandomVariableCuda implements RandomVariable {
 
 		return (new RandomVariableFromFloatArray(getFiltrationTime(), realizationsOnHostMemory)).getAverage();
 		*/
-		return reduceToDouble()/size();
+		return reduceToDouble().getAverage();
 		//return  reduce()/size();
 	}
 
@@ -1421,23 +1422,12 @@ public class RandomVariableCuda implements RandomVariable {
 	 */
 
 
-	private double reduceToDouble() {
+	private RandomVariableFromDoubleArray reduceToDouble() {
 
 		final int blockSizeX = reduceGridSize;
 		final int gridSizeX = (int)Math.ceil((double)size()/2 / blockSizeX);
 
-		final DevicePointerReference reduceVector = getDevicePointer(2);
-
-		final double[] result = new double[1];
-		try {
-			deviceExecutor.submit(new Runnable() { public void run() {
-				cuCtxSynchronize();
-				JCudaDriver.cuMemcpyHtoD(reduceVector.get(), Pointer.to(result), 1 * Sizeof.DOUBLE);
-				cuCtxSynchronize();
-			}}).get();
-		} catch (InterruptedException | ExecutionException e) {
-			throw new RuntimeException(e.getCause());
-		}
+		final DevicePointerReference reduceVector = getDevicePointer(2*gridSizeX);
 
 		callCudaFunction(reduceFloatVectorToDoubleScalar, new Pointer[] {
 				Pointer.to(new int[] { size() }),
@@ -1445,17 +1435,18 @@ public class RandomVariableCuda implements RandomVariable {
 				Pointer.to(reduceVector.get())},
 				gridSizeX, blockSizeX, blockSizeX*2*3);
 
+		final double[] result = new double[gridSizeX];
 		try {
 			deviceExecutor.submit(new Runnable() { public void run() {
 				cuCtxSynchronize();
-				cuMemcpyDtoH(Pointer.to(result), reduceVector.get(), 1 * Sizeof.DOUBLE);
+				cuMemcpyDtoH(Pointer.to(result), reduceVector.get(), gridSizeX * Sizeof.DOUBLE);
 				cuCtxSynchronize();
 			}}).get();
 		} catch (InterruptedException | ExecutionException e) {
 			throw new RuntimeException(e.getCause());
 		}
 
-		return result[0];
+		return (new RandomVariableFromDoubleArray(time, result));
 	}
 
 	private double reduce() {
