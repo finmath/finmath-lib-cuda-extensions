@@ -283,7 +283,6 @@ __global__ void subRatio(int n, float *a, float *b, float *c, float *result)
     }
 }
 
-/*
 extern "C"
 __global__ void reduceFloatVectorToDoubleScalar(int size, void *data, double *result) {
 	float *fdata = (float*) data;
@@ -314,7 +313,6 @@ __global__ void reduceFloatVectorToDoubleScalar(int size, void *data, double *re
 	if (tid == 0)
 		atomicAdd(result, sdata[0]);
 }
-*/
 
 /*
  * Perfom a reduction from data of length 'size' to result, where length of result will be 'number of blocks'.
