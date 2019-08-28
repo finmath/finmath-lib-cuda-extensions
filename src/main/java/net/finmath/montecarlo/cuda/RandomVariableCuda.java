@@ -105,8 +105,6 @@ public class RandomVariableCuda implements RandomVariable {
 		private final static float	vectorsRecyclerPercentageFreeToWaitForGC	= 0.05f;		// should be set by monitoring GPU mem
 		private final static long	vectorsRecyclerMaxTimeOutMillis			= 1000;
 
-		private volatile static float deviceFreeMemPercentage = 1.0f;	// Dummy
-
 		// Thread to collect weak references - will be worked on for a future version.
 		static {
 			new Thread(new Runnable() {
@@ -125,7 +123,7 @@ public class RandomVariableCuda implements RandomVariable {
 			}).start();
 		}
 
-		public DevicePointerReference getDevicePointer(final long size) {
+		public synchronized DevicePointerReference getDevicePointer(final long size) {
 			if(logger.isLoggable(Level.FINEST)) {
 				final StringBuilder stringBuilder = new StringBuilder();
 				stringBuilder.append("Memory pool stats: ");
@@ -139,68 +137,62 @@ public class RandomVariableCuda implements RandomVariable {
 
 			CUdeviceptr cuDevicePtr = null;
 
-			// Check for object to recycle - each size has its own ReferenceQueue<DevicePointerReference>
-			ReferenceQueue<DevicePointerReference> vectorsToRecycleReferenceQueue = vectorsToRecycleReferenceQueueMap.computeIfAbsent(new Integer((int)size), key -> { return new ReferenceQueue<DevicePointerReference>();});
+			// Check for object to recycle
+			ReferenceQueue<DevicePointerReference> vectorsToRecycleReferenceQueue = vectorsToRecycleReferenceQueueMap.get(new Integer((int)size));
+			if(vectorsToRecycleReferenceQueue == null) {
+				logger.info("Creating reference queue for vector size " + size);
+				vectorsToRecycleReferenceQueueMap.put(new Integer((int)size), vectorsToRecycleReferenceQueue = new ReferenceQueue<DevicePointerReference>());
+			}
 
 			Reference<? extends DevicePointerReference> reference = vectorsToRecycleReferenceQueue.poll();
 			if(reference != null) {
-				cuDevicePtr = vectorsInUseReferenceMap.remove(reference);
 				if(logger.isLoggable(Level.FINEST)) {
 					logger.finest("Recycling (1) device pointer " + cuDevicePtr + " from " + reference);
 				}
+				cuDevicePtr = vectorsInUseReferenceMap.remove(reference);
 			}
-			else synchronized(this) {
-				reference = vectorsToRecycleReferenceQueue.poll();
+			else {
+				final float deviceFreeMemPercentage = getDeviceFreeMemPercentage();
 
-				if(reference != null) {
-					cuDevicePtr = vectorsInUseReferenceMap.remove(reference);
-					if(logger.isLoggable(Level.FINEST)) {
-						logger.finest("Recycling (2) device pointer " + cuDevicePtr + " from " + reference);
-					}
-				}
-				else if(deviceFreeMemPercentage < vectorsRecyclerPercentageFreeToStartGC) {
-					// No pointer found, try GC if we are above a critical level
-					if(logger.isLoggable(Level.FINEST)) {
-						logger.finest("Device free memory " + deviceFreeMemPercentage*100 + "%");
-					}
-
+				// No pointer found, try GC if we are above a critical level
+				if(deviceFreeMemPercentage < vectorsRecyclerPercentageFreeToStartGC && deviceFreeMemPercentage >= vectorsRecyclerPercentageFreeToWaitForGC) {
 					System.runFinalization();
 					System.gc();
-					reference = vectorsToRecycleReferenceQueue.poll();
+
+					if(logger.isLoggable(Level.FINEST)) {
+						logger.fine("Device free memory " + deviceFreeMemPercentage*100 + "%");
+					}
+
+					try {
+						reference = vectorsToRecycleReferenceQueue.remove(1);
+					} catch (IllegalArgumentException | InterruptedException e) {}
+				}
+
+				// Wait for GC
+				if(reference == null && deviceFreeMemPercentage < vectorsRecyclerPercentageFreeToWaitForGC) {
+					/*
+					 * Try to obtain a reference after GC, retry with waits for 1 ms, 10 ms, 100 ms, ...
+					 */
+					System.gc();
+
+					long timeOut = 1;
+					while(reference == null && timeOut < vectorsRecyclerMaxTimeOutMillis) {
+						try {
+							reference = vectorsToRecycleReferenceQueue.remove(timeOut);
+							timeOut *= 4;
+						} catch (IllegalArgumentException | InterruptedException e) {}
+					}
 
 					if(reference != null) {
-						cuDevicePtr = vectorsInUseReferenceMap.remove(reference);
 						if(logger.isLoggable(Level.FINEST)) {
-							logger.finest("Recycling (3) device pointer " + cuDevicePtr + " from " + reference);
+							logger.finest("Recycling (2) device pointer " + cuDevicePtr + " from " + reference);
 						}
+						cuDevicePtr = vectorsInUseReferenceMap.remove(reference);
 					}
-					else if(deviceFreeMemPercentage < vectorsRecyclerPercentageFreeToWaitForGC) {
-						/*
-						 * Try to obtain a reference after GC, retry with waits for 1 ms, 10 ms, 100 ms, ...
-						 */
-						System.runFinalization();
-						System.gc();
-
-						long timeOut = 1;
-						while(reference == null && timeOut < vectorsRecyclerMaxTimeOutMillis) {
-							try {
-								reference = vectorsToRecycleReferenceQueue.remove(timeOut);
-								timeOut *= 4;
-							} catch (IllegalArgumentException | InterruptedException e) {}
-						}
-
-						if(reference != null) {
-							cuDevicePtr = vectorsInUseReferenceMap.remove(reference);
-							if(logger.isLoggable(Level.FINEST)) {
-								logger.finest("Recycling (2) device pointer " + cuDevicePtr + " from " + reference);
-							}
-						}
-						else {
-							// Still no pointer found for requested size, consider cleaning all (also other sizes)
-							logger.info("Last resort: Cleaning all unused vectors on device. Device free memory " + deviceFreeMemPercentage*100 + "%");
-							clean();
-							deviceFreeMemPercentage = getDeviceFreeMemPercentage();
-						}
+					else {
+						// Still no pointer found for requested size, consider cleaning all (also other sizes)
+						logger.info("Last resort: Cleaning all unused vectors on device. Device free memory " + deviceFreeMemPercentage*100 + "%");
+						clean();
 					}
 				}
 			}
@@ -226,8 +218,6 @@ public class RandomVariableCuda implements RandomVariable {
 				} catch (InterruptedException | ExecutionException e) {
 					logger.severe("Failed to allocate device vector with size=" + size + ". Cause: " + e.getCause());
 				}
-
-				deviceFreeMemPercentage = getDeviceFreeMemPercentage();
 
 				if(cuDevicePtr == null) {
 					logger.severe("Failed to allocate device vector with size=" + size);
