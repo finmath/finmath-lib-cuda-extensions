@@ -61,7 +61,7 @@ import net.finmath.stochastic.RandomVariable;
  * Accesses performed exclusively through the interface
  * <code>RandomVariable</code> is thread safe (and does not mutate the class).
  *
- * <b>This implementation uses floats for the realizations on a Cuda GPU</b>
+ * <b>This implementation uses floats for the realizations on a Cuda GPU.</b> There is a CPU implementation in {@link RandomVariableFromFloatArray} which give exactly the same results for all methods (checked by unit test).
  *
  * @author Christian Fries
  * @version 2.1
@@ -96,13 +96,24 @@ public class RandomVariableCuda implements RandomVariable {
 	 * reference of recycleable vectors. The map vectorsInUseReferenceMap maps this weak reference to a Cuda vector.
 	 *
 	 * @author Christian Fries
-	 *
 	 */
 	private static class DeviceMemoryPool {
 		private final static Map<Integer, ReferenceQueue<DevicePointerReference>>		vectorsToRecycleReferenceQueueMap	= new ConcurrentHashMap<Integer, ReferenceQueue<DevicePointerReference>>();
 		private final static Map<WeakReference<DevicePointerReference>, CUdeviceptr>	vectorsInUseReferenceMap			= new ConcurrentHashMap<WeakReference<DevicePointerReference>, CUdeviceptr>();
+
+		/**
+		 * Percentage of device memory at which we will trigger System.gc() to aggressively reduce references.
+		 */
 		private final static float	vectorsRecyclerPercentageFreeToStartGC		= 0.15f;		// should be set by monitoring GPU mem
+
+		/**
+		 * Percentage of device memory at which we will try to wait a few milliseconds for recycled objects.
+		 */
 		private final static float	vectorsRecyclerPercentageFreeToWaitForGC	= 0.05f;		// should be set by monitoring GPU mem
+
+		/**
+		 * Maximum time to wait for object recycled objects. (Higher value slows down the code, but prevents out-of-memory).
+		 */
 		private final static long	vectorsRecyclerMaxTimeOutMillis			= 1000;
 
 		// Thread to collect weak references - will be worked on for a future version.
@@ -123,6 +134,20 @@ public class RandomVariableCuda implements RandomVariable {
 			}).start();
 		}
 
+		/**
+		 * Get a Java object ({@link DevicePointerReference}) representing a vector allocated on the GPU memory (device memory).
+		 * 
+		 * If this object is the wrapped into a {@link RandomVariableCuda} via {@link RandomVariableCuda#of(double, DevicePointerReference, long)}
+		 * you may perfom arithmetic operations on it.
+		 * 
+		 * Note: You will likely not use this method directly. Instead use {@link RandomVariableCuda#RandomVariableCuda(float[])} which will
+		 * call this method and initialize the vector to the given values.
+		 * 
+		 * The object is "managed" in the sense the once the object is dereferenced the GPU memory will be marked for re-use (or freed at a later time).
+		 * 
+		 * @param size The size of the vector as multiples of sizeof(float). (To allocated a double vector use twice the size).
+		 * @return An object representing a vector allocated on the GPU memory.
+		 */
 		public synchronized DevicePointerReference getDevicePointer(final long size) {
 			if(logger.isLoggable(Level.FINEST)) {
 				final StringBuilder stringBuilder = new StringBuilder();
@@ -234,6 +259,9 @@ public class RandomVariableCuda implements RandomVariable {
 			return devicePointerReference;
 		}
 
+		/**
+		 * Free all unused device memory.
+		 */
 		public synchronized void clean() {
 			// Clean up all remaining pointers
 			for(final ReferenceQueue<DevicePointerReference> vectorsToRecycleReferenceQueue : vectorsToRecycleReferenceQueueMap.values()) {
