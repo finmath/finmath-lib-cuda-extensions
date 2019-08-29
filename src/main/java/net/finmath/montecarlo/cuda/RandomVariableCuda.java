@@ -136,15 +136,15 @@ public class RandomVariableCuda implements RandomVariable {
 
 		/**
 		 * Get a Java object ({@link DevicePointerReference}) representing a vector allocated on the GPU memory (device memory).
-		 * 
+		 *
 		 * If this object is the wrapped into a {@link RandomVariableCuda} via {@link RandomVariableCuda#of(double, DevicePointerReference, long)}
 		 * you may perfom arithmetic operations on it.
-		 * 
+		 *
 		 * Note: You will likely not use this method directly. Instead use {@link RandomVariableCuda#RandomVariableCuda(float[])} which will
 		 * call this method and initialize the vector to the given values.
-		 * 
+		 *
 		 * The object is "managed" in the sense the once the object is dereferenced the GPU memory will be marked for re-use (or freed at a later time).
-		 * 
+		 *
 		 * @param size The size of the vector as multiples of sizeof(float). (To allocated a double vector use twice the size).
 		 * @return An object representing a vector allocated on the GPU memory.
 		 */
@@ -269,7 +269,7 @@ public class RandomVariableCuda implements RandomVariable {
 				while((reference = vectorsToRecycleReferenceQueue.poll()) != null) {
 					final CUdeviceptr cuDevicePtr = vectorsInUseReferenceMap.remove(reference);
 					if(logger.isLoggable(Level.FINEST)) {
-						logger.finest("Freeing device pointer " + cuDevicePtr + " from " + reference);						
+						logger.finest("Freeing device pointer " + cuDevicePtr + " from " + reference);
 					}
 					try {
 						deviceExecutor.submit(new Runnable() { public void run() {
@@ -400,7 +400,7 @@ public class RandomVariableCuda implements RandomVariable {
 
 	/**
 	 * Create a <code>RandomVariableCuda</code>.
-	 * 
+	 *
 	 * @param time the filtration time, set to 0.0 if not used.
 	 * @param realizations A <code>DevicePointerReference</code> referencing a {@link CUdeviceptr} with the given size. Use {@link #getDevicePointer(long)} to create one.
 	 * @param size The size of the vector associated with <code>DevicePointerReference</code>.
@@ -413,7 +413,7 @@ public class RandomVariableCuda implements RandomVariable {
 
 	/**
 	 * Create a <code>RandomVariableCuda</code>.
-	 * 
+	 *
 	 * @param time the filtration time, set to 0.0 if not used.
 	 * @param realizations A <code>DevicePointerReference</code> referencing a {@link CUdeviceptr} with the given size. Use {@link #getDevicePointer(long)} to create one.
 	 * @param size The size of the vector associated with <code>DevicePointerReference</code>.
@@ -630,12 +630,17 @@ public class RandomVariableCuda implements RandomVariable {
 	public double getMin() {
 		if(isDeterministic()) return valueIfNonStochastic;
 
-		double[] realizations = getRealizations();
+		final double[] realizations = getRealizations();
 
 		// TODO: Use kernel
 		double min = Double.MAX_VALUE;
-		if(realizations.length != 0) min = realizations[0];     /// @see getMax()
-		for(int i=0; i<realizations.length; i++) min = Math.min(realizations[i],min);
+		if(realizations.length != 0)
+		{
+			min = realizations[0];     /// @see getMax()
+		}
+		for(int i=0; i<realizations.length; i++) {
+			min = Math.min(realizations[i],min);
+		}
 		return min;
 	}
 
@@ -643,12 +648,16 @@ public class RandomVariableCuda implements RandomVariable {
 	public double getMax() {
 		if(isDeterministic()) return valueIfNonStochastic;
 
-		double[] realizations = getRealizations();
+		final double[] realizations = getRealizations();
 
 		// TODO: Use kernel
 		double max = -Double.MAX_VALUE;
-		if(realizations.length != 0) max = realizations[0];
-		for(int i=0; i<realizations.length; i++) max = Math.max(realizations[i],max);
+		if(realizations.length != 0) {
+			max = realizations[0];
+		}
+		for(int i=0; i<realizations.length; i++) {
+			max = Math.max(realizations[i],max);
+		}
 		return max;
 	}
 
@@ -739,12 +748,12 @@ public class RandomVariableCuda implements RandomVariable {
 		if(isDeterministic())	return valueIfNonStochastic;
 		if(size() == 0)			return Double.NaN;
 
-		double[] realizations = getRealizations();
+		final double[] realizations = getRealizations();
 
-		double[] realizationsSorted = realizations;
+		final double[] realizationsSorted = realizations;
 		java.util.Arrays.sort(realizationsSorted);
 
-		int indexOfQuantileValue = Math.min(Math.max((int)Math.round((size()+1) * (1-quantile) - 1), 0), size()-1);
+		final int indexOfQuantileValue = Math.min(Math.max((int)Math.round((size()+1) * (1-quantile) - 1), 0), size()-1);
 
 		return realizationsSorted[indexOfQuantileValue];
 	}
@@ -763,11 +772,11 @@ public class RandomVariableCuda implements RandomVariable {
 		if(size() == 0)			return Double.NaN;
 		if(quantileStart > quantileEnd) return getQuantileExpectation(quantileEnd, quantileStart);
 
-		double[] realizationsSorted = getRealizations();
+		final double[] realizationsSorted = getRealizations();
 		java.util.Arrays.sort(realizationsSorted);
 
-		int indexOfQuantileValueStart	= Math.min(Math.max((int)Math.round((size()+1) * quantileStart - 1), 0), size()-1);
-		int indexOfQuantileValueEnd		= Math.min(Math.max((int)Math.round((size()+1) * quantileEnd - 1), 0), size()-1);
+		final int indexOfQuantileValueStart	= Math.min(Math.max((int)Math.round((size()+1) * quantileStart - 1), 0), size()-1);
+		final int indexOfQuantileValueEnd		= Math.min(Math.max((int)Math.round((size()+1) * quantileEnd - 1), 0), size()-1);
 
 		double quantileExpectation = 0.0;
 		for (int i=indexOfQuantileValueStart; i<=indexOfQuantileValueEnd;i++) {
@@ -781,7 +790,7 @@ public class RandomVariableCuda implements RandomVariable {
 	@Override
 	public double[] getHistogram(final double[] intervalPoints)
 	{
-		double[] histogramValues = new double[intervalPoints.length+1];
+		final double[] histogramValues = new double[intervalPoints.length+1];
 
 		if(isDeterministic()) {
 			java.util.Arrays.fill(histogramValues, 0.0);
@@ -795,7 +804,7 @@ public class RandomVariableCuda implements RandomVariable {
 			histogramValues[intervalPoints.length] = 1.0;
 		}
 		else {
-			double[] realizationsSorted = getRealizations();
+			final double[] realizationsSorted = getRealizations();
 			java.util.Arrays.sort(realizationsSorted);
 
 			int sampleIndex=0;
@@ -814,7 +823,9 @@ public class RandomVariableCuda implements RandomVariable {
 
 			// Normalize histogramValues
 			if(realizationsSorted.length > 0) {
-				for(int i=0; i<histogramValues.length; i++) histogramValues[i] /= realizationsSorted.length;
+				for(int i=0; i<histogramValues.length; i++) {
+					histogramValues[i] /= realizationsSorted.length;
+				}
 			}
 		}
 
@@ -823,19 +834,19 @@ public class RandomVariableCuda implements RandomVariable {
 
 	@Override
 	public double[][] getHistogram(final int numberOfPoints, final double standardDeviations) {
-		double[] intervalPoints = new double[numberOfPoints];
-		double[] anchorPoints	= new double[numberOfPoints+1];
-		double center	= getAverage();
-		double radius	= standardDeviations * getStandardDeviation();
-		double stepSize	= (double) (numberOfPoints-1) / 2.0;
+		final double[] intervalPoints = new double[numberOfPoints];
+		final double[] anchorPoints	= new double[numberOfPoints+1];
+		final double center	= getAverage();
+		final double radius	= standardDeviations * getStandardDeviation();
+		final double stepSize	= (double) (numberOfPoints-1) / 2.0;
 		for(int i=0; i<numberOfPoints;i++) {
-			double alpha = (-(double)(numberOfPoints-1) / 2.0 + (double)i) / stepSize;
+			final double alpha = (-(double)(numberOfPoints-1) / 2.0 + (double)i) / stepSize;
 			intervalPoints[i]	= center + alpha * radius;
 			anchorPoints[i]		= center + alpha * radius - radius / (2 * stepSize);
 		}
 		anchorPoints[numberOfPoints] = center + 1 * radius + radius / (2 * stepSize);
 
-		double[][] result = new double[2][];
+		final double[][] result = new double[2][];
 		result[0] = anchorPoints;
 		result[1] = getHistogram(intervalPoints);
 
