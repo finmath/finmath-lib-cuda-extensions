@@ -98,7 +98,17 @@ public class RandomVariableCuda implements RandomVariable {
 	 * @author Christian Fries
 	 */
 	private static class DeviceMemoryPool {
+		
+		/**
+		 * For each vector size this map stores <code>ReferenceQueue&lt;DevicePointerReference&gt;</code>. The garbadge collector
+		 * will put <code>WeakReference&lt;DevicePointerReference&gt;</code> into this queue once the
+		 * <code>DevicePointerReference</code>-object has become de-referenced.
+		 */
 		private final static Map<Integer, ReferenceQueue<DevicePointerReference>>		vectorsToRecycleReferenceQueueMap	= new ConcurrentHashMap<Integer, ReferenceQueue<DevicePointerReference>>();
+
+		/**
+		 * This map allow to recover the device pointer for a given <code>WeakReference&lt;DevicePointerReference&gt;</code>.
+		 */
 		private final static Map<WeakReference<DevicePointerReference>, CUdeviceptr>	vectorsInUseReferenceMap			= new ConcurrentHashMap<WeakReference<DevicePointerReference>, CUdeviceptr>();
 
 		/**
@@ -138,7 +148,7 @@ public class RandomVariableCuda implements RandomVariable {
 		 * Get a Java object ({@link DevicePointerReference}) representing a vector allocated on the GPU memory (device memory).
 		 *
 		 * If this object is the wrapped into a {@link RandomVariableCuda} via {@link RandomVariableCuda#of(double, DevicePointerReference, long)}
-		 * you may perfom arithmetic operations on it.
+		 * you may perform arithmetic operations on it.
 		 *
 		 * Note: You will likely not use this method directly. Instead use {@link RandomVariableCuda#RandomVariableCuda(float[])} which will
 		 * call this method and initialize the vector to the given values.
