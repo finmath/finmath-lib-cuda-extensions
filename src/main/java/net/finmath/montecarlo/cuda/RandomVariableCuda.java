@@ -64,7 +64,7 @@ import net.finmath.stochastic.RandomVariable;
  * <b>This implementation uses floats for the realizations on a Cuda GPU</b>
  *
  * @author Christian Fries
- * @version 2.0
+ * @version 2.1
  */
 public class RandomVariableCuda implements RandomVariable {
 
@@ -600,26 +600,28 @@ public class RandomVariableCuda implements RandomVariable {
 
 	@Override
 	public double getMin() {
-		throw new UnsupportedOperationException();
-		/*
 		if(isDeterministic()) return valueIfNonStochastic;
+
+		double[] realizations = getRealizations();
+
+		// TODO: Use kernel
 		double min = Double.MAX_VALUE;
 		if(realizations.length != 0) min = realizations[0];     /// @see getMax()
 		for(int i=0; i<realizations.length; i++) min = Math.min(realizations[i],min);
 		return min;
-		 */
 	}
 
 	@Override
 	public double getMax() {
-		throw new UnsupportedOperationException();
-		/*
 		if(isDeterministic()) return valueIfNonStochastic;
+
+		double[] realizations = getRealizations();
+
+		// TODO: Use kernel
 		double max = -Double.MAX_VALUE;
 		if(realizations.length != 0) max = realizations[0];
 		for(int i=0; i<realizations.length; i++) max = Math.max(realizations[i],max);
 		return max;
-		 */
 	}
 
 	@Override
@@ -709,15 +711,14 @@ public class RandomVariableCuda implements RandomVariable {
 		if(isDeterministic())	return valueIfNonStochastic;
 		if(size() == 0)			return Double.NaN;
 
-		throw new UnsupportedOperationException();
-		/*
-		float[] realizationsSorted = realizations.clone();
+		double[] realizations = getRealizations();
+
+		double[] realizationsSorted = realizations;
 		java.util.Arrays.sort(realizationsSorted);
 
 		int indexOfQuantileValue = Math.min(Math.max((int)Math.round((size()+1) * (1-quantile) - 1), 0), size()-1);
 
 		return realizationsSorted[indexOfQuantileValue];
-		 */
 	}
 
 	@Override
