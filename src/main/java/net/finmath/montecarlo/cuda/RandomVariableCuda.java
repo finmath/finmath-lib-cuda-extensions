@@ -75,7 +75,7 @@ public class RandomVariableCuda implements RandomVariable {
 	 * a recycling of the device vector.
 	 */
 	public static class DevicePointerReference {
-		public CUdeviceptr devicePointer;
+		private final CUdeviceptr devicePointer;
 
 		public DevicePointerReference(final CUdeviceptr devicePointer) {
 			this.devicePointer = devicePointer;
@@ -98,33 +98,35 @@ public class RandomVariableCuda implements RandomVariable {
 	 * @author Christian Fries
 	 */
 	private static class DeviceMemoryPool {
-		
+
+		private final Object lock = new Object();
+
 		/**
 		 * For each vector size this map stores <code>ReferenceQueue&lt;DevicePointerReference&gt;</code>. The garbadge collector
 		 * will put <code>WeakReference&lt;DevicePointerReference&gt;</code> into this queue once the
 		 * <code>DevicePointerReference</code>-object has become de-referenced.
 		 */
-		private final static Map<Integer, ReferenceQueue<DevicePointerReference>>		vectorsToRecycleReferenceQueueMap	= new ConcurrentHashMap<Integer, ReferenceQueue<DevicePointerReference>>();
+		private static final Map<Integer, ReferenceQueue<DevicePointerReference>>		vectorsToRecycleReferenceQueueMap	= new ConcurrentHashMap<Integer, ReferenceQueue<DevicePointerReference>>();
 
 		/**
 		 * This map allow to recover the device pointer for a given <code>WeakReference&lt;DevicePointerReference&gt;</code>.
 		 */
-		private final static Map<WeakReference<DevicePointerReference>, CUdeviceptr>	vectorsInUseReferenceMap			= new ConcurrentHashMap<WeakReference<DevicePointerReference>, CUdeviceptr>();
+		private static final Map<WeakReference<DevicePointerReference>, CUdeviceptr>	vectorsInUseReferenceMap			= new ConcurrentHashMap<WeakReference<DevicePointerReference>, CUdeviceptr>();
 
 		/**
 		 * Percentage of device memory at which we will trigger System.gc() to aggressively reduce references.
 		 */
-		private final static float	vectorsRecyclerPercentageFreeToStartGC		= 0.15f;		// should be set by monitoring GPU mem
+		private static final float	vectorsRecyclerPercentageFreeToStartGC		= 0.15f;		// should be set by monitoring GPU mem
 
 		/**
 		 * Percentage of device memory at which we will try to wait a few milliseconds for recycled objects.
 		 */
-		private final static float	vectorsRecyclerPercentageFreeToWaitForGC	= 0.05f;		// should be set by monitoring GPU mem
+		private static final float	vectorsRecyclerPercentageFreeToWaitForGC	= 0.05f;		// should be set by monitoring GPU mem
 
 		/**
 		 * Maximum time to wait for object recycled objects. (Higher value slows down the code, but prevents out-of-memory).
 		 */
-		private final static long	vectorsRecyclerMaxTimeOutMillis			= 1000;
+		private static final long	vectorsRecyclerMaxTimeOutMillis			= 1000;
 
 		// Thread to collect weak references - will be worked on for a future version.
 		static {
@@ -150,7 +152,7 @@ public class RandomVariableCuda implements RandomVariable {
 		 * If this object is the wrapped into a {@link RandomVariableCuda} via {@link RandomVariableCuda#of(double, DevicePointerReference, long)}
 		 * you may perform arithmetic operations on it.
 		 *
-		 * Note: You will likely not use this method directly. Instead use {@link RandomVariableCuda#RandomVariableCuda(float[])} which will
+		 * Note: You will likely not use this method directly. Instead use {@link #getDevicePointer(float[])} which will
 		 * call this method and initialize the vector to the given values.
 		 *
 		 * The object is "managed" in the sense the once the object is dereferenced the GPU memory will be marked for re-use (or freed at a later time).
@@ -158,7 +160,7 @@ public class RandomVariableCuda implements RandomVariable {
 		 * @param size The size of the vector as multiples of sizeof(float). (To allocated a double vector use twice the size).
 		 * @return An object representing a vector allocated on the GPU memory.
 		 */
-		public synchronized DevicePointerReference getDevicePointer(final long size) {
+		public DevicePointerReference getDevicePointer(final long size) {
 			if(logger.isLoggable(Level.FINEST)) {
 				final StringBuilder stringBuilder = new StringBuilder();
 				stringBuilder.append("Memory pool stats: ");
@@ -173,11 +175,10 @@ public class RandomVariableCuda implements RandomVariable {
 			CUdeviceptr cuDevicePtr = null;
 
 			// Check for object to recycle
-			ReferenceQueue<DevicePointerReference> vectorsToRecycleReferenceQueue = vectorsToRecycleReferenceQueueMap.get(new Integer((int)size));
-			if(vectorsToRecycleReferenceQueue == null) {
+			ReferenceQueue<DevicePointerReference> vectorsToRecycleReferenceQueue = vectorsToRecycleReferenceQueueMap.computeIfAbsent(new Integer((int)size), key ->  {
 				logger.info("Creating reference queue for vector size " + size);
-				vectorsToRecycleReferenceQueueMap.put(new Integer((int)size), vectorsToRecycleReferenceQueue = new ReferenceQueue<DevicePointerReference>());
-			}
+				return new ReferenceQueue<DevicePointerReference>();
+			});
 
 			Reference<? extends DevicePointerReference> reference = vectorsToRecycleReferenceQueue.poll();
 			if(reference != null) {
@@ -236,7 +237,8 @@ public class RandomVariableCuda implements RandomVariable {
 				// Still no pointer found, create new one
 				try {
 					cuDevicePtr =
-							deviceExecutor.submit(new Callable<CUdeviceptr>() { public CUdeviceptr call() {
+							deviceExecutor.submit(new Callable<CUdeviceptr>() { @Override
+								public CUdeviceptr call() {
 								CUdeviceptr cuDevicePtr = new CUdeviceptr();
 								final int succ = JCudaDriver.cuMemAlloc(cuDevicePtr, size * Sizeof.FLOAT);
 								if(succ != 0) {
@@ -272,27 +274,156 @@ public class RandomVariableCuda implements RandomVariable {
 		/**
 		 * Free all unused device memory.
 		 */
-		public synchronized void clean() {
-			// Clean up all remaining pointers
-			for(final ReferenceQueue<DevicePointerReference> vectorsToRecycleReferenceQueue : vectorsToRecycleReferenceQueueMap.values()) {
-				Reference<? extends DevicePointerReference> reference;
-				while((reference = vectorsToRecycleReferenceQueue.poll()) != null) {
-					final CUdeviceptr cuDevicePtr = vectorsInUseReferenceMap.remove(reference);
-					if(logger.isLoggable(Level.FINEST)) {
-						logger.finest("Freeing device pointer " + cuDevicePtr + " from " + reference);
-					}
-					try {
-						deviceExecutor.submit(new Runnable() { public void run() {
-							cuCtxSynchronize();
-							JCudaDriver.cuMemFree(cuDevicePtr);
-						}}).get();
-					} catch (InterruptedException | ExecutionException e) {
-						logger.severe("Unable to free pointer " + cuDevicePtr + " from " + reference);
-						throw new RuntimeException(e.getCause());
+		public void clean() {
+			synchronized (lock) {
+				// Clean up all remaining pointers
+				for(final ReferenceQueue<DevicePointerReference> vectorsToRecycleReferenceQueue : vectorsToRecycleReferenceQueueMap.values()) {
+					Reference<? extends DevicePointerReference> reference;
+					while((reference = vectorsToRecycleReferenceQueue.poll()) != null) {
+						final CUdeviceptr cuDevicePtr = vectorsInUseReferenceMap.remove(reference);
+						if(logger.isLoggable(Level.FINEST)) {
+							logger.finest("Freeing device pointer " + cuDevicePtr + " from " + reference);
+						}
+						try {
+							deviceExecutor.submit(new Runnable() { @Override
+								public void run() {
+								cuCtxSynchronize();
+								JCudaDriver.cuMemFree(cuDevicePtr);
+							}}).get();
+						} catch (InterruptedException | ExecutionException e) {
+							logger.severe("Unable to free pointer " + cuDevicePtr + " from " + reference);
+							throw new RuntimeException(e.getCause());
+						}
 					}
 				}
+
 			}
 		}
+
+		/**
+		 * Create a vector on device and copy host vector to it.
+		 *
+		 * @param values Host vector.
+		 * @return Pointer to device vector.
+		 */
+		public DevicePointerReference getDevicePointer(final float[] values) {
+			final DevicePointerReference devicePointerReference = getDevicePointer(values.length);
+			try {
+				deviceExecutor.submit(new Runnable() { @Override
+					public void run() {
+					cuCtxSynchronize();
+					JCudaDriver.cuMemcpyHtoD(devicePointerReference.get(), Pointer.to(values), (long)values.length * Sizeof.FLOAT);
+				}}).get();
+			} catch (InterruptedException | ExecutionException e) { throw new RuntimeException(e.getCause()); }
+
+			return devicePointerReference;
+		}
+
+		public float[] getValuesAsFloat(DevicePointerReference devicePtr, int size) {
+			final float[] result = new float[size];
+			try {
+				deviceExecutor.submit(new Runnable() { @Override
+					public void run() {
+					cuCtxSynchronize();
+					cuMemcpyDtoH(Pointer.to(result), devicePtr.get(), size * Sizeof.FLOAT);
+					cuCtxSynchronize();
+				}}).get();
+			} catch (InterruptedException | ExecutionException e) {
+				throw new RuntimeException(e.getCause());
+			}
+			return result;
+		}
+
+		public DevicePointerReference callCudaFunctionv1s0(final CUfunction function, final long resultSize, final DevicePointerReference argument1) {
+			synchronized (lock) {
+				final DevicePointerReference result = getDevicePointer(resultSize);
+				callCudaFunction(function, resultSize, new Pointer[] {
+						Pointer.to(new int[] { (int)resultSize }),
+						Pointer.to(argument1.get()),
+						Pointer.to(result.get()) }
+						);
+				return result;
+			}
+		}
+
+		public DevicePointerReference callCudaFunctionv2s0(final CUfunction function, final long resultSize, final DevicePointerReference argument1, final DevicePointerReference argument2) {
+			synchronized (lock) {
+				final DevicePointerReference result = getDevicePointer(resultSize);
+				callCudaFunction(function, resultSize, new Pointer[] {
+						Pointer.to(new int[] { (int)resultSize }),
+						Pointer.to(argument1.get()),
+						Pointer.to(argument2.get()),
+						Pointer.to(result.get()) }
+						);
+				return result;
+			}
+		}
+
+		public DevicePointerReference callCudaFunctionv3s0(final CUfunction function, final long resultSize, final DevicePointerReference argument1, final DevicePointerReference argument2, final DevicePointerReference argument3) {
+			synchronized (lock) {
+				final DevicePointerReference result = getDevicePointer(resultSize);
+				callCudaFunction(function, resultSize, new Pointer[] {
+						Pointer.to(new int[] { (int)resultSize }),
+						Pointer.to(argument1.get()),
+						Pointer.to(argument2.get()),
+						Pointer.to(argument3.get()),
+						Pointer.to(result.get()) }
+						);
+				return result;
+			}
+		}
+
+		public DevicePointerReference callCudaFunctionv1s1(final CUfunction function, final long resultSize, final DevicePointerReference argument1, final double value) {
+			synchronized (lock) {
+				final DevicePointerReference result = getDevicePointer(resultSize);
+				callCudaFunction(function, resultSize, new Pointer[] {
+						Pointer.to(new int[] { (int)resultSize }),
+						Pointer.to(argument1.get()),
+						Pointer.to(new float[] { (float)value }),
+						Pointer.to(result.get()) }
+						);
+				return result;
+			}
+		}
+
+		public DevicePointerReference callCudaFunctionv2s1(final CUfunction function, final long resultSize, final DevicePointerReference argument1, final DevicePointerReference argument2, final double value) {
+			synchronized (lock) {
+				final DevicePointerReference result = getDevicePointer(resultSize);
+				callCudaFunction(function, resultSize, new Pointer[] {
+						Pointer.to(new int[] { (int)resultSize }),
+						Pointer.to(argument1.get()),
+						Pointer.to(argument2.get()),
+						Pointer.to(new float[] { (float)value }),
+						Pointer.to(result.get()) }
+						);
+				return result;
+			}
+		}
+
+		public void callCudaFunction(final CUfunction function, final long resultSize, final Pointer[] arguments) {
+			final int blockSizeX = 1024;
+			final int gridSizeX = (int)Math.ceil((double)resultSize / blockSizeX);
+			callCudaFunction(function, arguments, gridSizeX, blockSizeX, 0);
+		}
+
+		public void callCudaFunction(final CUfunction function, final Pointer[] arguments, final int gridSizeX, final int blockSizeX, final int sharedMemorySize) {
+			// Set up the kernel parameters: A pointer to an array
+			// of pointers which point to the actual values.
+			final Pointer kernelParameters = Pointer.to(arguments);
+
+			deviceExecutor.submit(new Runnable() { @Override
+				public void run() {
+				//cuCtxSynchronize();
+				// Launching on the same stream (default stream)
+				cuLaunchKernel(function,
+						gridSizeX,  1, 1,      // Grid dimension
+						blockSizeX, 1, 1,      // Block dimension
+						sharedMemorySize * Sizeof.FLOAT, null,               // Shared memory size and stream
+						kernelParameters, null // Kernel- and extra parameters
+						);
+			}});
+		}
+
 	}
 
 	private static DeviceMemoryPool deviceMemoryPool = new DeviceMemoryPool();
@@ -313,41 +444,41 @@ public class RandomVariableCuda implements RandomVariable {
 	private final double      valueIfNonStochastic;
 
 
-	private final static Logger logger = Logger.getLogger("net.finmath");
+	private static final Logger logger = Logger.getLogger("net.finmath");
 
-	private final static ExecutorService deviceExecutor = Executors.newSingleThreadExecutor();
-	public final static CUdevice device = new CUdevice();
-	public final static CUcontext context = new CUcontext();
-	public final static CUmodule module = new CUmodule();
+	private static final ExecutorService deviceExecutor = Executors.newSingleThreadExecutor();
+	public static final CUdevice device = new CUdevice();
+	public static final CUcontext context = new CUcontext();
+	public static final CUmodule module = new CUmodule();
 
-	private final static CUfunction capByScalar = new CUfunction();
-	private final static CUfunction floorByScalar = new CUfunction();
-	private final static CUfunction addScalar = new CUfunction();
-	private final static CUfunction subScalar = new CUfunction();
-	private final static CUfunction busScalar = new CUfunction();
-	private final static CUfunction multScalar = new CUfunction();
-	private final static CUfunction divScalar = new CUfunction();
-	private final static CUfunction vidScalar = new CUfunction();
-	private final static CUfunction cuPow = new CUfunction();
-	private final static CUfunction cuSqrt = new CUfunction();
-	private final static CUfunction cuExp = new CUfunction();
-	private final static CUfunction cuLog = new CUfunction();
-	private final static CUfunction invert = new CUfunction();
-	private final static CUfunction cuAbs = new CUfunction();
-	private final static CUfunction cap = new CUfunction();
-	private final static CUfunction cuFloor = new CUfunction();
-	private final static CUfunction add = new CUfunction();
-	private final static CUfunction sub = new CUfunction();
-	private final static CUfunction mult = new CUfunction();
-	private final static CUfunction cuDiv = new CUfunction();
-	private final static CUfunction accrue = new CUfunction();
-	private final static CUfunction discount = new CUfunction();
-	private final static CUfunction addProduct = new CUfunction();
-	private final static CUfunction addProduct_vs = new CUfunction();		// add the product of a vector and a scalar
-	private final static CUfunction reducePartial = new CUfunction();
-	private final static CUfunction reduceFloatVectorToDoubleScalar = new CUfunction();
+	private static final CUfunction capByScalar = new CUfunction();
+	private static final CUfunction floorByScalar = new CUfunction();
+	private static final CUfunction addScalar = new CUfunction();
+	private static final CUfunction subScalar = new CUfunction();
+	private static final CUfunction busScalar = new CUfunction();
+	private static final CUfunction multScalar = new CUfunction();
+	private static final CUfunction divScalar = new CUfunction();
+	private static final CUfunction vidScalar = new CUfunction();
+	private static final CUfunction cuPow = new CUfunction();
+	private static final CUfunction cuSqrt = new CUfunction();
+	private static final CUfunction cuExp = new CUfunction();
+	private static final CUfunction cuLog = new CUfunction();
+	private static final CUfunction invert = new CUfunction();
+	private static final CUfunction cuAbs = new CUfunction();
+	private static final CUfunction cap = new CUfunction();
+	private static final CUfunction cuFloor = new CUfunction();
+	private static final CUfunction add = new CUfunction();
+	private static final CUfunction sub = new CUfunction();
+	private static final CUfunction mult = new CUfunction();
+	private static final CUfunction cuDiv = new CUfunction();
+	private static final CUfunction accrue = new CUfunction();
+	private static final CUfunction discount = new CUfunction();
+	private static final CUfunction addProduct = new CUfunction();
+	private static final CUfunction addProduct_vs = new CUfunction();		// add the product of a vector and a scalar
+	private static final CUfunction reducePartial = new CUfunction();
+	private static final CUfunction reduceFloatVectorToDoubleScalar = new CUfunction();
 
-	private final static int reduceGridSize = 1024;
+	private static final int reduceGridSize = 1024;
 
 	// Initalize cuda
 	static {
@@ -367,7 +498,8 @@ public class RandomVariableCuda implements RandomVariable {
 			}
 
 			final String ptxFileName2 = ptxFileName;
-			deviceExecutor.submit(new Runnable() { public void run() {
+			deviceExecutor.submit(new Runnable() { @Override
+				public void run() {
 				// Initialize the driver and create a context for the first device.
 				cuInit(0);
 				cuDeviceGet(device, 0);
@@ -534,18 +666,7 @@ public class RandomVariableCuda implements RandomVariable {
 	 * @return Pointer to device vector.
 	 */
 	private static DevicePointerReference getDevicePointer(final float[] values) {
-		synchronized (deviceMemoryPool)
-		{
-			final DevicePointerReference devicePointerReference = deviceMemoryPool.getDevicePointer(values.length);
-			try {
-				deviceExecutor.submit(new Runnable() { public void run() {
-					cuCtxSynchronize();
-					JCudaDriver.cuMemcpyHtoD(devicePointerReference.get(), Pointer.to(values), (long)values.length * Sizeof.FLOAT);
-				}}).get();
-			} catch (InterruptedException | ExecutionException e) { throw new RuntimeException(e.getCause()); }
-
-			return devicePointerReference;
-		}
+		return deviceMemoryPool.getDevicePointer(values);
 	}
 
 	public static void clean() {
@@ -553,8 +674,9 @@ public class RandomVariableCuda implements RandomVariable {
 	}
 
 	private static RandomVariableCuda getRandomVariableCuda(final RandomVariable randomVariable) {
-		if(randomVariable instanceof RandomVariableCuda) return (RandomVariableCuda)randomVariable;
-		else {
+		if(randomVariable instanceof RandomVariableCuda) {
+			return (RandomVariableCuda)randomVariable;
+		} else {
 			final RandomVariableCuda randomVariableCuda = new RandomVariableCuda(randomVariable.getFiltrationTime(), randomVariable.getRealizations());
 			return randomVariableCuda;
 		}
@@ -566,7 +688,8 @@ public class RandomVariableCuda implements RandomVariable {
 	private static float getDeviceFreeMemPercentage() {
 		float freeRate;
 		try {
-			freeRate = deviceExecutor.submit(new Callable<Float>() { public Float call() {
+			freeRate = deviceExecutor.submit(new Callable<Float>() { @Override
+				public Float call() {
 				final long[] free = new long[1];
 				final long[] total = new long[1];
 				jcuda.runtime.JCuda.cudaMemGetInfo(free, total);
@@ -626,19 +749,27 @@ public class RandomVariableCuda implements RandomVariable {
 
 	@Override
 	public double get(final int pathOrState) {
-		if(isDeterministic())   return valueIfNonStochastic;
-		else               		throw new UnsupportedOperationException();
+		if(isDeterministic()) {
+			return valueIfNonStochastic;
+		} else {
+			throw new UnsupportedOperationException();
+		}
 	}
 
 	@Override
 	public int size() {
-		if(isDeterministic())    return 1;
-		else                     return (int)this.size;
+		if(isDeterministic()) {
+			return 1;
+		} else {
+			return (int)this.size;
+		}
 	}
 
 	@Override
 	public double getMin() {
-		if(isDeterministic()) return valueIfNonStochastic;
+		if(isDeterministic()) {
+			return valueIfNonStochastic;
+		}
 
 		final double[] realizations = getRealizations();
 
@@ -656,7 +787,9 @@ public class RandomVariableCuda implements RandomVariable {
 
 	@Override
 	public double getMax() {
-		if(isDeterministic()) return valueIfNonStochastic;
+		if(isDeterministic()) {
+			return valueIfNonStochastic;
+		}
 
 		final double[] realizations = getRealizations();
 
@@ -673,20 +806,15 @@ public class RandomVariableCuda implements RandomVariable {
 
 	@Override
 	public double getAverage() {
-		if(isDeterministic())	return valueIfNonStochastic;
-		if(size() == 0)			return Double.NaN;
+		if(isDeterministic()) {
+			return valueIfNonStochastic;
+		}
+		if(size() == 0) {
+			return Double.NaN;
+		}
 
 		// TODO: Use kernel
-		final float[] realizationsOnHostMemory = new float[(int)size];
-		try {
-			deviceExecutor.submit(new Runnable() { public void run() {
-				cuCtxSynchronize();
-				cuMemcpyDtoH(Pointer.to(realizationsOnHostMemory), realizations.get(), size * Sizeof.FLOAT);
-				cuCtxSynchronize();
-			}}).get();
-		} catch (InterruptedException | ExecutionException e) { throw new RuntimeException(e.getCause()); }
-
-		return (new RandomVariableFromFloatArray(getFiltrationTime(), realizationsOnHostMemory)).getAverage();
+		return (new RandomVariableFromFloatArray(getFiltrationTime(), deviceMemoryPool.getValuesAsFloat(realizations, size()))).getAverage();
 
 		//RandomVariable reduced = reduceToDouble();
 		//return reduced.getAverage() * reduced.size() / size();		// Temp hack @FIXME @TODO
@@ -700,8 +828,12 @@ public class RandomVariableCuda implements RandomVariable {
 
 	@Override
 	public double getVariance() {
-		if(isDeterministic())	return 0.0;
-		if(size() == 0)			return Double.NaN;
+		if(isDeterministic()) {
+			return 0.0;
+		}
+		if(size() == 0) {
+			return Double.NaN;
+		}
 
 		final double average = getAverage();
 		return this.squared().getAverage() - average*average;
@@ -715,48 +847,72 @@ public class RandomVariableCuda implements RandomVariable {
 
 	@Override
 	public double getSampleVariance() {
-		if(isDeterministic() || size() == 1)	return 0.0;
-		if(size() == 0)							return Double.NaN;
+		if(isDeterministic() || size() == 1) {
+			return 0.0;
+		}
+		if(size() == 0) {
+			return Double.NaN;
+		}
 
 		return getVariance() * size()/(size()-1);
 	}
 
 	@Override
 	public double getStandardDeviation() {
-		if(isDeterministic())	return 0.0;
-		if(size() == 0)			return Double.NaN;
+		if(isDeterministic()) {
+			return 0.0;
+		}
+		if(size() == 0) {
+			return Double.NaN;
+		}
 
 		return Math.sqrt(getVariance());
 	}
 
 	@Override
 	public double getStandardDeviation(final RandomVariable probabilities) {
-		if(isDeterministic())	return 0.0;
-		if(size() == 0)			return Double.NaN;
+		if(isDeterministic()) {
+			return 0.0;
+		}
+		if(size() == 0) {
+			return Double.NaN;
+		}
 
 		return Math.sqrt(getVariance(probabilities));
 	}
 
 	@Override
 	public double getStandardError() {
-		if(isDeterministic())	return 0.0;
-		if(size() == 0)			return Double.NaN;
+		if(isDeterministic()) {
+			return 0.0;
+		}
+		if(size() == 0) {
+			return Double.NaN;
+		}
 
 		return getStandardDeviation()/Math.sqrt(size());
 	}
 
 	@Override
 	public double getStandardError(final RandomVariable probabilities) {
-		if(isDeterministic())	return 0.0;
-		if(size() == 0)			return Double.NaN;
+		if(isDeterministic()) {
+			return 0.0;
+		}
+		if(size() == 0) {
+			return Double.NaN;
+		}
 
 		return getStandardDeviation(probabilities)/Math.sqrt(size());
 	}
 
 	@Override
 	public double getQuantile(final double quantile) {
-		if(isDeterministic())	return valueIfNonStochastic;
-		if(size() == 0)			return Double.NaN;
+		if(isDeterministic()) {
+			return valueIfNonStochastic;
+		}
+		if(size() == 0) {
+			return Double.NaN;
+		}
 
 		final double[] realizations = getRealizations();
 
@@ -770,17 +926,27 @@ public class RandomVariableCuda implements RandomVariable {
 
 	@Override
 	public double getQuantile(final double quantile, final RandomVariable probabilities) {
-		if(isDeterministic())	return valueIfNonStochastic;
-		if(size() == 0)			return Double.NaN;
+		if(isDeterministic()) {
+			return valueIfNonStochastic;
+		}
+		if(size() == 0) {
+			return Double.NaN;
+		}
 
 		throw new RuntimeException("Method not implemented.");
 	}
 
 	@Override
 	public double getQuantileExpectation(final double quantileStart, final double quantileEnd) {
-		if(isDeterministic())	return valueIfNonStochastic;
-		if(size() == 0)			return Double.NaN;
-		if(quantileStart > quantileEnd) return getQuantileExpectation(quantileEnd, quantileStart);
+		if(isDeterministic()) {
+			return valueIfNonStochastic;
+		}
+		if(size() == 0) {
+			return Double.NaN;
+		}
+		if(quantileStart > quantileEnd) {
+			return getQuantileExpectation(quantileEnd, quantileStart);
+		}
 
 		final double[] realizationsSorted = getRealizations();
 		java.util.Arrays.sort(realizationsSorted);
@@ -848,9 +1014,9 @@ public class RandomVariableCuda implements RandomVariable {
 		final double[] anchorPoints	= new double[numberOfPoints+1];
 		final double center	= getAverage();
 		final double radius	= standardDeviations * getStandardDeviation();
-		final double stepSize	= (double) (numberOfPoints-1) / 2.0;
+		final double stepSize	= (numberOfPoints-1) / 2.0;
 		for(int i=0; i<numberOfPoints;i++) {
-			final double alpha = (-(double)(numberOfPoints-1) / 2.0 + (double)i) / stepSize;
+			final double alpha = (-(double)(numberOfPoints-1) / 2.0 + i) / stepSize;
 			intervalPoints[i]	= center + alpha * radius;
 			anchorPoints[i]		= center + alpha * radius - radius / (2 * stepSize);
 		}
@@ -889,28 +1055,18 @@ public class RandomVariableCuda implements RandomVariable {
 		if(isDeterministic()) {
 			final double[] result = new double[] { valueIfNonStochastic };
 			return result;
-		}
-		else {
-			final float[] result = new float[(int)size];
-			try {
-				deviceExecutor.submit(new Runnable() { public void run() {
-					cuCtxSynchronize();
-					cuMemcpyDtoH(Pointer.to(result), realizations.get(), size * Sizeof.FLOAT);
-					cuCtxSynchronize();
-				}}).get();
-			} catch (InterruptedException | ExecutionException e) {
-				throw new RuntimeException(e.getCause());
-			}
-			return getDoubleArray(result);
+		} else {
+			return getDoubleArray(deviceMemoryPool.getValuesAsFloat(realizations, size()));
 		}
 	}
 
 	@Override
 	public Double doubleValue() {
-		if(isDeterministic())
+		if(isDeterministic()) {
 			return valueIfNonStochastic;
-		else
+		} else {
 			throw new UnsupportedOperationException("The random variable is non-deterministic");
+		}
 	}
 
 	@Override
@@ -951,13 +1107,14 @@ public class RandomVariableCuda implements RandomVariable {
 		throw new UnsupportedOperationException();
 	}
 
+	@Override
 	public RandomVariable cap(final double cap) {
 		if(isDeterministic()) {
 			final double newValueIfNonStochastic = Math.min(valueIfNonStochastic,cap);
 			return new RandomVariableCuda(time, newValueIfNonStochastic);
 		}
 		else {
-			final DevicePointerReference result = callCudaFunctionv1s1(capByScalar, size, realizations, cap);
+			final DevicePointerReference result = deviceMemoryPool.callCudaFunctionv1s1(capByScalar, size, realizations, cap);
 			return RandomVariableCuda.of(time, result, size());
 		}
 	}
@@ -969,7 +1126,7 @@ public class RandomVariableCuda implements RandomVariable {
 			return new RandomVariableCuda(time, newValueIfNonStochastic);
 		}
 		else {
-			final DevicePointerReference result = callCudaFunctionv1s1(floorByScalar, size, realizations, floor);
+			final DevicePointerReference result = deviceMemoryPool.callCudaFunctionv1s1(floorByScalar, size, realizations, floor);
 			return RandomVariableCuda.of(time, result, size());
 		}
 	}
@@ -981,7 +1138,7 @@ public class RandomVariableCuda implements RandomVariable {
 			return new RandomVariableCuda(time, newValueIfNonStochastic);
 		}
 		else {
-			final DevicePointerReference result = callCudaFunctionv1s1(addScalar, size, realizations, value);
+			final DevicePointerReference result = deviceMemoryPool.callCudaFunctionv1s1(addScalar, size, realizations, value);
 			return RandomVariableCuda.of(time, result, size());
 		}
 	}
@@ -993,7 +1150,7 @@ public class RandomVariableCuda implements RandomVariable {
 			return new RandomVariableCuda(time, newValueIfNonStochastic);
 		}
 		else {
-			final DevicePointerReference result = callCudaFunctionv1s1(subScalar, size, realizations, value);
+			final DevicePointerReference result = deviceMemoryPool.callCudaFunctionv1s1(subScalar, size, realizations, value);
 			return RandomVariableCuda.of(time, result, size());
 		}
 	}
@@ -1004,7 +1161,7 @@ public class RandomVariableCuda implements RandomVariable {
 			return new RandomVariableCuda(time, newValueIfNonStochastic);
 		}
 		else {
-			final DevicePointerReference result = callCudaFunctionv1s1(busScalar, size, realizations, value);
+			final DevicePointerReference result = deviceMemoryPool.callCudaFunctionv1s1(busScalar, size, realizations, value);
 			return RandomVariableCuda.of(time, result, size());
 		}
 	}
@@ -1016,7 +1173,7 @@ public class RandomVariableCuda implements RandomVariable {
 			return new RandomVariableCuda(time, newValueIfNonStochastic);
 		}
 		else {
-			final DevicePointerReference result = callCudaFunctionv1s1(multScalar, size, realizations, value);
+			final DevicePointerReference result = deviceMemoryPool.callCudaFunctionv1s1(multScalar, size, realizations, value);
 			return RandomVariableCuda.of(time, result, size());
 		}
 	}
@@ -1028,7 +1185,7 @@ public class RandomVariableCuda implements RandomVariable {
 			return new RandomVariableCuda(time, newValueIfNonStochastic);
 		}
 		else {
-			final DevicePointerReference result = callCudaFunctionv1s1(divScalar, size, realizations, value);
+			final DevicePointerReference result = deviceMemoryPool.callCudaFunctionv1s1(divScalar, size, realizations, value);
 			return RandomVariableCuda.of(time, result, size());
 		}
 	}
@@ -1039,7 +1196,7 @@ public class RandomVariableCuda implements RandomVariable {
 			return new RandomVariableCuda(time, newValueIfNonStochastic);
 		}
 		else {
-			final DevicePointerReference result = callCudaFunctionv1s1(vidScalar, size, realizations, value);
+			final DevicePointerReference result = deviceMemoryPool.callCudaFunctionv1s1(vidScalar, size, realizations, value);
 			return RandomVariableCuda.of(time, result, size());
 		}
 	}
@@ -1051,7 +1208,7 @@ public class RandomVariableCuda implements RandomVariable {
 			return new RandomVariableCuda(time, newValueIfNonStochastic);
 		}
 		else {
-			final DevicePointerReference result = callCudaFunctionv1s1(cuPow, size, realizations, exponent);
+			final DevicePointerReference result = deviceMemoryPool.callCudaFunctionv1s1(cuPow, size, realizations, exponent);
 			return RandomVariableCuda.of(time, result, size());
 		}
 	}
@@ -1066,8 +1223,9 @@ public class RandomVariableCuda implements RandomVariable {
 		if(isDeterministic()) {
 			final double newValueIfNonStochastic = valueIfNonStochastic * valueIfNonStochastic;
 			return new RandomVariableCuda(time, newValueIfNonStochastic);
-		} else
+		} else {
 			return this.mult(this);
+		}
 	}
 
 	@Override
@@ -1077,55 +1235,60 @@ public class RandomVariableCuda implements RandomVariable {
 			return new RandomVariableCuda(time, newValueIfNonStochastic);
 		}
 		else {
-			final DevicePointerReference result = callCudaFunctionv1s0(cuSqrt, size, realizations);
+			final DevicePointerReference result = deviceMemoryPool.callCudaFunctionv1s0(cuSqrt, size, realizations);
 			return RandomVariableCuda.of(time, result, size());
 		}
 	}
 
+	@Override
 	public RandomVariable invert() {
 		if(isDeterministic()) {
 			final double newValueIfNonStochastic = 1.0/valueIfNonStochastic;
 			return new RandomVariableCuda(time, newValueIfNonStochastic);
 		}
 		else {
-			final DevicePointerReference result = callCudaFunctionv1s0(invert, size, realizations);
+			final DevicePointerReference result = deviceMemoryPool.callCudaFunctionv1s0(invert, size, realizations);
 			return RandomVariableCuda.of(time, result, size());
 		}
 	}
 
+	@Override
 	public RandomVariable abs() {
 		if(isDeterministic()) {
 			final double newValueIfNonStochastic = Math.abs(valueIfNonStochastic);
 			return new RandomVariableCuda(time, newValueIfNonStochastic);
 		}
 		else {
-			final DevicePointerReference result = callCudaFunctionv1s0(cuAbs, size, realizations);
+			final DevicePointerReference result = deviceMemoryPool.callCudaFunctionv1s0(cuAbs, size, realizations);
 			return RandomVariableCuda.of(time, result, size());
 		}
 	}
 
+	@Override
 	public RandomVariableCuda exp() {
 		if(isDeterministic()) {
 			final double newValueIfNonStochastic = Math.exp(valueIfNonStochastic);
 			return new RandomVariableCuda(time, newValueIfNonStochastic);
 		}
 		else {
-			final DevicePointerReference result = callCudaFunctionv1s0(cuExp, size, realizations);
+			final DevicePointerReference result = deviceMemoryPool.callCudaFunctionv1s0(cuExp, size, realizations);
 			return RandomVariableCuda.of(time, result, size());
 		}
 	}
 
+	@Override
 	public RandomVariableCuda log() {
 		if(isDeterministic()) {
 			final double newValueIfNonStochastic = Math.log(valueIfNonStochastic);
 			return new RandomVariableCuda(time, newValueIfNonStochastic);
 		}
 		else {
-			final DevicePointerReference result = callCudaFunctionv1s0(cuLog, size, realizations);
+			final DevicePointerReference result = deviceMemoryPool.callCudaFunctionv1s0(cuLog, size, realizations);
 			return RandomVariableCuda.of(time, result, size());
 		}
 	}
 
+	@Override
 	public RandomVariable sin() {
 		throw new UnsupportedOperationException();
 		/*
@@ -1141,6 +1304,7 @@ public class RandomVariableCuda implements RandomVariable {
 		 */
 	}
 
+	@Override
 	public RandomVariable cos() {
 		throw new UnsupportedOperationException();
 		/*
@@ -1162,9 +1326,10 @@ public class RandomVariableCuda implements RandomVariable {
 
 	@Override
 	public RandomVariable add(final RandomVariable randomVariable) {
-		if(randomVariable.getTypePriority() > this.getTypePriority())
+		if(randomVariable.getTypePriority() > this.getTypePriority()) {
 			// Check type priority
 			return randomVariable.add(this);
+		}
 
 		// Set time of this random variable to maximum of time with respect to which measurability is known.
 		final double newTime = Math.max(time, randomVariable.getFiltrationTime());
@@ -1173,21 +1338,22 @@ public class RandomVariableCuda implements RandomVariable {
 			final double newValueIfNonStochastic = valueIfNonStochastic + randomVariable.doubleValue();
 			return new RandomVariableCuda(newTime, newValueIfNonStochastic);
 		}
-		else if(isDeterministic())
+		else if(isDeterministic()) {
 			return getRandomVariableCuda(randomVariable).add(valueIfNonStochastic);
-		else if(randomVariable.isDeterministic())
+		} else if(randomVariable.isDeterministic()) {
 			return this.add(randomVariable.doubleValue());
-		else {
-			final DevicePointerReference result = callCudaFunctionv2s0(add, size, realizations, getRandomVariableCuda(randomVariable).realizations);
+		} else {
+			final DevicePointerReference result = deviceMemoryPool.callCudaFunctionv2s0(add, size, realizations, getRandomVariableCuda(randomVariable).realizations);
 			return RandomVariableCuda.of(time, result, size());
 		}
 	}
 
 	@Override
 	public RandomVariable sub(final RandomVariable randomVariable) {
-		if(randomVariable.getTypePriority() > this.getTypePriority())
+		if(randomVariable.getTypePriority() > this.getTypePriority()) {
 			// Check type priority
 			return randomVariable.bus(this);
+		}
 
 		// Set time of this random variable to maximum of time with respect to which measurability is known.
 		final double newTime = Math.max(time, randomVariable.getFiltrationTime());
@@ -1196,21 +1362,22 @@ public class RandomVariableCuda implements RandomVariable {
 			final double newValueIfNonStochastic = valueIfNonStochastic - randomVariable.doubleValue();
 			return new RandomVariableCuda(newTime, newValueIfNonStochastic);
 		}
-		else if(isDeterministic())
+		else if(isDeterministic()) {
 			return getRandomVariableCuda(randomVariable).bus(valueIfNonStochastic);
-		else if(randomVariable.isDeterministic())
+		} else if(randomVariable.isDeterministic()) {
 			return this.sub(randomVariable.doubleValue());
-		else {
-			final DevicePointerReference result = callCudaFunctionv2s0(sub, size, realizations, getRandomVariableCuda(randomVariable).realizations);
+		} else {
+			final DevicePointerReference result = deviceMemoryPool.callCudaFunctionv2s0(sub, size, realizations, getRandomVariableCuda(randomVariable).realizations);
 			return RandomVariableCuda.of(time, result, size());
 		}
 	}
 
 	@Override
 	public RandomVariable bus(final RandomVariable randomVariable) {
-		if(randomVariable.getTypePriority() > this.getTypePriority())
+		if(randomVariable.getTypePriority() > this.getTypePriority()) {
 			// Check type priority
 			return randomVariable.sub(this);
+		}
 
 		// Set time of this random variable to maximum of time with respect to which measurability is known.
 		final double newTime = Math.max(time, randomVariable.getFiltrationTime());
@@ -1219,22 +1386,23 @@ public class RandomVariableCuda implements RandomVariable {
 			final double newValueIfNonStochastic = -valueIfNonStochastic + randomVariable.doubleValue();
 			return new RandomVariableCuda(newTime, newValueIfNonStochastic);
 		}
-		else if(isDeterministic())
+		else if(isDeterministic()) {
 			return getRandomVariableCuda(randomVariable).sub(valueIfNonStochastic);
-		else if(randomVariable.isDeterministic())
+		} else if(randomVariable.isDeterministic()) {
 			return this.bus(randomVariable.doubleValue());
-		else {
+		} else {
 			// flipped arguments
-			final DevicePointerReference result = callCudaFunctionv2s0(sub, size, getRandomVariableCuda(randomVariable).realizations, realizations);
+			final DevicePointerReference result = deviceMemoryPool.callCudaFunctionv2s0(sub, size, getRandomVariableCuda(randomVariable).realizations, realizations);
 			return RandomVariableCuda.of(time, result, size());
 		}
 	}
 
 	@Override
 	public RandomVariable mult(final RandomVariable randomVariable) {
-		if(randomVariable.getTypePriority() > this.getTypePriority())
+		if(randomVariable.getTypePriority() > this.getTypePriority()) {
 			// Check type priority
 			return randomVariable.mult(this);
+		}
 
 		// Set time of this random variable to maximum of time with respect to which measurability is known.
 		final double newTime = Math.max(time, randomVariable.getFiltrationTime());
@@ -1243,21 +1411,22 @@ public class RandomVariableCuda implements RandomVariable {
 			final double newValueIfNonStochastic = valueIfNonStochastic * randomVariable.doubleValue();
 			return new RandomVariableCuda(newTime, newValueIfNonStochastic);
 		}
-		else if(randomVariable.isDeterministic())
+		else if(randomVariable.isDeterministic()) {
 			return this.mult(randomVariable.doubleValue());
-		else if(isDeterministic() && !randomVariable.isDeterministic())
+		} else if(isDeterministic() && !randomVariable.isDeterministic()) {
 			return getRandomVariableCuda(randomVariable).mult(this.valueIfNonStochastic);
-		else {
-			final DevicePointerReference result = callCudaFunctionv2s0(mult, size, realizations, getRandomVariableCuda(randomVariable).realizations);
+		} else {
+			final DevicePointerReference result = deviceMemoryPool.callCudaFunctionv2s0(mult, size, realizations, getRandomVariableCuda(randomVariable).realizations);
 			return RandomVariableCuda.of(newTime, result, size());
 		}
 	}
 
 	@Override
 	public RandomVariable div(final RandomVariable randomVariable) {
-		if(randomVariable.getTypePriority() > this.getTypePriority())
+		if(randomVariable.getTypePriority() > this.getTypePriority()) {
 			// Check type priority
 			return randomVariable.vid(this);
+		}
 
 		// Set time of this random variable to maximum of time with respect to which measurability is known.
 		final double newTime = Math.max(time, randomVariable.getFiltrationTime());
@@ -1266,21 +1435,22 @@ public class RandomVariableCuda implements RandomVariable {
 			final double newValueIfNonStochastic = valueIfNonStochastic / randomVariable.doubleValue();
 			return new RandomVariableCuda(newTime, newValueIfNonStochastic);
 		}
-		else if(isDeterministic())
+		else if(isDeterministic()) {
 			return getRandomVariableCuda(randomVariable).vid(valueIfNonStochastic);
-		else if(randomVariable.isDeterministic())
+		} else if(randomVariable.isDeterministic()) {
 			return this.div(randomVariable.doubleValue());
-		else {
-			final DevicePointerReference result = callCudaFunctionv2s0(cuDiv, size, realizations, getRandomVariableCuda(randomVariable).realizations);
+		} else {
+			final DevicePointerReference result = deviceMemoryPool.callCudaFunctionv2s0(cuDiv, size, realizations, getRandomVariableCuda(randomVariable).realizations);
 			return RandomVariableCuda.of(newTime, result, size());
 		}
 	}
 
 	@Override
 	public RandomVariable vid(final RandomVariable randomVariable) {
-		if(randomVariable.getTypePriority() > this.getTypePriority())
+		if(randomVariable.getTypePriority() > this.getTypePriority()) {
 			// Check type priority
 			return randomVariable.vid(this);
+		}
 
 		// Set time of this random variable to maximum of time with respect to which measurability is known.
 		final double newTime = Math.max(time, randomVariable.getFiltrationTime());
@@ -1289,22 +1459,23 @@ public class RandomVariableCuda implements RandomVariable {
 			final double newValueIfNonStochastic = randomVariable.doubleValue() / valueIfNonStochastic;
 			return new RandomVariableCuda(newTime, newValueIfNonStochastic);
 		}
-		else if(isDeterministic())
+		else if(isDeterministic()) {
 			return getRandomVariableCuda(randomVariable).div(valueIfNonStochastic);
-		else if(randomVariable.isDeterministic())
+		} else if(randomVariable.isDeterministic()) {
 			return this.vid(randomVariable.doubleValue());
-		else {
+		} else {
 			// flipped arguments
-			final DevicePointerReference result = callCudaFunctionv2s0(cuDiv, size, getRandomVariableCuda(randomVariable).realizations, realizations);
+			final DevicePointerReference result = deviceMemoryPool.callCudaFunctionv2s0(cuDiv, size, getRandomVariableCuda(randomVariable).realizations, realizations);
 			return RandomVariableCuda.of(newTime, result, size());
 		}
 	}
 
 	@Override
 	public RandomVariable cap(final RandomVariable randomVariable) {
-		if(randomVariable.getTypePriority() > this.getTypePriority())
+		if(randomVariable.getTypePriority() > this.getTypePriority()) {
 			// Check type priority
 			return randomVariable.cap(this);
+		}
 
 		// Set time of this random variable to maximum of time with respect to which measurability is known.
 		final double newTime = Math.max(time, randomVariable.getFiltrationTime());
@@ -1313,18 +1484,20 @@ public class RandomVariableCuda implements RandomVariable {
 			final double newValueIfNonStochastic = Math.min(valueIfNonStochastic, randomVariable.doubleValue());
 			return new RandomVariableCuda(newTime, newValueIfNonStochastic);
 		}
-		else if(isDeterministic()) return randomVariable.cap(valueIfNonStochastic);
-		else {
-			final DevicePointerReference result = callCudaFunctionv2s0(cap, size, realizations, getRandomVariableCuda(randomVariable).realizations);
+		else if(isDeterministic()) {
+			return randomVariable.cap(valueIfNonStochastic);
+		} else {
+			final DevicePointerReference result = deviceMemoryPool.callCudaFunctionv2s0(cap, size, realizations, getRandomVariableCuda(randomVariable).realizations);
 			return RandomVariableCuda.of(newTime, result, size());
 		}
 	}
 
 	@Override
 	public RandomVariable floor(final RandomVariable randomVariable) {
-		if(randomVariable.getTypePriority() > this.getTypePriority())
+		if(randomVariable.getTypePriority() > this.getTypePriority()) {
 			// Check type priority
 			return randomVariable.floor(this);
+		}
 
 		// Set time of this random variable to maximum of time with respect to which measurability is known.
 		final double newTime = Math.max(time, randomVariable.getFiltrationTime());
@@ -1333,52 +1506,56 @@ public class RandomVariableCuda implements RandomVariable {
 			final double newValueIfNonStochastic = Math.max(valueIfNonStochastic, randomVariable.doubleValue());
 			return new RandomVariableCuda(newTime, newValueIfNonStochastic);
 		}
-		else if(isDeterministic())
+		else if(isDeterministic()) {
 			return getRandomVariableCuda(randomVariable).floor(valueIfNonStochastic);
-		else if(randomVariable.isDeterministic())
+		} else if(randomVariable.isDeterministic()) {
 			return this.floor(randomVariable.doubleValue());
-		else {
-			final DevicePointerReference result = callCudaFunctionv2s0(cuFloor, size, realizations, getRandomVariableCuda(randomVariable).realizations);
+		} else {
+			final DevicePointerReference result = deviceMemoryPool.callCudaFunctionv2s0(cuFloor, size, realizations, getRandomVariableCuda(randomVariable).realizations);
 			return RandomVariableCuda.of(newTime, result, size());
 		}
 	}
 
 	@Override
 	public RandomVariable accrue(final RandomVariable rate, final double periodLength) {
-		if(rate.getTypePriority() > this.getTypePriority())
+		if(rate.getTypePriority() > this.getTypePriority()) {
 			// Check type priority
 			return rate.mult(periodLength).add(1.0).mult(this);
+		}
 
 		// Set time of this random variable to maximum of time with respect to which measurability is known.
 		final double newTime = Math.max(time, rate.getFiltrationTime());
 
-		if(rate.isDeterministic())
+		if(rate.isDeterministic()) {
 			return this.mult(1.0 + rate.doubleValue() * periodLength);
-		else if(isDeterministic() && !rate.isDeterministic())
+		} else if(isDeterministic() && !rate.isDeterministic()) {
 			return getRandomVariableCuda(rate.mult(periodLength).add(1.0).mult(valueIfNonStochastic));
-		else {
-			final DevicePointerReference result = callCudaFunctionv2s1(accrue, size, realizations, getRandomVariableCuda(rate).realizations, periodLength);
+		} else {
+			final DevicePointerReference result = deviceMemoryPool.callCudaFunctionv2s1(accrue, size, realizations, getRandomVariableCuda(rate).realizations, periodLength);
 			return RandomVariableCuda.of(newTime, result, size());
 		}
 	}
 
 	@Override
 	public RandomVariable discount(final RandomVariable rate, final double periodLength) {
-		if(rate.getTypePriority() > this.getTypePriority())
+		if(rate.getTypePriority() > this.getTypePriority()) {
 			// Check type priority
 			return rate.mult(periodLength).add(1.0).invert().mult(this);
+		}
 
 		// Set time of this random variable to maximum of time with respect to which measurability is known.
 		final double newTime = Math.max(time, rate.getFiltrationTime());
 
-		if(rate.isDeterministic())
+		if(rate.isDeterministic()) {
 			return this.div(1.0 + rate.doubleValue() * periodLength);
-		else if(isDeterministic() && !rate.isDeterministic()) {
-			if(valueIfNonStochastic == 0) return this;
-			return ((RandomVariableCuda)getRandomVariableCuda(rate.mult(periodLength).add(1.0)).vid(valueIfNonStochastic));
+		} else if(isDeterministic() && !rate.isDeterministic()) {
+			if(valueIfNonStochastic == 0) {
+				return this;
+			}
+			return (getRandomVariableCuda(rate.mult(periodLength).add(1.0)).vid(valueIfNonStochastic));
 		}
 		else {
-			final DevicePointerReference result = callCudaFunctionv2s1(discount, size, realizations, getRandomVariableCuda(rate).realizations, periodLength);
+			final DevicePointerReference result = deviceMemoryPool.callCudaFunctionv2s1(discount, size, realizations, getRandomVariableCuda(rate).realizations, periodLength);
 			return RandomVariableCuda.of(newTime, result, size());
 		}
 	}
@@ -1396,27 +1573,30 @@ public class RandomVariableCuda implements RandomVariable {
 
 	@Override
 	public RandomVariable addProduct(final RandomVariable factor1, final double factor2) {
-		if(factor1.getTypePriority() > this.getTypePriority())
+		if(factor1.getTypePriority() > this.getTypePriority()) {
 			// Check type priority
 			return factor1.mult(factor2).add(this);
+		}
 
 		// Set time of this random variable to maximum of time with respect to which measurability is known.
 		final double newTime = Math.max(time, factor1.getFiltrationTime());
 
-		if(factor1.isDeterministic())
+		if(factor1.isDeterministic()) {
 			return this.add(factor1.doubleValue() * factor2);
-		else if(!isDeterministic() && !factor1.isDeterministic()) {
-			final DevicePointerReference result = callCudaFunctionv2s1(addProduct_vs, size, realizations, getRandomVariableCuda(factor1).realizations, factor2);
+		} else if(!isDeterministic() && !factor1.isDeterministic()) {
+			final DevicePointerReference result = deviceMemoryPool.callCudaFunctionv2s1(addProduct_vs, size, realizations, getRandomVariableCuda(factor1).realizations, factor2);
 			return RandomVariableCuda.of(newTime, result, size());
-		} else
+		} else {
 			return this.add(factor1.mult(factor2));
+		}
 	}
 
 	@Override
 	public RandomVariable addProduct(final RandomVariable factor1, final RandomVariable factor2) {
-		if(factor1.getTypePriority() > this.getTypePriority() || factor2.getTypePriority() > this.getTypePriority())
+		if(factor1.getTypePriority() > this.getTypePriority() || factor2.getTypePriority() > this.getTypePriority()) {
 			// Check type priority
 			return factor1.mult(factor2).add(this);
+		}
 
 		// Set time of this random variable to maximum of time with respect to which measurability is known.
 		final double newTime = Math.max(Math.max(time, factor1.getFiltrationTime()), factor2.getFiltrationTime());
@@ -1425,17 +1605,18 @@ public class RandomVariableCuda implements RandomVariable {
 			final double newValueIfNonStochastic = valueIfNonStochastic + (factor1.doubleValue() * factor2.doubleValue());
 			return new RandomVariableCuda(newTime, newValueIfNonStochastic);
 		}
-		else if(factor1.isDeterministic() && factor2.isDeterministic())
+		else if(factor1.isDeterministic() && factor2.isDeterministic()) {
 			return add(factor1.doubleValue() * factor2.doubleValue());
-		else if(factor2.isDeterministic())
+		} else if(factor2.isDeterministic()) {
 			return this.addProduct(factor1, factor2.doubleValue());
-		else if(factor1.isDeterministic())
+		} else if(factor1.isDeterministic()) {
 			return this.addProduct(factor2, factor1.doubleValue());
-		else if(!isDeterministic() && !factor1.isDeterministic() && !factor2.isDeterministic()) {
-			final DevicePointerReference result = callCudaFunctionv3s0(addProduct, size, realizations, getRandomVariableCuda(factor1).realizations, getRandomVariableCuda(factor2).realizations);
+		} else if(!isDeterministic() && !factor1.isDeterministic() && !factor2.isDeterministic()) {
+			final DevicePointerReference result = deviceMemoryPool.callCudaFunctionv3s0(addProduct, size, realizations, getRandomVariableCuda(factor1).realizations, getRandomVariableCuda(factor2).realizations);
 			return RandomVariableCuda.of(newTime, result, size());
-		} else
+		} else {
 			return this.add(factor1.mult(factor2));
+		}
 	}
 
 	@Override
@@ -1471,7 +1652,7 @@ public class RandomVariableCuda implements RandomVariable {
 
 		final DevicePointerReference reduceVector = getDevicePointer(2*gridSizeX);
 
-		callCudaFunction(reduceFloatVectorToDoubleScalar, new Pointer[] {
+		deviceMemoryPool.callCudaFunction(reduceFloatVectorToDoubleScalar, new Pointer[] {
 				Pointer.to(new int[] { size() }),
 				Pointer.to(realizations.get()),
 				Pointer.to(reduceVector.get())},
@@ -1479,7 +1660,8 @@ public class RandomVariableCuda implements RandomVariable {
 
 		final double[] result = new double[gridSizeX];
 		try {
-			deviceExecutor.submit(new Runnable() { public void run() {
+			deviceExecutor.submit(new Runnable() { @Override
+				public void run() {
 				cuCtxSynchronize();
 				cuMemcpyDtoH(Pointer.to(result), reduceVector.get(), gridSizeX * Sizeof.DOUBLE);
 				cuCtxSynchronize();
@@ -1492,7 +1674,9 @@ public class RandomVariableCuda implements RandomVariable {
 	}
 
 	private double reduce() {
-		if(this.isDeterministic()) return valueIfNonStochastic;
+		if(this.isDeterministic()) {
+			return valueIfNonStochastic;
+		}
 
 		RandomVariableCuda reduced = this;
 		while(reduced.size() > 1) {
@@ -1506,91 +1690,12 @@ public class RandomVariableCuda implements RandomVariable {
 		final int gridSizeX = (int)Math.ceil((double)size()/2 / blockSizeX);
 		final DevicePointerReference reduceVector = getDevicePointer(gridSizeX);
 
-		callCudaFunction(reducePartial, new Pointer[] {
+		deviceMemoryPool.callCudaFunction(reducePartial, new Pointer[] {
 				Pointer.to(new int[] { size() }),
 				Pointer.to(realizations.get()),
 				Pointer.to(reduceVector.get())},
 				gridSizeX, blockSizeX, blockSizeX*2*3);
 
 		return RandomVariableCuda.of(-Double.MAX_VALUE, reduceVector, gridSizeX);
-	}
-
-	private DevicePointerReference callCudaFunctionv1s0(final CUfunction function, final long resultSize, final DevicePointerReference argument1) {
-		final DevicePointerReference result = getDevicePointer(resultSize);
-		callCudaFunction(function, new Pointer[] {
-				Pointer.to(new int[] { (int)resultSize }),
-				Pointer.to(argument1.get()),
-				Pointer.to(result.get()) }
-				);
-		return result;
-	}
-
-	private DevicePointerReference callCudaFunctionv2s0(final CUfunction function, final long resultSize, final DevicePointerReference argument1, final DevicePointerReference argument2) {
-		final DevicePointerReference result = getDevicePointer(resultSize);
-		callCudaFunction(function, new Pointer[] {
-				Pointer.to(new int[] { (int)resultSize }),
-				Pointer.to(argument1.get()),
-				Pointer.to(argument2.get()),
-				Pointer.to(result.get()) }
-				);
-		return result;
-	}
-
-	private DevicePointerReference callCudaFunctionv3s0(final CUfunction function, final long resultSize, final DevicePointerReference argument1, final DevicePointerReference argument2, final DevicePointerReference argument3) {
-		final DevicePointerReference result = getDevicePointer(resultSize);
-		callCudaFunction(function, new Pointer[] {
-				Pointer.to(new int[] { (int)resultSize }),
-				Pointer.to(argument1.get()),
-				Pointer.to(argument2.get()),
-				Pointer.to(argument3.get()),
-				Pointer.to(result.get()) }
-				);
-		return result;
-	}
-
-	private DevicePointerReference callCudaFunctionv1s1(final CUfunction function, final long resultSize, final DevicePointerReference argument1, final double value) {
-		final DevicePointerReference result = getDevicePointer(resultSize);
-		callCudaFunction(function, new Pointer[] {
-				Pointer.to(new int[] { (int)resultSize }),
-				Pointer.to(argument1.get()),
-				Pointer.to(new float[] { (float)value }),
-				Pointer.to(result.get()) }
-				);
-		return result;
-	}
-
-	private DevicePointerReference callCudaFunctionv2s1(final CUfunction function, final long resultSize, final DevicePointerReference argument1, final DevicePointerReference argument2, final double value) {
-		final DevicePointerReference result = getDevicePointer(resultSize);
-		callCudaFunction(function, new Pointer[] {
-				Pointer.to(new int[] { (int)resultSize }),
-				Pointer.to(argument1.get()),
-				Pointer.to(argument2.get()),
-				Pointer.to(new float[] { (float)value }),
-				Pointer.to(result.get()) }
-				);
-		return result;
-	}
-
-	private void callCudaFunction(final CUfunction function, final Pointer[] arguments) {
-		final int blockSizeX = 1024;
-		final int gridSizeX = (int)Math.ceil((double)size() / blockSizeX);
-		callCudaFunction(function, arguments, gridSizeX, blockSizeX, 0);
-	}
-
-	private void callCudaFunction(final CUfunction function, final Pointer[] arguments, final int gridSizeX, final int blockSizeX, final int sharedMemorySize) {
-		// Set up the kernel parameters: A pointer to an array
-		// of pointers which point to the actual values.
-		final Pointer kernelParameters = Pointer.to(arguments);
-
-		deviceExecutor.submit(new Runnable() { public void run() {
-			//cuCtxSynchronize();
-			// Launching on the same stream (default stream)
-			cuLaunchKernel(function,
-					gridSizeX,  1, 1,      // Grid dimension
-					blockSizeX, 1, 1,      // Block dimension
-					sharedMemorySize * Sizeof.FLOAT, null,               // Shared memory size and stream
-					kernelParameters, null // Kernel- and extra parameters
-					);
-		}});
 	}
 }

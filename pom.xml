@@ -59,6 +59,16 @@
 					<target>1.8</target>
 				</configuration>
 			</plugin>
+
+			<plugin>
+				<groupId>org.apache.maven.plugins</groupId>
+				<artifactId>maven-checkstyle-plugin</artifactId>
+				<version>3.0.0</version>
+				<configuration>
+					<configLocation>finmath-checkstyle.xml</configLocation>
+				</configuration>
+			</plugin>
+
 		</plugins>
 		<resources>
 			<resource>
@@ -67,6 +77,7 @@
 			</resource>
 		</resources>
 	</build>
+
 	<dependencies>
 
 		<dependency>

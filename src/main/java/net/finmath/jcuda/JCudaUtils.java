@@ -37,12 +37,14 @@ public class JCudaUtils
 		}
 		final String ptxFileName = cuFileName.substring(0, endIndex+1)+"ptx";
 		final File ptxFile = new File(ptxFileName);
-		if (ptxFile.exists())
+		if (ptxFile.exists()) {
 			return ptxFileName;
+		}
 
 		final File cuFile = new File(cuFileName);
-		if (!cuFile.exists())
+		if (!cuFile.exists()) {
 			throw new IOException("Input file not found: "+cuFileName);
+		}
 
 		/*
 		 * Check for 64 bit or 32 bit

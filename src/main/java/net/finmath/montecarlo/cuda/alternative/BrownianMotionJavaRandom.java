@@ -130,7 +130,10 @@ public class BrownianMotionJavaRandom implements BrownianMotion, Serializable {
 	 * Lazy initialization of brownianIncrement. Synchronized to ensure thread safety of lazy init.
 	 */
 	private void doGenerateBrownianMotion() {
-		if(brownianIncrements != null) return;	// Nothing to do
+		if(brownianIncrements != null)
+		{
+			return;	// Nothing to do
+		}
 
 		// Create random number sequence generator
 		final Random random = new Random(seed);
@@ -202,6 +205,7 @@ public class BrownianMotionJavaRandom implements BrownianMotion, Serializable {
 		return seed;
 	}
 
+	@Override
 	public String toString() {
 		return super.toString()
 				+ "\n" + "timeDiscretizationFromArray: " + timeDiscretization.toString()
@@ -212,15 +216,27 @@ public class BrownianMotionJavaRandom implements BrownianMotion, Serializable {
 
 	@Override
 	public boolean equals(final Object o) {
-		if (this == o) return true;
-		if (o == null || getClass() != o.getClass()) return false;
+		if (this == o) {
+			return true;
+		}
+		if (o == null || getClass() != o.getClass()) {
+			return false;
+		}
 
 		final BrownianMotionJavaRandom that = (BrownianMotionJavaRandom) o;
 
-		if (numberOfFactors != that.numberOfFactors) return false;
-		if (numberOfPaths != that.numberOfPaths) return false;
-		if (seed != that.seed) return false;
-		if (!timeDiscretization.equals(that.timeDiscretization)) return false;
+		if (numberOfFactors != that.numberOfFactors) {
+			return false;
+		}
+		if (numberOfPaths != that.numberOfPaths) {
+			return false;
+		}
+		if (seed != that.seed) {
+			return false;
+		}
+		if (!timeDiscretization.equals(that.timeDiscretization)) {
+			return false;
+		}
 
 		return true;
 	}

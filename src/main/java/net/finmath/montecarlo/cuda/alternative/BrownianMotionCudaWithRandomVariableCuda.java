@@ -140,7 +140,10 @@ public class BrownianMotionCudaWithRandomVariableCuda implements BrownianMotion,
 	 * Lazy initialization of brownianIncrement. Synchronized to ensure thread safety of lazy init.
 	 */
 	private void doGenerateBrownianMotion() {
-		if(brownianIncrements != null) return;	// Nothing to do
+		if(brownianIncrements != null)
+		{
+			return;	// Nothing to do
+		}
 
 		// Enable exceptions and omit all subsequent error checks
 		JCuda.setExceptionsEnabled(true);
@@ -168,7 +171,7 @@ public class BrownianMotionCudaWithRandomVariableCuda implements BrownianMotion,
 
 			for(int factor=0; factor<numberOfFactors; factor++) {
 				// Generate n floats on device
-				final DevicePointerReference realizations = RandomVariableCuda.getDevicePointer((long)numberOfPaths);
+				final DevicePointerReference realizations = RandomVariableCuda.getDevicePointer(numberOfPaths);
 				jcuda.jcurand.JCurand.curandGenerateNormal(generator, realizations.get(), numberOfPaths, 0.0f /* mean */, sqrtOfTimeStep /* stddev */);
 				brownianIncrements[timeIndex][factor] = RandomVariableCuda.of(time, realizations, numberOfPaths);
 			}
@@ -205,6 +208,7 @@ public class BrownianMotionCudaWithRandomVariableCuda implements BrownianMotion,
 		return seed;
 	}
 
+	@Override
 	public String toString() {
 		return super.toString()
 				+ "\n" + "timeDiscretizationFromArray: " + timeDiscretization.toString()
@@ -215,15 +219,27 @@ public class BrownianMotionCudaWithRandomVariableCuda implements BrownianMotion,
 
 	@Override
 	public boolean equals(final Object o) {
-		if (this == o) return true;
-		if (o == null || getClass() != o.getClass()) return false;
+		if (this == o) {
+			return true;
+		}
+		if (o == null || getClass() != o.getClass()) {
+			return false;
+		}
 
 		final BrownianMotionCudaWithRandomVariableCuda that = (BrownianMotionCudaWithRandomVariableCuda) o;
 
-		if (numberOfFactors != that.numberOfFactors) return false;
-		if (numberOfPaths != that.numberOfPaths) return false;
-		if (seed != that.seed) return false;
-		if (!timeDiscretization.equals(that.timeDiscretization)) return false;
+		if (numberOfFactors != that.numberOfFactors) {
+			return false;
+		}
+		if (numberOfPaths != that.numberOfPaths) {
+			return false;
+		}
+		if (seed != that.seed) {
+			return false;
+		}
+		if (!timeDiscretization.equals(that.timeDiscretization)) {
+			return false;
+		}
 
 		return true;
 	}
