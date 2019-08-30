@@ -547,6 +547,7 @@ public class RandomVariableCuda implements RandomVariable {
 	 * @param realizations A <code>DevicePointerReference</code> referencing a {@link CUdeviceptr} with the given size. Use {@link #getDevicePointer(long)} to create one.
 	 * @param size The size of the vector associated with <code>DevicePointerReference</code>.
 	 * @param typePriority The priority of this type in construction of result types. See "operator type priority" for details.
+	 * @return A new instance of RandomVariableCuda wrapping the given DevicePointerReference.
 	 */
 	public static RandomVariableCuda of(final double time, final DevicePointerReference realizations, final long size, final int typePriority) {
 		final RandomVariableCuda randomVariableCuda = new RandomVariableCuda(time, realizations, size, typePriority);
@@ -559,7 +560,7 @@ public class RandomVariableCuda implements RandomVariable {
 	 * @param time the filtration time, set to 0.0 if not used.
 	 * @param realizations A <code>DevicePointerReference</code> referencing a {@link CUdeviceptr} with the given size. Use {@link #getDevicePointer(long)} to create one.
 	 * @param size The size of the vector associated with <code>DevicePointerReference</code>.
-	 * @param typePriority The priority of this type in construction of result types. See "operator type priority" for details.
+	 * @return A new instance of RandomVariableCuda wrapping the given DevicePointerReference.
 	 */
 	public static RandomVariableCuda of(final double time, final DevicePointerReference realizations, final long size) {
 		final RandomVariableCuda randomVariableCuda = new RandomVariableCuda(time, realizations, size, typePriorityDefault);

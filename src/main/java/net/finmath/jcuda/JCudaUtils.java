@@ -22,10 +22,10 @@ public class JCudaUtils
 	 * compiled from the given file using NVCC. The name of the
 	 * PTX file is returned.
 	 *
-	 * @param cuFileURL The name of the .CU file
-	 * @return The name of the PTX file
-	 * @throws IOException If an I/O error occurs
-	 * @throws URISyntaxException
+	 * @param cuFileURL The name of the .cu file
+	 * @return The name of the PTX file.
+	 * @throws IOException Thrown if an I/O error occurs.
+	 * @throws URISyntaxException Thrown if the cuFileURL cannot be converted to an URI.
 	 */
 	public static String preparePtxFile(final URL cuFileURL) throws IOException, URISyntaxException
 	{

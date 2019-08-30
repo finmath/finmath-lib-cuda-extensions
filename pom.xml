@@ -62,6 +62,57 @@
 
 			<plugin>
 				<groupId>org.apache.maven.plugins</groupId>
+				<artifactId>maven-javadoc-plugin</artifactId>
+				<version>3.0.1</version>
+				<configuration>
+					<doctitle>${project.name} (${project.version}) documentation</doctitle>
+					<stylesheetfile>stylesheet.css</stylesheetfile>
+					<docfilessubdirs>true</docfilessubdirs>
+					<excludePackageNames>net.finmath.montecarlo.automaticdifferentiation.backward.alternative:net.finmath.rootfinder</excludePackageNames>
+					<header>
+			   			<![CDATA[
+						<span class="logo-white">finMath</span><span class="logo-red"> lib</span> documentation
+						<script type="text/javascript" src='https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.2/MathJax.js?config=TeX-AMS-MML_HTMLorMML'></script>
+			   			]]>
+					</header>
+					<footer>
+			   			<![CDATA[
+						<i>Copyright &copy; 2019 Christian&nbsp;P.&nbsp;Fries.</i>
+			   			]]>
+					</footer>
+					<tags>
+						<tag>
+							<name>TODO</name>
+							<placement>a</placement>
+							<head>To dos:</head>
+						</tag>
+						<tag>
+							<name>date</name>
+							<placement>a</placement>
+							<head>Date:</head>
+						</tag>
+					</tags>
+					<links>
+						<link>http://commons.apache.org/proper/commons-lang/javadocs/api-release</link>
+						<link>http://commons.apache.org/proper/commons-math/javadocs/api-3.3</link>
+					</links>
+					<detectLinks>true</detectLinks>
+					<additionalOptions>
+						<additionalOption>--allow-script-in-comments</additionalOption>
+					</additionalOptions>
+				</configuration>
+				<executions>
+					<execution>
+						<id>attach-javadocs</id>
+						<goals>
+							<goal>jar</goal>
+						</goals>
+					</execution>
+				</executions>
+			</plugin>
+
+			<plugin>
+				<groupId>org.apache.maven.plugins</groupId>
 				<artifactId>maven-checkstyle-plugin</artifactId>
 				<version>3.0.0</version>
 				<configuration>
