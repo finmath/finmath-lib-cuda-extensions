@@ -6,6 +6,13 @@ finmath lib cuda extensions Release Notes
 # Release Notes
 
 
+## 4.0.10 (31.08.2019)
+
+### General
+
+- Added site
+
+
 ## 4.0.6 (30.08.2019)
 
 ### General
