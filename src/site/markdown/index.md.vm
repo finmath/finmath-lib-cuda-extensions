@@ -76,7 +76,7 @@ To build the project yourself and run the unit tests from the source repository:
 To obtain and build the finmath-lib-cuda-extensions then do
 
 ```
-git clone https://github.com/cfries/finmath-lib-cuda-extensions.git
+git clone https://github.com/finmath/finmath-lib-cuda-extensions.git
 cd finmath-lib-cuda-extensions
 mvn clean package
 ```
