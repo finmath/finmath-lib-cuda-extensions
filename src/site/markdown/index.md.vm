@@ -35,6 +35,8 @@ finmath-lib-cuda-extensions is distributed through the central Maven repository.
     <artifactId>finmath-lib-cuda-extensions</artifactId>
 	<version>${project.version}</version>
 
+Note: For Cuda 10.0 use version 4.0.10.
+
 Example
 -------------------------------------
 
@@ -70,7 +72,7 @@ Installation / Build
 
 Binary distribution is available via Maven central.
 
-You have to have NVidia Cuda 10.0 installed. (If you like to use a different version, you can try to switch the JCuda version in the Maven pom.xml).
+You have to have NVIDIA Cuda 10.1 installed. (If you like to use a different version, you can try to switch the JCuda version in the Maven pom.xml).
 
 To build the project yourself and run the unit tests from the source repository:
 
