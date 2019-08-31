@@ -7,7 +7,8 @@ finmath lib cuda extensions
 
 ****************************************
 
-The *finmath lib cuda extensions* provide a Cuda implementation of the [finmath lib](http://finmath.net/finmath-lib/) interfaces `RandomVariable` and `BrownianMotion` compatible with finmath lib 4.0.12 or later.
+The *finmath lib cuda extensions* provide a Cuda implementation of the [finmath lib](http://finmath.net/finmath-lib/) interfaces `RandomVariable` and `BrownianMotion` compatible with finmath lib 4.0.12 or later
+(tested on GRID GPU Kepler GK105, GeForce GTX 1080, GeForce GT 750M).
 
 #[[
 ### RandomVariable

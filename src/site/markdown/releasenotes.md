@@ -6,6 +6,13 @@ finmath lib cuda extensions Release Notes
 # Release Notes
 
 
+## 4.0.11 (31.08.2019)
+
+### General
+
+- Compiled for Cuda 10.1 (JCuda 10.1.10).
+
+
 ## 4.0.10 (31.08.2019)
 
 ### General
