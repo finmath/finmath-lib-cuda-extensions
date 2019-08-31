@@ -38,22 +38,30 @@ Example
 -------------------------------------
 
 Create a vector of floats on the GPU device
+
 ```
 RandomVariableInterface randomVariable = new RandomVariableCuda(new float[] {-4.0f, -2.0f, 0.0f, 2.0f, 4.0f} );
 ```
+
 perform some calculations (still on the GPU device)
+
 ```
 randomVariable = randomVariable.add(4.0);
 randomVariable = randomVariable.div(2.0);
 ```
+
 perform a reduction on the GPU device
+
 ```
 double average = randomVariable.getAverage();
 ```
+
 or get the result vector (to the host)
+
 ```
 double[] result = randomVariable.getRealizations();
 ```
+
 (note: the result is always double, since different implementation may support float or double on the device).
 
 Installation / Build
@@ -66,11 +74,13 @@ You have to have NVidia Cuda 10.0 installed. (If you like to use a different ver
 To build the project yourself and run the unit tests from the source repository:
 
 To obtain and build the finmath-lib-cuda-extensions then do
+
 ```
 git clone https://github.com/cfries/finmath-lib-cuda-extensions.git
 cd finmath-lib-cuda-extensions
 mvn clean package
 ```
+
 If everything goes well, you will see unit test run. Note that some of the tests may fail if the device (GPU) has not enough memory. 
 
 Trying on Amazon EC2
