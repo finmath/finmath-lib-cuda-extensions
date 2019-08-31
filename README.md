@@ -72,16 +72,27 @@ Installation / Build
 
 Binary distribution is available via Maven central.
 
-You have to have NVIDIA Cuda 10.1 installed. (If you like to use a different version, you can try to switch the JCuda version in the Maven pom.xml).
+You have to have NVIDIA Cuda 10.1 installed. The Maven configuration comes with profiles for Cuda 10.0 and 10.1. If you like to use a different version, you can try to switch the JCuda version in the Maven pom.xml.
 
 To build the project yourself and run the unit tests from the source repository:
 
-To obtain and build the finmath-lib-cuda-extensions then do
+Obtain the finmath-lib-cuda-extensions source
 
 ```
 git clone https://github.com/finmath/finmath-lib-cuda-extensions.git
 cd finmath-lib-cuda-extensions
+```
+
+...then build the code.
+
+```
 mvn clean package
+```
+
+This will build the version using Cuda 10.1. For Cuda 10.0 use
+
+```
+mvn -P cuda-10.0 clean package
 ```
 
 If everything goes well, you will see unit test run. Note that some of the tests may fail if the device (GPU) has not enough memory. 
