@@ -223,6 +223,10 @@
 				<directory>src/main/cuda</directory>
 				<filtering>false</filtering>
 			</resource>
+			<resource>
+				<directory>src/main/opencl</directory>
+				<filtering>false</filtering>
+			</resource>
 		</resources>
 
 		<pluginManagement>

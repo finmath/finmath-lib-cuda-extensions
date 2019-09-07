@@ -63,7 +63,7 @@ import net.finmath.montecarlo.RandomVariableFromFloatArray;
 import net.finmath.stochastic.RandomVariable;
 
 /**
- * The class RandomVariableCuda represents a random variable being the evaluation of a stochastic process
+ * This class represents a random variable being the evaluation of a stochastic process
  * at a certain time within a Monte-Carlo simulation.
  *
  * It is thus essentially a vector of floating point numbers - the realizations - together with a double - the time.
@@ -76,8 +76,31 @@ import net.finmath.stochastic.RandomVariable;
  * Accesses performed exclusively through the interface
  * <code>RandomVariable</code> is thread safe (and does not mutate the class).
  *
- * <b>This implementation uses floats for the realizations on a Cuda GPU.</b> There is a CPU implementation in {@link RandomVariableFromFloatArray} which give exactly the same results for all methods (checked by unit test).
+ * <b>This implementation uses floats for the realizations on a OpenCL device.</b>
+ * There is a CPU implementation in {@link RandomVariableFromFloatArray} which give exactly the same results for all methods (checked by unit test).
  *
+ * <b>Configuration</b>
+ * 
+ * The class can be configured with system property to use a chosen OpenCL device. The poperties are:
+ * <dl>
+ * 	<dt>
+ * 		"net.finmath.montecarlo.opencl.RandomVariableOpenCL.deviceType"
+ * 	</dt>
+ * 	<dd>
+ *		with possible values "GPU", "CPU", "ALL"
+ * 	</dd>
+ * 	<dt>
+ * 		"net.finmath.montecarlo.opencl.RandomVariableOpenCL.deviceIndex"
+ * 	</dt>
+ * 	<dd>
+ *		being an integer. For a positive values, the device
+ * 		with the corresponding index is used. For a negative value the device with the index numberOfDevices - deviceIndex is used.
+ * 		That is, a value of -1 selects the last device in the list of devices. To select the dedicated GPU in a MacBook Pro you may use
+ * 		"GPU" with index "-1".
+ * 	</dd>
+ * </dl>
+ * 
+ * 
  * @author Christian Fries
  * @version 2.1
  */
@@ -514,11 +537,27 @@ public class RandomVariableOpenCL implements RandomVariable {
 	static {
 		synchronized (deviceMemoryPool) {
 
+			String	openCLDeviceTypeSTring = System.getProperty("net.finmath.montecarlo.opencl.RandomVariableOpenCL.deviceType", "GPU");
+			int		openCLDeviceIndex = Integer.parseInt(System.getProperty("net.finmath.montecarlo.opencl.RandomVariableOpenCL.deviceType", "-1"));
+
+			final long deviceType;
+			switch(openCLDeviceTypeSTring) {
+			case "GPU":
+			default:
+				deviceType = CL.CL_DEVICE_TYPE_GPU;
+				break;
+			case "CPU":
+				deviceType = CL.CL_DEVICE_TYPE_CPU;
+				break;
+			case "ALL":
+				deviceType = CL.CL_DEVICE_TYPE_ALL;
+				break;
+			}
 
 			final int platformIndex = 0;
-			//final long deviceType = CL_DEVICE_TYPE_ALL;
-			final long deviceType = CL.CL_DEVICE_TYPE_GPU;
-			final int deviceIndex = 0;
+			final int deviceIndex;		// will be a property.
+
+
 
 			// Create the PTX file by calling the NVCC
 			String clFileName = null;
@@ -555,6 +594,14 @@ public class RandomVariableOpenCL implements RandomVariable {
 			// Obtain a device ID 
 			cl_device_id devices[] = new cl_device_id[numDevices];
 			clGetDeviceIDs(platform, deviceType, numDevices, devices, null);
+
+
+			/*
+			 * Device index is openCLDeviceIndex if positive, or devices.length + openCLDeviceIndex if negative.
+			 * That is, to get the last device in the list use -1.
+			 * This is useful on a MacBook Pro, where the ATI Card is the second gpu, s.th. you use type = GPU, index = -1.
+			 */
+			deviceIndex = openCLDeviceIndex >= 0 ? openCLDeviceIndex : devices.length + openCLDeviceIndex;
 			device = devices[deviceIndex];
 
 			// Create a context for the selected device
