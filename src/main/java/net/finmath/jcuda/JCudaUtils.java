@@ -68,10 +68,8 @@ public class JCudaUtils
 		System.out.println("Executing\n"+Arrays.toString(command));
 		final Process process = Runtime.getRuntime().exec(command);
 
-		final String errorMessage =
-				new String(toByteArray(process.getErrorStream()));
-		final String outputMessage =
-				new String(toByteArray(process.getInputStream()));
+		final String errorMessage = new String(toByteArray(process.getErrorStream()));
+		final String outputMessage = new String(toByteArray(process.getInputStream()));
 		int exitValue = 0;
 		try
 		{
@@ -104,8 +102,7 @@ public class JCudaUtils
 	 * @return The byte array containing the data from the input stream
 	 * @throws IOException If an I/O error occurs
 	 */
-	private static byte[] toByteArray(final InputStream inputStream)
-			throws IOException
+	private static byte[] toByteArray(final InputStream inputStream) throws IOException
 	{
 		final ByteArrayOutputStream baos = new ByteArrayOutputStream();
 		final byte buffer[] = new byte[8192];

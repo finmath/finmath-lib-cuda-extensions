@@ -39,6 +39,7 @@ import net.finmath.montecarlo.interestrate.models.covariance.LIBORCovarianceMode
 import net.finmath.montecarlo.interestrate.models.covariance.LIBORCovarianceModelStochasticVolatility;
 import net.finmath.montecarlo.interestrate.products.AbstractLIBORMonteCarloProduct;
 import net.finmath.montecarlo.interestrate.products.SwaptionSimple;
+import net.finmath.montecarlo.opencl.RandomVariableOpenCLFactory;
 import net.finmath.montecarlo.process.EulerSchemeFromProcessModel;
 import net.finmath.time.TimeDiscretizationFromArray;
 
@@ -53,8 +54,9 @@ public class LIBORMarketModelCalibrationTest {
 	@Parameters
 	public static Collection<Object[]> data() {
 		return Arrays.asList(new Object[][] {
-			{ ProcessingUnit.GPU },
-			{ ProcessingUnit.GPU_WITH_CPU_RANDOM },
+			{ ProcessingUnit.GPU_CUDA },
+			{ ProcessingUnit.GPU_CUDA_WITH_CPU_RANDOM },
+			{ ProcessingUnit.GPU_OPENCL_WITH_CPU_RANDOM },
 			{ ProcessingUnit.CPU },
 		});
 	}
@@ -70,8 +72,9 @@ public class LIBORMarketModelCalibrationTest {
 
 	private enum ProcessingUnit {
 		CPU,
-		GPU,
-		GPU_WITH_CPU_RANDOM
+		GPU_CUDA,
+		GPU_OPENCL_WITH_CPU_RANDOM,
+		GPU_CUDA_WITH_CPU_RANDOM,
 	}
 
 	private final ProcessingUnit processingUnit;
@@ -197,11 +200,15 @@ public class LIBORMarketModelCalibrationTest {
 			randomVariableFactory = new RandomVariableFloatFactory();
 			brownianMotion = new net.finmath.montecarlo.BrownianMotionLazyInit(timeDiscretizationFromArray, numberOfFactors + 1, numberOfPaths, 314151 /* seed */, randomVariableFactory);
 			break;
-		case GPU:
+		case GPU_CUDA:
 			randomVariableFactory = new RandomVariableCudaFactory();
 			brownianMotion = new net.finmath.montecarlo.cuda.alternative.BrownianMotionCudaWithRandomVariableCuda(timeDiscretizationFromArray, numberOfFactors + 1, numberOfPaths, 314151 /* seed */);
 			break;
-		case GPU_WITH_CPU_RANDOM:
+		case GPU_OPENCL_WITH_CPU_RANDOM:
+			randomVariableFactory = new RandomVariableOpenCLFactory();
+			brownianMotion = new net.finmath.montecarlo.BrownianMotionLazyInit(timeDiscretizationFromArray, numberOfFactors + 1, numberOfPaths, 314151 /* seed */, randomVariableFactory);
+			break;
+		case GPU_CUDA_WITH_CPU_RANDOM:
 		default:
 			randomVariableFactory = new RandomVariableCudaFactory();
 			brownianMotion = new net.finmath.montecarlo.BrownianMotionLazyInit(timeDiscretizationFromArray, numberOfFactors + 1, numberOfPaths, 314151 /* seed */, randomVariableFactory);

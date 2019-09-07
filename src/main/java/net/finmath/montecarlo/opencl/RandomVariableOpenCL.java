@@ -3,23 +3,34 @@
  *
  * Created on 09.02.2006
  */
-package net.finmath.montecarlo.cuda;
+package net.finmath.montecarlo.opencl;
 
-import static jcuda.driver.JCudaDriver.cuCtxCreate;
-import static jcuda.driver.JCudaDriver.cuCtxSynchronize;
-import static jcuda.driver.JCudaDriver.cuDeviceGet;
-import static jcuda.driver.JCudaDriver.cuInit;
-import static jcuda.driver.JCudaDriver.cuLaunchKernel;
-import static jcuda.driver.JCudaDriver.cuMemcpyDtoH;
-import static jcuda.driver.JCudaDriver.cuModuleGetFunction;
-import static jcuda.driver.JCudaDriver.cuModuleLoad;
+import static org.jocl.CL.CL_CONTEXT_PLATFORM;
+import static org.jocl.CL.CL_MEM_READ_WRITE;
+import static org.jocl.CL.CL_TRUE;
+import static org.jocl.CL.clBuildProgram;
+import static org.jocl.CL.clCreateCommandQueue;
+import static org.jocl.CL.clCreateContext;
+import static org.jocl.CL.clCreateKernel;
+import static org.jocl.CL.clCreateProgramWithSource;
+import static org.jocl.CL.clEnqueueNDRangeKernel;
+import static org.jocl.CL.clEnqueueReadBuffer;
+import static org.jocl.CL.clEnqueueWriteBuffer;
+import static org.jocl.CL.clGetDeviceIDs;
+import static org.jocl.CL.clGetPlatformIDs;
+import static org.jocl.CL.clReleaseMemObject;
+import static org.jocl.CL.clSetKernelArg;
 
+import java.io.BufferedReader;
+import java.io.FileInputStream;
 import java.io.IOException;
+import java.io.InputStreamReader;
 import java.lang.ref.Reference;
 import java.lang.ref.ReferenceQueue;
 import java.lang.ref.WeakReference;
 import java.net.URISyntaxException;
 import java.net.URL;
+import java.nio.file.Paths;
 import java.util.Map;
 import java.util.Map.Entry;
 import java.util.concurrent.Callable;
@@ -34,15 +45,18 @@ import java.util.logging.Level;
 import java.util.logging.Logger;
 import java.util.stream.DoubleStream;
 
-import jcuda.LogLevel;
-import jcuda.Pointer;
-import jcuda.Sizeof;
-import jcuda.driver.CUcontext;
-import jcuda.driver.CUdevice;
-import jcuda.driver.CUdeviceptr;
-import jcuda.driver.CUfunction;
-import jcuda.driver.CUmodule;
-import jcuda.driver.JCudaDriver;
+import org.jocl.CL;
+import org.jocl.Pointer;
+import org.jocl.Sizeof;
+import org.jocl.cl_command_queue;
+import org.jocl.cl_context;
+import org.jocl.cl_context_properties;
+import org.jocl.cl_device_id;
+import org.jocl.cl_kernel;
+import org.jocl.cl_mem;
+import org.jocl.cl_platform_id;
+import org.jocl.cl_program;
+
 import net.finmath.functions.DoubleTernaryOperator;
 import net.finmath.montecarlo.RandomVariableFromDoubleArray;
 import net.finmath.montecarlo.RandomVariableFromFloatArray;
@@ -67,7 +81,7 @@ import net.finmath.stochastic.RandomVariable;
  * @author Christian Fries
  * @version 2.1
  */
-public class RandomVariableCuda implements RandomVariable {
+public class RandomVariableOpenCL implements RandomVariable {
 
 	/**
 	 * An object referencing a cuda device pointer.
@@ -76,13 +90,13 @@ public class RandomVariableCuda implements RandomVariable {
 	 * a recycling of the device vector.
 	 */
 	public static class DevicePointerReference {
-		private final CUdeviceptr devicePointer;
+		private final cl_mem devicePointer;
 
-		public DevicePointerReference(final CUdeviceptr devicePointer) {
+		public DevicePointerReference(final cl_mem devicePointer) {
 			this.devicePointer = devicePointer;
 		}
 
-		public CUdeviceptr get() {
+		public cl_mem get() {
 			return devicePointer;
 		}
 	}
@@ -112,7 +126,7 @@ public class RandomVariableCuda implements RandomVariable {
 		/**
 		 * This map allow to recover the device pointer for a given <code>WeakReference&lt;DevicePointerReference&gt;</code>.
 		 */
-		private static final Map<WeakReference<DevicePointerReference>, CUdeviceptr>	vectorsInUseReferenceMap			= new ConcurrentHashMap<WeakReference<DevicePointerReference>, CUdeviceptr>();
+		private static final Map<WeakReference<DevicePointerReference>, cl_mem>	vectorsInUseReferenceMap			= new ConcurrentHashMap<WeakReference<DevicePointerReference>, cl_mem>();
 
 		/**
 		 * Percentage of device memory at which we will trigger System.gc() to aggressively reduce references.
@@ -140,7 +154,7 @@ public class RandomVariableCuda implements RandomVariable {
 					while(true) {
 						System.gc();
 						try {
-							Thread.sleep(1000);
+							Thread.sleep(50);
 						} catch (final InterruptedException e) {
 							// TODO Auto-generated catch block
 							e.printStackTrace();
@@ -153,7 +167,7 @@ public class RandomVariableCuda implements RandomVariable {
 		/**
 		 * Get a Java object ({@link DevicePointerReference}) representing a vector allocated on the GPU memory (device memory).
 		 *
-		 * If this object is the wrapped into a {@link RandomVariableCuda} via {@link RandomVariableCuda#of(double, DevicePointerReference, long)}
+		 * If this object is the wrapped into a {@link RandomVariableOpenCL} via {@link RandomVariableOpenCL#of(double, DevicePointerReference, long)}
 		 * you may perform arithmetic operations on it.
 		 *
 		 * Note: You will likely not use this method directly. Instead use {@link #getDevicePointer(float[])} which will
@@ -176,7 +190,7 @@ public class RandomVariableCuda implements RandomVariable {
 				logger.finest(stringBuilder.toString());
 			}
 
-			CUdeviceptr cuDevicePtr = null;
+			cl_mem cuDevicePtr = null;
 
 			// Check for object to recycle
 			ReferenceQueue<DevicePointerReference> vectorsToRecycleReferenceQueue = vectorsToRecycleReferenceQueueMap.computeIfAbsent(new Integer((int)size), key ->  {
@@ -239,19 +253,12 @@ public class RandomVariableCuda implements RandomVariable {
 				// Still no pointer found, create new one
 				try {
 					cuDevicePtr =
-							deviceExecutor.submit(new Callable<CUdeviceptr>() { @Override
-								public CUdeviceptr call() {
-								CUdeviceptr cuDevicePtr = new CUdeviceptr();
-								final int succ = JCudaDriver.cuMemAlloc(cuDevicePtr, size * Sizeof.FLOAT);
-								if(succ != 0) {
-									cuDevicePtr = null;
-									final String[] cudaErrorName = new String[1];
-									JCudaDriver.cuGetErrorName(succ, cudaErrorName);
-									final String[] cudaErrorDescription = new String[1];
-									JCudaDriver.cuGetErrorString(succ, cudaErrorDescription);
+							deviceExecutor.submit(new Callable<cl_mem>() { @Override
+								public cl_mem call() {
+								cl_mem cuDevicePtr = CL.clCreateBuffer(context, 
+										CL_MEM_READ_WRITE, 
+										size * Sizeof.cl_float, null, null);
 
-									logger.warning("Failed creating device vector "+ cuDevicePtr + " with size=" + size + " with error "+ cudaErrorName + ": " + cudaErrorDescription);
-								}
 								return cuDevicePtr;
 							}}).get();
 				} catch (InterruptedException | ExecutionException e) {
@@ -263,7 +270,7 @@ public class RandomVariableCuda implements RandomVariable {
 					throw new OutOfMemoryError("Failed to allocate device vector with size=" + size);
 				}
 
-				deviceAllocMemoryBytes += size * Sizeof.FLOAT;
+				deviceAllocMemoryBytes += size * Sizeof.cl_float;
 			}
 
 			/*
@@ -287,26 +294,26 @@ public class RandomVariableCuda implements RandomVariable {
 
 					Reference<? extends DevicePointerReference> reference;
 					while((reference = vectorsToRecycleReferenceQueue.poll()) != null) {
-						final CUdeviceptr cuDevicePtr = vectorsInUseReferenceMap.remove(reference);
+						final cl_mem cuDevicePtr = vectorsInUseReferenceMap.remove(reference);
 						if(logger.isLoggable(Level.FINEST)) {
 							logger.finest("Freeing device pointer " + cuDevicePtr + " from " + reference);
 						}
 						try {
 							deviceExecutor.submit(new Runnable() { @Override
 								public void run() {
-								cuCtxSynchronize();
-								JCudaDriver.cuMemFree(cuDevicePtr);
+								clReleaseMemObject(cuDevicePtr);
 							}}).get();
 						} catch (InterruptedException | ExecutionException e) {
 							logger.severe("Unable to free pointer " + cuDevicePtr + " from " + reference);
 							throw new RuntimeException(e.getCause());
 						}
-						deviceAllocMemoryBytes -= size * Sizeof.FLOAT;
+						deviceAllocMemoryBytes -= size * Sizeof.cl_float;
 					}
 				}
 
 			}
 		}
+
 
 		/**
 		 * 
@@ -328,8 +335,8 @@ public class RandomVariableCuda implements RandomVariable {
 			try {
 				deviceExecutor.submit(new Runnable() { @Override
 					public void run() {
-					cuCtxSynchronize();
-					JCudaDriver.cuMemcpyHtoD(devicePointerReference.get(), Pointer.to(values), (long)values.length * Sizeof.FLOAT);
+					clEnqueueWriteBuffer(commandQueue, devicePointerReference.get(), CL_TRUE, 0L,
+							(long)values.length  * Sizeof.cl_float, Pointer.to(values), 0, null, null);
 				}}).get();
 			} catch (InterruptedException | ExecutionException e) { throw new RuntimeException(e.getCause()); }
 
@@ -341,9 +348,8 @@ public class RandomVariableCuda implements RandomVariable {
 			try {
 				deviceExecutor.submit(new Runnable() { @Override
 					public void run() {
-					cuCtxSynchronize();
-					cuMemcpyDtoH(Pointer.to(result), devicePtr.get(), size * Sizeof.FLOAT);
-					cuCtxSynchronize();
+					clEnqueueReadBuffer(commandQueue, devicePtr.get(), true, 0, 
+							size * Sizeof.cl_float, Pointer.to(result), 0, null, null);
 				}}).get();
 			} catch (InterruptedException | ExecutionException e) {
 				throw new RuntimeException(e.getCause());
@@ -351,32 +357,34 @@ public class RandomVariableCuda implements RandomVariable {
 			return result;
 		}
 
-		public DevicePointerReference callFunctionv1s0(final CUfunction function, final long resultSize, final DevicePointerReference argument1) {
+		public DevicePointerReference callFunctionv1s0(final cl_kernel function, final long resultSize, final DevicePointerReference argument1) {
 			synchronized (lock) {
 				final DevicePointerReference result = getDevicePointer(resultSize);
 				callFunction(function, resultSize, new Pointer[] {
 						Pointer.to(new int[] { (int)resultSize }),
 						Pointer.to(argument1.get()),
-						Pointer.to(result.get()) }
+						Pointer.to(result.get()) },
+						new int[] { Sizeof.cl_int, Sizeof.cl_mem, Sizeof.cl_mem }
 						);
 				return result;
 			}
 		}
 
-		public DevicePointerReference callFunctionv2s0(final CUfunction function, final long resultSize, final DevicePointerReference argument1, final DevicePointerReference argument2) {
+		public DevicePointerReference callFunctionv2s0(final cl_kernel function, final long resultSize, final DevicePointerReference argument1, final DevicePointerReference argument2) {
 			synchronized (lock) {
 				final DevicePointerReference result = getDevicePointer(resultSize);
 				callFunction(function, resultSize, new Pointer[] {
 						Pointer.to(new int[] { (int)resultSize }),
 						Pointer.to(argument1.get()),
 						Pointer.to(argument2.get()),
-						Pointer.to(result.get()) }
+						Pointer.to(result.get()) },
+						new int[] { Sizeof.cl_int, Sizeof.cl_mem, Sizeof.cl_mem, Sizeof.cl_mem }
 						);
 				return result;
 			}
 		}
 
-		public DevicePointerReference callFunctionv3s0(final CUfunction function, final long resultSize, final DevicePointerReference argument1, final DevicePointerReference argument2, final DevicePointerReference argument3) {
+		public DevicePointerReference callFunctionv3s0(final cl_kernel function, final long resultSize, final DevicePointerReference argument1, final DevicePointerReference argument2, final DevicePointerReference argument3) {
 			synchronized (lock) {
 				final DevicePointerReference result = getDevicePointer(resultSize);
 				callFunction(function, resultSize, new Pointer[] {
@@ -384,26 +392,28 @@ public class RandomVariableCuda implements RandomVariable {
 						Pointer.to(argument1.get()),
 						Pointer.to(argument2.get()),
 						Pointer.to(argument3.get()),
-						Pointer.to(result.get()) }
+						Pointer.to(result.get()) },
+						new int[] { Sizeof.cl_int, Sizeof.cl_mem, Sizeof.cl_mem, Sizeof.cl_mem, Sizeof.cl_mem }
 						);
 				return result;
 			}
 		}
 
-		public DevicePointerReference callFunctionv1s1(final CUfunction function, final long resultSize, final DevicePointerReference argument1, final double value) {
+		public DevicePointerReference callFunctionv1s1(final cl_kernel function, final long resultSize, final DevicePointerReference argument1, final double value) {
 			synchronized (lock) {
 				final DevicePointerReference result = getDevicePointer(resultSize);
 				callFunction(function, resultSize, new Pointer[] {
 						Pointer.to(new int[] { (int)resultSize }),
 						Pointer.to(argument1.get()),
 						Pointer.to(new float[] { (float)value }),
-						Pointer.to(result.get()) }
+						Pointer.to(result.get()) },
+						new int[] { Sizeof.cl_int, Sizeof.cl_mem, Sizeof.cl_float, Sizeof.cl_mem }
 						);
 				return result;
 			}
 		}
 
-		public DevicePointerReference callFunctionv2s1(final CUfunction function, final long resultSize, final DevicePointerReference argument1, final DevicePointerReference argument2, final double value) {
+		public DevicePointerReference callFunctionv2s1(final cl_kernel function, final long resultSize, final DevicePointerReference argument1, final DevicePointerReference argument2, final double value) {
 			synchronized (lock) {
 				final DevicePointerReference result = getDevicePointer(resultSize);
 				callFunction(function, resultSize, new Pointer[] {
@@ -411,34 +421,37 @@ public class RandomVariableCuda implements RandomVariable {
 						Pointer.to(argument1.get()),
 						Pointer.to(argument2.get()),
 						Pointer.to(new float[] { (float)value }),
-						Pointer.to(result.get()) }
+						Pointer.to(result.get()) },
+						new int[] { Sizeof.cl_int, Sizeof.cl_mem, Sizeof.cl_mem, Sizeof.cl_float, Sizeof.cl_mem }
 						);
 				return result;
 			}
 		}
 
-		public void callFunction(final CUfunction function, final long resultSize, final Pointer[] arguments) {
+		public void callFunction(final cl_kernel function, final long resultSize, final Pointer[] arguments, final int[] argumentSizes) {
 			final int blockSizeX = 1024;
 			final int gridSizeX = (int)Math.ceil((double)resultSize / blockSizeX);
-			callFunction(function, arguments, gridSizeX, blockSizeX, 0);
+			callFunction(function, arguments, argumentSizes, gridSizeX, blockSizeX, 0);
 		}
 
-		public void callFunction(final CUfunction function, final Pointer[] arguments, final int gridSizeX, final int blockSizeX, final int sharedMemorySize) {
+		public void callFunction(final cl_kernel function, final Pointer[] arguments, final int[] argumentSizes, final int gridSizeX, final int blockSizeX, final int sharedMemorySize) {
 			// Set up the kernel parameters: A pointer to an array
 			// of pointers which point to the actual values.
-			final Pointer kernelParameters = Pointer.to(arguments);
 
 			deviceExecutor.submit(new Runnable() { @Override
 				public void run() {
+				for(int i=0; i<arguments.length; i++) {
+					clSetKernelArg(function, i, argumentSizes[i], arguments[i]);
+				}
+				// Set the work-item dimensions
+				long global_work_size[] = new long[]{ gridSizeX*blockSizeX};
+				long local_work_size[] = null;
 				//cuCtxSynchronize();
 				// Launching on the same stream (default stream)
-				cuLaunchKernel(function,
-						gridSizeX,  1, 1,      // Grid dimension
-						blockSizeX, 1, 1,      // Block dimension
-						sharedMemorySize * Sizeof.FLOAT, null,               // Shared memory size and stream
-						kernelParameters, null // Kernel- and extra parameters
-						);
+				clEnqueueNDRangeKernel(commandQueue, function, 1, null,
+						global_work_size, local_work_size, 0, null, null);
 			}});
+
 		}
 
 	}
@@ -464,98 +477,173 @@ public class RandomVariableCuda implements RandomVariable {
 	private static final Logger logger = Logger.getLogger("net.finmath");
 
 	private static final ExecutorService deviceExecutor = Executors.newSingleThreadExecutor();
-	public static final CUdevice device = new CUdevice();
-	public static final CUcontext context = new CUcontext();
-	public static final CUmodule module = new CUmodule();
+	public static cl_device_id device;
+	public static cl_context context;
+	public static cl_command_queue commandQueue;
 
-	private static final CUfunction capByScalar = new CUfunction();
-	private static final CUfunction floorByScalar = new CUfunction();
-	private static final CUfunction addScalar = new CUfunction();
-	private static final CUfunction subScalar = new CUfunction();
-	private static final CUfunction busScalar = new CUfunction();
-	private static final CUfunction multScalar = new CUfunction();
-	private static final CUfunction divScalar = new CUfunction();
-	private static final CUfunction vidScalar = new CUfunction();
-	private static final CUfunction cuPow = new CUfunction();
-	private static final CUfunction cuSqrt = new CUfunction();
-	private static final CUfunction cuExp = new CUfunction();
-	private static final CUfunction cuLog = new CUfunction();
-	private static final CUfunction invert = new CUfunction();
-	private static final CUfunction cuAbs = new CUfunction();
-	private static final CUfunction cap = new CUfunction();
-	private static final CUfunction cuFloor = new CUfunction();
-	private static final CUfunction add = new CUfunction();
-	private static final CUfunction sub = new CUfunction();
-	private static final CUfunction mult = new CUfunction();
-	private static final CUfunction cuDiv = new CUfunction();
-	private static final CUfunction accrue = new CUfunction();
-	private static final CUfunction discount = new CUfunction();
-	private static final CUfunction addProduct = new CUfunction();
-	private static final CUfunction addProduct_vs = new CUfunction();		// add the product of a vector and a scalar
-	private static final CUfunction reducePartial = new CUfunction();
-	private static final CUfunction reduceFloatVectorToDoubleScalar = new CUfunction();
+	private static cl_kernel capByScalar;
+	private static cl_kernel floorByScalar;
+	private static cl_kernel addScalar;
+	private static cl_kernel subScalar;
+	private static cl_kernel busScalar;
+	private static cl_kernel multScalar;
+	private static cl_kernel divScalar;
+	private static cl_kernel vidScalar;
+	private static cl_kernel cuPow;
+	private static cl_kernel cuSqrt;
+	private static cl_kernel cuExp;
+	private static cl_kernel cuLog;
+	private static cl_kernel invert;
+	private static cl_kernel cuAbs;
+	private static cl_kernel cap;
+	private static cl_kernel cuFloor;
+	private static cl_kernel add;
+	private static cl_kernel sub;
+	private static cl_kernel mult;
+	private static cl_kernel cuDiv;
+	private static cl_kernel accrue;
+	private static cl_kernel discount;
+	private static cl_kernel addProduct;
+	private static cl_kernel addProduct_vs;		// add the product of a vector and a scalar
+	private static cl_kernel reducePartial;
+	private static cl_kernel reduceFloatVectorToDoubleScalar;
 
 	private static final int reduceGridSize = 1024;
 
-	// Initalize cuda
+	// Initalize OpenCL
 	static {
 		synchronized (deviceMemoryPool) {
-			try {
-			// Enable exceptions and omit all subsequent error checks
-			JCudaDriver.setExceptionsEnabled(true);
-			JCudaDriver.setLogLevel(LogLevel.LOG_DEBUG);
+
+
+			final int platformIndex = 0;
+			//final long deviceType = CL_DEVICE_TYPE_ALL;
+			final long deviceType = CL.CL_DEVICE_TYPE_GPU;
+			final int deviceIndex = 0;
 
 			// Create the PTX file by calling the NVCC
-			String ptxFileName = null;
+			String clFileName = null;
 			try {
-				final URL cuFileURL = RandomVariableCuda.class.getClassLoader().getResource("net/finmath/montecarlo/RandomVariableCudaKernel.cu");
-				ptxFileName = net.finmath.jcuda.JCudaUtils.preparePtxFile(cuFileURL);
-			} catch (IOException | URISyntaxException e) {
+				final URL cuFileURL = RandomVariableOpenCL.class.getClassLoader().getResource("net/finmath/montecarlo/RandomVariableCudaKernel.cl");
+				clFileName = Paths.get(cuFileURL.toURI()).toFile().getAbsolutePath();
+			} catch (URISyntaxException e) {
 				// TODO Auto-generated catch block
 				e.printStackTrace();
 			}
 
-			final String ptxFileName2 = ptxFileName;
-			deviceExecutor.submit(new Runnable() { @Override
-				public void run() {
-				// Initialize the driver and create a context for the first device.
-				cuInit(0);
-				cuDeviceGet(device, 0);
-				//				cuCtxCreate(context, jcuda.driver.CUctx_flags.CU_CTX_SCHED_BLOCKING_SYNC, device);
-				cuCtxCreate(context, jcuda.driver.CUctx_flags.CU_CTX_SCHED_AUTO, device);
+			// Enable exceptions and subsequently omit error checks in this sample
+			CL.setExceptionsEnabled(true);
 
-				// Load the ptx file.
-				cuModuleLoad(module, ptxFileName2);
+			// Obtain the number of platforms
+			int numPlatformsArray[] = new int[1];
+			clGetPlatformIDs(0, null, numPlatformsArray);
+			int numPlatforms = numPlatformsArray[0];
 
-				// Obtain a function pointers
-				cuModuleGetFunction(capByScalar, module, "capByScalar");
-				cuModuleGetFunction(floorByScalar, module, "floorByScalar");
-				cuModuleGetFunction(addScalar, module, "addScalar");
-				cuModuleGetFunction(subScalar, module, "subScalar");
-				cuModuleGetFunction(busScalar, module, "busScalar");
-				cuModuleGetFunction(multScalar, module, "multScalar");
-				cuModuleGetFunction(divScalar, module, "divScalar");
-				cuModuleGetFunction(vidScalar, module, "vidScalar");
-				cuModuleGetFunction(cuPow, module, "cuPow");
-				cuModuleGetFunction(cuSqrt, module, "cuSqrt");
-				cuModuleGetFunction(cuExp, module, "cuExp");
-				cuModuleGetFunction(cuLog, module, "cuLog");
-				cuModuleGetFunction(invert, module, "invert");
-				cuModuleGetFunction(cuAbs, module, "cuAbs");
-				cuModuleGetFunction(cap, module, "cap");
-				cuModuleGetFunction(cuFloor, module, "cuFloor");
-				cuModuleGetFunction(add, module, "add");
-				cuModuleGetFunction(sub, module, "sub");
-				cuModuleGetFunction(mult, module, "mult");
-				cuModuleGetFunction(cuDiv, module, "cuDiv");
-				cuModuleGetFunction(accrue, module, "accrue");
-				cuModuleGetFunction(discount, module, "discount");
-				cuModuleGetFunction(addProduct, module, "addProduct");
-				cuModuleGetFunction(addProduct_vs, module, "addProduct_vs");
-				cuModuleGetFunction(reducePartial, module, "reducePartial");
-				cuModuleGetFunction(reduceFloatVectorToDoubleScalar, module, "reduceFloatVectorToDoubleScalar");
-			}});
-			} catch(Error er) {};
+			// Obtain a platform ID
+			cl_platform_id platforms[] = new cl_platform_id[numPlatforms];
+			clGetPlatformIDs(platforms.length, platforms, null);
+			cl_platform_id platform = platforms[platformIndex];
+
+			// Initialize the context properties
+			cl_context_properties contextProperties = new cl_context_properties();
+			contextProperties.addProperty(CL_CONTEXT_PLATFORM, platform);
+
+			// Obtain the number of devices for the platform
+			int numDevicesArray[] = new int[1];
+			clGetDeviceIDs(platform, deviceType, 0, null, numDevicesArray);
+			int numDevices = numDevicesArray[0];
+			System.out.println(numDevices);
+			// Obtain a device ID 
+			cl_device_id devices[] = new cl_device_id[numDevices];
+			clGetDeviceIDs(platform, deviceType, numDevices, devices, null);
+			device = devices[deviceIndex];
+
+			// Create a context for the selected device
+			context = clCreateContext(
+					contextProperties, 1, new cl_device_id[]{device}, 
+					null, null, null);
+
+			// Create a command-queue for the selected device
+			commandQueue = clCreateCommandQueue(context, device, 0, null);
+			//	        org.jocl.cl_queue_properties properties = new org.jocl.cl_queue_properties();
+			//	        commandQueue = CL.clCreateCommandQueueWithProperties(context, device, properties, null);
+
+			// Program Setup
+			String source = readFile(clFileName);
+
+			// Create the program
+			cl_program cpProgram = clCreateProgramWithSource(context, 1, 
+					new String[]{ source }, null, null);
+
+			// Build the program
+			clBuildProgram(cpProgram, 0, null, "-cl-mad-enable", null, null);
+
+
+			// Obtain a function pointers
+			capByScalar = clCreateKernel(cpProgram, "capByScalar", null);
+			floorByScalar = clCreateKernel(cpProgram, "floorByScalar", null);
+			addScalar = clCreateKernel(cpProgram, "addScalar", null);
+			subScalar = clCreateKernel(cpProgram, "subScalar", null);
+			busScalar = clCreateKernel(cpProgram, "busScalar", null);
+			multScalar = clCreateKernel(cpProgram, "multScalar", null);
+			divScalar = clCreateKernel(cpProgram, "divScalar", null);
+			vidScalar = clCreateKernel(cpProgram, "vidScalar", null);
+			cuPow = clCreateKernel(cpProgram, "cuPow", null);
+			cuSqrt = clCreateKernel(cpProgram, "cuSqrt", null);
+			cuExp = clCreateKernel(cpProgram, "cuExp", null);
+			cuLog = clCreateKernel(cpProgram, "cuLog", null);
+			invert = clCreateKernel(cpProgram, "invert", null);
+			cuAbs = clCreateKernel(cpProgram, "cuAbs", null);
+			cap = clCreateKernel(cpProgram, "cap", null);
+			cuFloor = clCreateKernel(cpProgram, "cuFloor", null);
+			add = clCreateKernel(cpProgram, "add", null);
+			sub = clCreateKernel(cpProgram, "sub", null);
+			mult = clCreateKernel(cpProgram, "mult", null);
+			cuDiv = clCreateKernel(cpProgram, "cuDiv", null);
+			accrue = clCreateKernel(cpProgram, "accrue", null);
+			discount = clCreateKernel(cpProgram, "discount", null);
+			addProduct = clCreateKernel(cpProgram, "addProduct", null);
+			addProduct_vs = clCreateKernel(cpProgram, "addProduct_vs", null);
+			//				reducePartial = clCreateKernel(cpProgram, "reducePartial", null);
+			//				reduceFloatVectorToDoubleScalar = clCreateKernel(cpProgram, "reduceFloatVectorToDoubleScalar", null);
+
+			long[] deviceMaxMemoryBytesResult = new long[1];
+			CL.clGetDeviceInfo(device, CL.CL_DEVICE_GLOBAL_MEM_SIZE, Sizeof.cl_long, Pointer.to(deviceMaxMemoryBytesResult), null);
+			DeviceMemoryPool.deviceMaxMemoryBytes = deviceMaxMemoryBytesResult[0];
+		}
+	}
+
+	/**
+	 * Helper function which reads the file with the given name and returns 
+	 * the contents of this file as a String. Will exit the application
+	 * if the file can not be read.
+	 * 
+	 * @param fileName The name of the file to read.
+	 * @return The contents of the file
+	 */
+	private static String readFile(String fileName)
+	{
+		try
+		{
+			BufferedReader br = new BufferedReader(
+					new InputStreamReader(new FileInputStream(fileName)));
+			StringBuffer sb = new StringBuffer();
+			String line = null;
+			while (true)
+			{
+				line = br.readLine();
+				if (line == null)
+				{
+					break;
+				}
+				sb.append(line).append("\n");
+			}
+			return sb.toString();
+		}
+		catch (IOException e)
+		{
+			e.printStackTrace();
+			System.exit(1);
+			return null;
 		}
 	}
 
@@ -563,27 +651,27 @@ public class RandomVariableCuda implements RandomVariable {
 	 * Create a <code>RandomVariableCuda</code>.
 	 *
 	 * @param time the filtration time, set to 0.0 if not used.
-	 * @param realizations A <code>DevicePointerReference</code> referencing a {@link CUdeviceptr} with the given size. Use {@link #getDevicePointer(long)} to create one.
+	 * @param realizations A <code>DevicePointerReference</code> referencing a {@link cl_mem} with the given size. Use {@link #getDevicePointer(long)} to create one.
 	 * @param size The size of the vector associated with <code>DevicePointerReference</code>.
 	 * @param typePriority The priority of this type in construction of result types. See "operator type priority" for details.
 	 * @return A new instance of RandomVariableCuda wrapping the given DevicePointerReference.
 	 */
-	public static RandomVariableCuda of(final double time, final DevicePointerReference realizations, final long size, final int typePriority) {
-		final RandomVariableCuda randomVariableCuda = new RandomVariableCuda(time, realizations, size, typePriority);
-		return randomVariableCuda;
+	public static RandomVariableOpenCL of(final double time, final DevicePointerReference realizations, final long size, final int typePriority) {
+		final RandomVariableOpenCL randomVariableOpenCL = of(time, realizations, size, typePriority);
+		return randomVariableOpenCL;
 	}
 
 	/**
 	 * Create a <code>RandomVariableCuda</code>.
 	 *
 	 * @param time the filtration time, set to 0.0 if not used.
-	 * @param realizations A <code>DevicePointerReference</code> referencing a {@link CUdeviceptr} with the given size. Use {@link #getDevicePointer(long)} to create one.
+	 * @param realizations A <code>DevicePointerReference</code> referencing a {@link cl_mem} with the given size. Use {@link #getDevicePointer(long)} to create one.
 	 * @param size The size of the vector associated with <code>DevicePointerReference</code>.
 	 * @return A new instance of RandomVariableCuda wrapping the given DevicePointerReference.
 	 */
-	public static RandomVariableCuda of(final double time, final DevicePointerReference realizations, final long size) {
-		final RandomVariableCuda randomVariableCuda = new RandomVariableCuda(time, realizations, size, typePriorityDefault);
-		return randomVariableCuda;
+	public static RandomVariableOpenCL of(final double time, final DevicePointerReference realizations, final long size) {
+		final RandomVariableOpenCL randomVariableOpenCL = new RandomVariableOpenCL(time, realizations, size, typePriorityDefault);
+		return randomVariableOpenCL;
 	}
 
 	/**
@@ -592,18 +680,19 @@ public class RandomVariableCuda implements RandomVariable {
 	 * @param time the filtration time, set to 0.0 if not used.
 	 * @param value the value, a constant.
 	 */
-	public static RandomVariableCuda of(final double time, final double value) {
-		final RandomVariableCuda randomVariableCuda = new RandomVariableCuda(time, value, typePriorityDefault);
-		return randomVariableCuda;
+	public static RandomVariableOpenCL of(final double time, final double value) {
+		final RandomVariableOpenCL randomVariableOpenCL = new RandomVariableOpenCL(time, value, typePriorityDefault);
+		return randomVariableOpenCL;
 	}
+
 
 	/**
 	 * @param time the filtration time, set to 0.0 if not used.
-	 * @param realizations A <code>DevicePointerReference</code> referencing a {@link CUdeviceptr} with the given size. Use {@link #getDevicePointer(long)} to create one.
+	 * @param realizations A <code>DevicePointerReference</code> referencing a {@link cl_mem} with the given size. Use {@link #getDevicePointer(long)} to create one.
 	 * @param size The size of the vector associated with <code>DevicePointerReference</code>.
 	 * @param typePriority The priority of this type in construction of result types. See "operator type priority" for details.
 	 */
-	private RandomVariableCuda(final double time, final DevicePointerReference realizations, final long size, final int typePriority) {
+	private RandomVariableOpenCL(final double time, final DevicePointerReference realizations, final long size, final int typePriority) {
 		this.time = time;
 		this.realizations = realizations;
 		this.size = size;
@@ -616,7 +705,7 @@ public class RandomVariableCuda implements RandomVariable {
 	 *
 	 * @param value the value, a constant.
 	 */
-	public RandomVariableCuda(final double value) {
+	public RandomVariableOpenCL(final double value) {
 		this(-Double.MAX_VALUE, value);
 	}
 
@@ -627,7 +716,7 @@ public class RandomVariableCuda implements RandomVariable {
 	 * @param value the value, a constant.
 	 * @param typePriority The priority of this type in construction of result types. See "operator type priority" for details.
 	 */
-	public RandomVariableCuda(final double time, final double value, final int typePriority) {
+	public RandomVariableOpenCL(final double time, final double value, final int typePriority) {
 		this.time = time;
 		this.realizations = null;
 		this.size = 1;
@@ -642,7 +731,7 @@ public class RandomVariableCuda implements RandomVariable {
 	 * @param realisations the vector of realizations.
 	 * @param typePriority The priority of this type in construction of result types. See "operator type priority" for details.
 	 */
-	public RandomVariableCuda(final double time, final float[] realisations, final int typePriority) {
+	public RandomVariableOpenCL(final double time, final float[] realisations, final int typePriority) {
 		this(time, getDevicePointer(realisations), realisations.length, typePriority);
 	}
 
@@ -652,7 +741,7 @@ public class RandomVariableCuda implements RandomVariable {
 	 * @param time the filtration time, set to 0.0 if not used.
 	 * @param value the value, a constant.
 	 */
-	public RandomVariableCuda(final double time, final double value) {
+	public RandomVariableOpenCL(final double time, final double value) {
 		this(time, value, typePriorityDefault);
 	}
 
@@ -662,7 +751,7 @@ public class RandomVariableCuda implements RandomVariable {
 	 * @param time the filtration time, set to 0.0 if not used.
 	 * @param realisations the vector of realizations.
 	 */
-	public RandomVariableCuda(final double time, final float[] realisations) {
+	public RandomVariableOpenCL(final double time, final float[] realisations) {
 		this(time, getDevicePointer(realisations), realisations.length, typePriorityDefault);
 	}
 
@@ -672,7 +761,7 @@ public class RandomVariableCuda implements RandomVariable {
 	 * @param time the filtration time, set to 0.0 if not used.
 	 * @param realisations the vector of realizations.
 	 */
-	public RandomVariableCuda(final double time, final double[] realisations) {
+	public RandomVariableOpenCL(final double time, final double[] realisations) {
 		this(time, getFloatArray(realisations));
 	}
 
@@ -681,7 +770,7 @@ public class RandomVariableCuda implements RandomVariable {
 	 *
 	 * @param realisations the vector of realizations.
 	 */
-	public RandomVariableCuda(final float[] realisations) {
+	public RandomVariableOpenCL(final float[] realisations) {
 		this(0.0, realisations);
 	}
 
@@ -704,11 +793,11 @@ public class RandomVariableCuda implements RandomVariable {
 		deviceMemoryPool.clean();
 	}
 
-	private static RandomVariableCuda getRandomVariableCuda(final RandomVariable randomVariable) {
-		if(randomVariable instanceof RandomVariableCuda) {
-			return (RandomVariableCuda)randomVariable;
+	private static RandomVariableOpenCL getRandomVariableCuda(final RandomVariable randomVariable) {
+		if(randomVariable instanceof RandomVariableOpenCL) {
+			return (RandomVariableOpenCL)randomVariable;
 		} else {
-			final RandomVariableCuda randomVariableCuda = new RandomVariableCuda(randomVariable.getFiltrationTime(), randomVariable.getRealizations());
+			final RandomVariableOpenCL randomVariableCuda = new RandomVariableOpenCL(randomVariable.getFiltrationTime(), randomVariable.getRealizations());
 			return randomVariableCuda;
 		}
 	}
@@ -1665,15 +1754,14 @@ public class RandomVariableCuda implements RandomVariable {
 				Pointer.to(new int[] { size() }),
 				Pointer.to(realizations.get()),
 				Pointer.to(reduceVector.get())},
+				new int[] { Sizeof.cl_int, Sizeof.cl_mem, Sizeof.cl_mem },
 				gridSizeX, blockSizeX, blockSizeX*2*3);
 
 		final double[] result = new double[gridSizeX];
 		try {
 			deviceExecutor.submit(new Runnable() { @Override
 				public void run() {
-				cuCtxSynchronize();
-				cuMemcpyDtoH(Pointer.to(result), reduceVector.get(), gridSizeX * Sizeof.DOUBLE);
-				cuCtxSynchronize();
+				//				cuMemcpyDtoH(Pointer.to(result), reduceVector.get(), gridSizeX * Sizeof.cl_double);
 			}}).get();
 		} catch (InterruptedException | ExecutionException e) {
 			throw new RuntimeException(e.getCause());
@@ -1687,14 +1775,14 @@ public class RandomVariableCuda implements RandomVariable {
 			return valueIfNonStochastic;
 		}
 
-		RandomVariableCuda reduced = this;
+		RandomVariableOpenCL reduced = this;
 		while(reduced.size() > 1) {
 			reduced = reduced.reduceBySize(reduceGridSize);
 		}
 		return reduced.getRealizations()[0];
 	}
 
-	private RandomVariableCuda reduceBySize(final int bySize) {
+	private RandomVariableOpenCL reduceBySize(final int bySize) {
 		final int blockSizeX = bySize;
 		final int gridSizeX = (int)Math.ceil((double)size()/2 / blockSizeX);
 		final DevicePointerReference reduceVector = getDevicePointer(gridSizeX);
@@ -1703,6 +1791,7 @@ public class RandomVariableCuda implements RandomVariable {
 				Pointer.to(new int[] { size() }),
 				Pointer.to(realizations.get()),
 				Pointer.to(reduceVector.get())},
+				new int[] { Sizeof.cl_int, Sizeof.cl_mem, Sizeof.cl_mem },
 				gridSizeX, blockSizeX, blockSizeX*2*3);
 
 		return of(-Double.MAX_VALUE, reduceVector, gridSizeX);

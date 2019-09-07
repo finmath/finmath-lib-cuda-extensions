@@ -28,6 +28,7 @@ import net.finmath.montecarlo.cuda.alternative.BrownianMotionCudaWithHostRandomV
 import net.finmath.montecarlo.cuda.alternative.BrownianMotionCudaWithRandomVariableCuda;
 import net.finmath.montecarlo.cuda.alternative.BrownianMotionJavaRandom;
 import net.finmath.montecarlo.model.AbstractProcessModel;
+import net.finmath.montecarlo.opencl.RandomVariableOpenCLFactory;
 import net.finmath.montecarlo.process.EulerSchemeFromProcessModel;
 import net.finmath.montecarlo.process.MonteCarloProcessFromProcessModel;
 import net.finmath.stochastic.RandomVariable;
@@ -44,13 +45,15 @@ public class MonteCarloBlackScholesModelTest {
 	@Parameters
 	public static Collection<Object[]> data() {
 		return Arrays.asList(new Object[][] {
-			{ "BrownianMotionLazyInit" },					// Text case 1: Java implementation using MersenneTwister
-			{ "BrownianMotionJavaRandom" },					// Text case 2: Java implementation using Java LCG
-			{ "BrownianMotionCudaWithHostRandomVariable" },	// Text case 3: Java implementation using Cuda LCG with Host RandomVariable
-			{ "BrownianMotionCudaWithRandomVariableCuda" }	// Text case 4: Java implementation using Cuda LCG with Cuda RandomVariable
+			{ "BrownianMotionLazyInitCPUFloat" },			// Test case 1: Java implementation using MersenneTwister
+			{ "BrownianMotionLazyInitCPUDouble" },			// Test case 2: Java implementation using MersenneTwister
+			{ "BrownianMotionJavaRandomCPUDouble" },		// Test case 3: Java implementation using Java LCG
+			{ "BrownianMotionLazyInitOpenCL" },				// Test case 4: Java implementation using MersenneTwister with OpenCL RandomVariable
+			{ "BrownianMotionCudaWithHostRandomVariable" },	// Test case 5: Java implementation using Cuda LCG with Host RandomVariable
+			{ "BrownianMotionCudaWithRandomVariableCuda" }	// Test case 6: Java implementation using Cuda LCG with Cuda RandomVariable
 		});
 	}
-
+	
 	static final DecimalFormat formatterReal2	= new DecimalFormat(" 0.00");
 	static final DecimalFormat formatterReal4	= new DecimalFormat(" 0.0000");
 	static final DecimalFormat formatterSci4	= new DecimalFormat(" 0.0000E00;-0.0000E00");
@@ -86,14 +89,22 @@ public class MonteCarloBlackScholesModelTest {
 		final TimeDiscretization timeDiscretization = new TimeDiscretizationFromArray(0.0 /* initial */, numberOfTimeSteps, deltaT);
 
 		switch(testCase) {
-		case "BrownianMotionLazyInit":
+		case "BrownianMotionLazyInitCPUFloat":
 		default:
+			brownian = new BrownianMotionLazyInit(timeDiscretization, 1, numberOfPaths, seed,
+					new RandomVariableFactory(false));
+			break;
+		case "BrownianMotionLazyInitCPUDouble":
 			brownian = new BrownianMotionLazyInit(timeDiscretization, 1, numberOfPaths, seed,
 					new RandomVariableFactory(true));
 			break;
-		case "BrownianMotionJavaRandom":
+		case "BrownianMotionJavaRandomCPUDouble":
 			brownian = new BrownianMotionJavaRandom(timeDiscretization, 1, numberOfPaths, seed,
 					new RandomVariableFactory(true));
+			break;
+		case "BrownianMotionLazyInitOpenCL":
+			brownian = new BrownianMotionLazyInit(timeDiscretization, 1, numberOfPaths, seed,
+					new RandomVariableOpenCLFactory());
 			break;
 		case "BrownianMotionCudaWithHostRandomVariable":
 			brownian = new BrownianMotionCudaWithHostRandomVariable(
@@ -116,7 +127,10 @@ public class MonteCarloBlackScholesModelTest {
 
 	@Before
 	public void cleanUp() {
-		RandomVariableCuda.clean();
+		try {
+			RandomVariableCuda.clean();
+		}
+		catch(Exception e) {};
 	}
 
 	@Test

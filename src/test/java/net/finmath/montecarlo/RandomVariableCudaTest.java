@@ -24,7 +24,7 @@ import net.finmath.stochastic.Scalar;
  * @author Christian Fries
  * @see net.finmath.montecarlo.RandomVariableFromDoubleArray
  */
-public class RandomVariableTest {
+public class RandomVariableCudaTest {
 
 	@Test
 	public void testRandomVariableDeterministc() {
