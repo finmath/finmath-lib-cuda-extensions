@@ -313,7 +313,19 @@ public class RandomVariableCuda implements RandomVariable {
 		 * @return Returns the (estimated) percentage amount of free memory on the device.
 		 */
 		private static float getDeviceFreeMemPercentage() {
-			float freeRate = 1.0f-(float)deviceAllocMemoryBytes / (float) deviceMaxMemoryBytes;
+			float freeRate;
+			try {
+				freeRate = deviceExecutor.submit(new Callable<Float>() { @Override
+					public Float call() {
+					final long[] free = new long[1];
+					final long[] total = new long[1];
+					jcuda.runtime.JCuda.cudaMemGetInfo(free, total);
+					final float freeRate = ((float)free[0]/(total[0]));
+					return freeRate;
+				}}).get();
+			} catch (InterruptedException | ExecutionException e) {
+				return freeRate = 0;
+			}
 			return freeRate;
 		}
 
@@ -501,60 +513,61 @@ public class RandomVariableCuda implements RandomVariable {
 	static {
 		synchronized (deviceMemoryPool) {
 			try {
-			// Enable exceptions and omit all subsequent error checks
-			JCudaDriver.setExceptionsEnabled(true);
-			JCudaDriver.setLogLevel(LogLevel.LOG_DEBUG);
+				// Enable exceptions and omit all subsequent error checks
+				JCudaDriver.setExceptionsEnabled(true);
+				JCudaDriver.setLogLevel(LogLevel.LOG_DEBUG);
 
-			// Create the PTX file by calling the NVCC
-			String ptxFileName = null;
-			try {
-				final URL cuFileURL = RandomVariableCuda.class.getClassLoader().getResource("net/finmath/montecarlo/RandomVariableCudaKernel.cu");
-				ptxFileName = net.finmath.jcuda.JCudaUtils.preparePtxFile(cuFileURL);
-			} catch (IOException | URISyntaxException e) {
-				// TODO Auto-generated catch block
-				e.printStackTrace();
-			}
+				// Create the PTX file by calling the NVCC
+				String ptxFileName = null;
+				try {
+					final URL cuFileURL = RandomVariableCuda.class.getClassLoader().getResource("net/finmath/montecarlo/RandomVariableCudaKernel.cu");
+					ptxFileName = net.finmath.jcuda.JCudaUtils.preparePtxFile(cuFileURL);
+				} catch (IOException | URISyntaxException e) {
+					// TODO Auto-generated catch block
+					e.printStackTrace();
+				}
 
-			final String ptxFileName2 = ptxFileName;
-			deviceExecutor.submit(new Runnable() { @Override
-				public void run() {
-				// Initialize the driver and create a context for the first device.
-				cuInit(0);
-				cuDeviceGet(device, 0);
-				//				cuCtxCreate(context, jcuda.driver.CUctx_flags.CU_CTX_SCHED_BLOCKING_SYNC, device);
-				cuCtxCreate(context, jcuda.driver.CUctx_flags.CU_CTX_SCHED_AUTO, device);
+				final String ptxFileName2 = ptxFileName;
+				deviceExecutor.submit(new Runnable() { @Override
+					public void run() {
+					// Initialize the driver and create a context for the first device.
+					cuInit(0);
+					cuDeviceGet(device, 0);
+					//				cuCtxCreate(context, jcuda.driver.CUctx_flags.CU_CTX_SCHED_BLOCKING_SYNC, device);
+					cuCtxCreate(context, jcuda.driver.CUctx_flags.CU_CTX_SCHED_AUTO, device);
 
-				// Load the ptx file.
-				cuModuleLoad(module, ptxFileName2);
+					// Load the ptx file.
+					cuModuleLoad(module, ptxFileName2);
 
-				// Obtain a function pointers
-				cuModuleGetFunction(capByScalar, module, "capByScalar");
-				cuModuleGetFunction(floorByScalar, module, "floorByScalar");
-				cuModuleGetFunction(addScalar, module, "addScalar");
-				cuModuleGetFunction(subScalar, module, "subScalar");
-				cuModuleGetFunction(busScalar, module, "busScalar");
-				cuModuleGetFunction(multScalar, module, "multScalar");
-				cuModuleGetFunction(divScalar, module, "divScalar");
-				cuModuleGetFunction(vidScalar, module, "vidScalar");
-				cuModuleGetFunction(cuPow, module, "cuPow");
-				cuModuleGetFunction(cuSqrt, module, "cuSqrt");
-				cuModuleGetFunction(cuExp, module, "cuExp");
-				cuModuleGetFunction(cuLog, module, "cuLog");
-				cuModuleGetFunction(invert, module, "invert");
-				cuModuleGetFunction(cuAbs, module, "cuAbs");
-				cuModuleGetFunction(cap, module, "cap");
-				cuModuleGetFunction(cuFloor, module, "cuFloor");
-				cuModuleGetFunction(add, module, "add");
-				cuModuleGetFunction(sub, module, "sub");
-				cuModuleGetFunction(mult, module, "mult");
-				cuModuleGetFunction(cuDiv, module, "cuDiv");
-				cuModuleGetFunction(accrue, module, "accrue");
-				cuModuleGetFunction(discount, module, "discount");
-				cuModuleGetFunction(addProduct, module, "addProduct");
-				cuModuleGetFunction(addProduct_vs, module, "addProduct_vs");
-				cuModuleGetFunction(reducePartial, module, "reducePartial");
-				cuModuleGetFunction(reduceFloatVectorToDoubleScalar, module, "reduceFloatVectorToDoubleScalar");
-			}});
+					// Obtain a function pointers
+					cuModuleGetFunction(capByScalar, module, "capByScalar");
+					cuModuleGetFunction(floorByScalar, module, "floorByScalar");
+					cuModuleGetFunction(addScalar, module, "addScalar");
+					cuModuleGetFunction(subScalar, module, "subScalar");
+					cuModuleGetFunction(busScalar, module, "busScalar");
+					cuModuleGetFunction(multScalar, module, "multScalar");
+					cuModuleGetFunction(divScalar, module, "divScalar");
+					cuModuleGetFunction(vidScalar, module, "vidScalar");
+					cuModuleGetFunction(cuPow, module, "cuPow");
+					cuModuleGetFunction(cuSqrt, module, "cuSqrt");
+					cuModuleGetFunction(cuExp, module, "cuExp");
+					cuModuleGetFunction(cuLog, module, "cuLog");
+					cuModuleGetFunction(invert, module, "invert");
+					cuModuleGetFunction(cuAbs, module, "cuAbs");
+					cuModuleGetFunction(cap, module, "cap");
+					cuModuleGetFunction(cuFloor, module, "cuFloor");
+					cuModuleGetFunction(add, module, "add");
+					cuModuleGetFunction(sub, module, "sub");
+					cuModuleGetFunction(mult, module, "mult");
+					cuModuleGetFunction(cuDiv, module, "cuDiv");
+					cuModuleGetFunction(accrue, module, "accrue");
+					cuModuleGetFunction(discount, module, "discount");
+					cuModuleGetFunction(addProduct, module, "addProduct");
+					cuModuleGetFunction(addProduct_vs, module, "addProduct_vs");
+					cuModuleGetFunction(reducePartial, module, "reducePartial");
+					cuModuleGetFunction(reduceFloatVectorToDoubleScalar, module, "reduceFloatVectorToDoubleScalar");
+
+				}});
 			} catch(Error er) {};
 		}
 	}
