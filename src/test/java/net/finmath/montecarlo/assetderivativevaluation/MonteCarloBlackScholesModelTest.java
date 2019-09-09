@@ -28,6 +28,7 @@ import net.finmath.montecarlo.cuda.alternative.BrownianMotionCudaWithHostRandomV
 import net.finmath.montecarlo.cuda.alternative.BrownianMotionCudaWithRandomVariableCuda;
 import net.finmath.montecarlo.cuda.alternative.BrownianMotionJavaRandom;
 import net.finmath.montecarlo.model.AbstractProcessModel;
+import net.finmath.montecarlo.opencl.RandomVariableOpenCL;
 import net.finmath.montecarlo.opencl.RandomVariableOpenCLFactory;
 import net.finmath.montecarlo.process.EulerSchemeFromProcessModel;
 import net.finmath.montecarlo.process.MonteCarloProcessFromProcessModel;
@@ -48,9 +49,9 @@ public class MonteCarloBlackScholesModelTest {
 			{ "BrownianMotionLazyInitCPUFloat" },			// Test case 1: Java implementation using MersenneTwister
 			{ "BrownianMotionLazyInitCPUDouble" },			// Test case 2: Java implementation using MersenneTwister
 			{ "BrownianMotionJavaRandomCPUDouble" },		// Test case 3: Java implementation using Java LCG
-			{ "BrownianMotionLazyInitOpenCL" },				// Test case 4: Java implementation using MersenneTwister with OpenCL RandomVariable
 			{ "BrownianMotionCudaWithHostRandomVariable" },	// Test case 5: Java implementation using Cuda LCG with Host RandomVariable
-			{ "BrownianMotionCudaWithRandomVariableCuda" }	// Test case 6: Java implementation using Cuda LCG with Cuda RandomVariable
+			{ "BrownianMotionCudaWithRandomVariableCuda" },	// Test case 6: Java implementation using Cuda LCG with Cuda RandomVariable
+			{ "BrownianMotionLazyInitOpenCL" },				// Test case 4: Java implementation using MersenneTwister with OpenCL RandomVariable
 		});
 	}
 	
@@ -81,6 +82,21 @@ public class MonteCarloBlackScholesModelTest {
 
 	public MonteCarloBlackScholesModelTest(final String testCase) {
 		this.testCase = testCase;
+	}
+
+	@Before
+	public void cleanUp() {
+		System.gc();
+		System.runFinalization();
+		try {
+			RandomVariableCuda.clean();
+		}
+		catch(Exception e) {};
+
+		try {
+			RandomVariableOpenCL.clean();
+		}
+		catch(Exception e) {};
 	}
 
 	@Before
@@ -123,14 +139,6 @@ public class MonteCarloBlackScholesModelTest {
 					);
 			break;
 		}
-	}
-
-	@Before
-	public void cleanUp() {
-		try {
-			RandomVariableCuda.clean();
-		}
-		catch(Exception e) {};
 	}
 
 	@Test

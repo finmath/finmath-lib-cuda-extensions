@@ -9,9 +9,12 @@ package net.finmath.montecarlo;
 import java.text.DecimalFormat;
 
 import org.junit.Assert;
+import org.junit.Before;
 import org.junit.Test;
 
+import net.finmath.montecarlo.cuda.RandomVariableCuda;
 import net.finmath.montecarlo.cuda.alternative.BrownianMotionCudaWithRandomVariableCuda;
+import net.finmath.montecarlo.opencl.RandomVariableOpenCL;
 import net.finmath.stochastic.RandomVariable;
 import net.finmath.time.TimeDiscretization;
 import net.finmath.time.TimeDiscretizationFromArray;
@@ -26,6 +29,21 @@ public class BrownianMotionMemoryTest {
 	static final DecimalFormat formatterPercent	= new DecimalFormat(" 00.0%");
 	static final DecimalFormat formatterSci4	= new DecimalFormat(" 0.0000E00;-0.0000E00");
 	static final DecimalFormat formatterSci1	= new DecimalFormat(" 0E00;-0.E00");
+
+	@Before
+	public void cleanUp() {
+		System.gc();
+		System.runFinalization();
+		try {
+			RandomVariableCuda.clean();
+		}
+		catch(Exception e) {};
+
+		try {
+			RandomVariableOpenCL.clean();
+		}
+		catch(Exception e) {};
+	}
 
 	@Test
 	public void testBrownianMotionMemory() {

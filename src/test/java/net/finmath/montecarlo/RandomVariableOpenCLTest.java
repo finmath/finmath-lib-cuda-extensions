@@ -11,8 +11,10 @@ import java.util.function.BiFunction;
 import java.util.function.Consumer;
 
 import org.junit.Assert;
+import org.junit.Before;
 import org.junit.Test;
 
+import net.finmath.montecarlo.cuda.RandomVariableCuda;
 import net.finmath.montecarlo.opencl.RandomVariableOpenCL;
 import net.finmath.montecarlo.opencl.RandomVariableOpenCLFactory;
 import net.finmath.stochastic.RandomVariable;
@@ -24,6 +26,21 @@ import net.finmath.stochastic.RandomVariable;
  * @see net.finmath.montecarlo.RandomVariableFromDoubleArray
  */
 public class RandomVariableOpenCLTest {
+
+	@Before
+	public void cleanUp() {
+		System.gc();
+		System.runFinalization();
+		try {
+			RandomVariableCuda.clean();
+		}
+		catch(Exception e) {};
+
+		try {
+			RandomVariableOpenCL.clean();
+		}
+		catch(Exception e) {};
+	}
 
 	@Test
 	public void testRandomVariableDeterministc() {

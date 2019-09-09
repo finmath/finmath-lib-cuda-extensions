@@ -17,9 +17,11 @@ import org.junit.runner.RunWith;
 import org.junit.runners.Parameterized;
 import org.junit.runners.Parameterized.Parameters;
 
+import net.finmath.montecarlo.cuda.RandomVariableCuda;
 import net.finmath.montecarlo.cuda.alternative.BrownianMotionCudaWithHostRandomVariable;
 import net.finmath.montecarlo.cuda.alternative.BrownianMotionCudaWithRandomVariableCuda;
 import net.finmath.montecarlo.cuda.alternative.BrownianMotionJavaRandom;
+import net.finmath.montecarlo.opencl.RandomVariableOpenCL;
 import net.finmath.stochastic.RandomVariable;
 import net.finmath.time.TimeDiscretization;
 import net.finmath.time.TimeDiscretizationFromArray;
@@ -52,7 +54,18 @@ public class BrownianMotionTest {
 	}
 
 	@Before
-	public void setUp() {
+	public void cleanUp() {
+		System.gc();
+		System.runFinalization();
+		try {
+			RandomVariableCuda.clean();
+		}
+		catch(Exception e) {};
+
+		try {
+			RandomVariableOpenCL.clean();
+		}
+		catch(Exception e) {};
 	}
 
 	@Test

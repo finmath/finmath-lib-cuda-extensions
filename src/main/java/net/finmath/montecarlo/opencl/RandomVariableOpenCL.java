@@ -60,6 +60,7 @@ import org.jocl.cl_program;
 import net.finmath.functions.DoubleTernaryOperator;
 import net.finmath.montecarlo.RandomVariableFromDoubleArray;
 import net.finmath.montecarlo.RandomVariableFromFloatArray;
+import net.finmath.montecarlo.cuda.RandomVariableCuda;
 import net.finmath.stochastic.RandomVariable;
 
 /**
@@ -135,7 +136,7 @@ public class RandomVariableOpenCL implements RandomVariable {
 	 *
 	 * @author Christian Fries
 	 */
-	private static class DeviceMemoryPool {
+	public static class DeviceMemoryPool {
 
 		private final Object lock = new Object();
 
@@ -149,17 +150,17 @@ public class RandomVariableOpenCL implements RandomVariable {
 		/**
 		 * This map allow to recover the device pointer for a given <code>WeakReference&lt;DevicePointerReference&gt;</code>.
 		 */
-		private static final Map<WeakReference<DevicePointerReference>, cl_mem>	vectorsInUseReferenceMap			= new ConcurrentHashMap<WeakReference<DevicePointerReference>, cl_mem>();
+		public static final Map<WeakReference<DevicePointerReference>, cl_mem>	vectorsInUseReferenceMap			= new ConcurrentHashMap<WeakReference<DevicePointerReference>, cl_mem>();
 
 		/**
 		 * Percentage of device memory at which we will trigger System.gc() to aggressively reduce references.
 		 */
-		private static final float	vectorsRecyclerPercentageFreeToStartGC		= 0.15f;		// should be set by monitoring GPU mem
+		private static final float	vectorsRecyclerPercentageFreeToStartGC		= 0.25f;		// should be set by monitoring GPU mem
 
 		/**
 		 * Percentage of device memory at which we will try to wait a few milliseconds for recycled objects.
 		 */
-		private static final float	vectorsRecyclerPercentageFreeToWaitForGC	= 0.05f;		// should be set by monitoring GPU mem
+		private static final float	vectorsRecyclerPercentageFreeToWaitForGC	= 0.10f;		// should be set by monitoring GPU mem
 
 		/**
 		 * Maximum time to wait for object recycled objects. (Higher value slows down the code, but prevents out-of-memory).
@@ -275,12 +276,13 @@ public class RandomVariableOpenCL implements RandomVariable {
 			if(cuDevicePtr == null)  {
 				// Still no pointer found, create new one
 				try {
+					final int[] errorCode = new int[1];
 					cuDevicePtr =
 							deviceExecutor.submit(new Callable<cl_mem>() { @Override
 								public cl_mem call() {
 								cl_mem cuDevicePtr = CL.clCreateBuffer(context, 
 										CL_MEM_READ_WRITE, 
-										size * Sizeof.cl_float, null, null);
+										size * Sizeof.cl_float, null, errorCode);
 
 								return cuDevicePtr;
 							}}).get();
@@ -322,10 +324,11 @@ public class RandomVariableOpenCL implements RandomVariable {
 							logger.finest("Freeing device pointer " + cuDevicePtr + " from " + reference);
 						}
 						try {
-							deviceExecutor.submit(new Runnable() { @Override
+							deviceExecutor.submit(new Runnable() {
+								@Override
 								public void run() {
-								clReleaseMemObject(cuDevicePtr);
-							}}).get();
+									clReleaseMemObject(cuDevicePtr);
+								}}).get();
 						} catch (InterruptedException | ExecutionException e) {
 							logger.severe("Unable to free pointer " + cuDevicePtr + " from " + reference);
 							throw new RuntimeException(e.getCause());
@@ -333,17 +336,15 @@ public class RandomVariableOpenCL implements RandomVariable {
 						deviceAllocMemoryBytes -= size * Sizeof.cl_float;
 					}
 				}
-
 			}
 		}
-
 
 		/**
 		 * 
 		 * @return Returns the (estimated) percentage amount of free memory on the device.
 		 */
 		private static float getDeviceFreeMemPercentage() {
-			float freeRate = 1.0f-(float)deviceAllocMemoryBytes / (float) deviceMaxMemoryBytes;
+			float freeRate = 1.0f - 1.1f * (float)deviceAllocMemoryBytes / (float) deviceMaxMemoryBytes;
 			return freeRate;
 		}
 
@@ -479,7 +480,7 @@ public class RandomVariableOpenCL implements RandomVariable {
 
 	}
 
-	private static DeviceMemoryPool deviceMemoryPool = new DeviceMemoryPool();
+	public static DeviceMemoryPool deviceMemoryPool = new DeviceMemoryPool();
 
 	private static final long serialVersionUID = 7620120320663270600L;
 
@@ -495,7 +496,6 @@ public class RandomVariableOpenCL implements RandomVariable {
 
 	// Data model for the non-stochastic case (if realizations==null)
 	private final double      valueIfNonStochastic;
-
 
 	private static final Logger logger = Logger.getLogger("net.finmath");
 
@@ -590,11 +590,10 @@ public class RandomVariableOpenCL implements RandomVariable {
 			int numDevicesArray[] = new int[1];
 			clGetDeviceIDs(platform, deviceType, 0, null, numDevicesArray);
 			int numDevices = numDevicesArray[0];
-			System.out.println(numDevices);
+
 			// Obtain a device ID 
 			cl_device_id devices[] = new cl_device_id[numDevices];
 			clGetDeviceIDs(platform, deviceType, numDevices, devices, null);
-
 
 			/*
 			 * Device index is openCLDeviceIndex if positive, or devices.length + openCLDeviceIndex if negative.
@@ -605,9 +604,7 @@ public class RandomVariableOpenCL implements RandomVariable {
 			device = devices[deviceIndex];
 
 			// Create a context for the selected device
-			context = clCreateContext(
-					contextProperties, 1, new cl_device_id[]{device}, 
-					null, null, null);
+			context = clCreateContext(contextProperties, 1, new cl_device_id[]{ device }, null, null, null);
 
 			// Create a command-queue for the selected device
 			commandQueue = clCreateCommandQueue(context, device, 0, null);
@@ -618,12 +615,10 @@ public class RandomVariableOpenCL implements RandomVariable {
 			String source = readFile(clFileName);
 
 			// Create the program
-			cl_program cpProgram = clCreateProgramWithSource(context, 1, 
-					new String[]{ source }, null, null);
+			cl_program cpProgram = clCreateProgramWithSource(context, 1, new String[]{ source }, null, null);
 
 			// Build the program
 			clBuildProgram(cpProgram, 0, null, "-cl-mad-enable", null, null);
-
 
 			// Obtain a function pointers
 			capByScalar = clCreateKernel(cpProgram, "capByScalar", null);
