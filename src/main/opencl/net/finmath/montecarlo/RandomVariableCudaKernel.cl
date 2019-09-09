@@ -109,7 +109,7 @@ __kernel void cuExp(int n, __global const float *a, __global float *result)
     int i = get_global_id(0);
     if (i<n)
     {
-        result[i] = exp(a[i]);
+        result[i] = (float)exp((double)a[i]);
     }
 }
 
@@ -118,7 +118,7 @@ __kernel void cuLog(int n, __global const float *a, __global float *result)
     int i = get_global_id(0);
     if (i<n)
     {
-        result[i] = log(a[i]);
+        result[i] = (float)log((double)a[i]);
     }
 }
 
