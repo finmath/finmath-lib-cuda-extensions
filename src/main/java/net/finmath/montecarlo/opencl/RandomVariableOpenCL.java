@@ -664,10 +664,8 @@ public class RandomVariableOpenCL implements RandomVariable {
 	 */
 	private static String readFile(String fileName)
 	{
-		try
+		try(BufferedReader br = new BufferedReader(new InputStreamReader(new FileInputStream(fileName))))
 		{
-			BufferedReader br = new BufferedReader(
-					new InputStreamReader(new FileInputStream(fileName)));
 			StringBuffer sb = new StringBuffer();
 			String line = null;
 			while (true)
