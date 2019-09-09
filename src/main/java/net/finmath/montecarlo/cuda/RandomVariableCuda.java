@@ -27,6 +27,7 @@ import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
+import java.util.concurrent.TimeUnit;
 import java.util.function.DoubleBinaryOperator;
 import java.util.function.DoubleUnaryOperator;
 import java.util.function.IntToDoubleFunction;
@@ -143,7 +144,7 @@ public class RandomVariableCuda implements RandomVariable {
 						System.gc();
 						System.runFinalization();
 						try {
-							Thread.sleep(100);
+							Thread.sleep(200);
 						} catch (final InterruptedException e) {
 							// TODO Auto-generated catch block
 							e.printStackTrace();
@@ -295,11 +296,12 @@ public class RandomVariableCuda implements RandomVariable {
 							logger.finest("Freeing device pointer " + cuDevicePtr + " from " + reference);
 						}
 						try {
-							deviceExecutor.submit(new Runnable() { @Override
+							deviceExecutor.submit(new Runnable() {
+								@Override
 								public void run() {
-								cuCtxSynchronize();
-								JCudaDriver.cuMemFree(cuDevicePtr);
-							}}).get();
+									cuCtxSynchronize();
+									JCudaDriver.cuMemFree(cuDevicePtr);
+								}}).get();
 						} catch (InterruptedException | ExecutionException e) {
 							logger.severe("Unable to free pointer " + cuDevicePtr + " from " + reference);
 							throw new RuntimeException(e.getCause());
@@ -307,27 +309,13 @@ public class RandomVariableCuda implements RandomVariable {
 						deviceAllocMemoryBytes -= size * Sizeof.FLOAT;
 					}
 				}
+
+				System.out.println("Size Cuda: " + vectorsInUseReferenceMap.size());
 			}
 		}
 
-		public static void purge() {
-			synchronized (vectorsInUseReferenceMap) {
-				vectorsToRecycleReferenceQueueMap.clear();
-				for(CUdeviceptr devicePtr : vectorsInUseReferenceMap.values()) {
-					try {
-						deviceExecutor.submit(new Runnable() { @Override
-							public void run() {
-							cuCtxSynchronize();
-							JCudaDriver.cuMemFree(devicePtr);
-						}}).get();
-					} catch (InterruptedException | ExecutionException e) {
-						// TODO Auto-generated catch block
-						e.printStackTrace();
-					}
-				}
-				vectorsInUseReferenceMap.clear();
-				JCuda.cudaDeviceReset();
-			}
+		public void purge() {
+			clean();
 		}
 
 		/**
@@ -335,8 +323,6 @@ public class RandomVariableCuda implements RandomVariable {
 		 * @return Returns the (estimated) percentage amount of free memory on the device.
 		 */
 		private static float getDeviceFreeMemPercentage() {
-//			System.out.println("OpenCL: " + RandomVariableOpenCL.deviceMemoryPool.vectorsInUseReferenceMap.size());
-
 			float freeRate;// = 1.0f - 1.1f * (float)deviceAllocMemoryBytes / (float)deviceMaxMemoryBytes;
 			try {
 				freeRate = deviceExecutor.submit(new Callable<Float>() { @Override
@@ -350,8 +336,7 @@ public class RandomVariableCuda implements RandomVariable {
 			} catch (InterruptedException | ExecutionException e) {
 				return freeRate = 0;
 			}
-
-//			System.out.println("Cuda: " + RandomVariableCuda.deviceMemoryPool.vectorsInUseReferenceMap.size() + "\t" + freeRate);
+			//			System.out.println("Cuda: " + deviceMemoryPool.vectorsInUseReferenceMap.size() + "\t" + freeRate);
 			return freeRate;
 		}
 
@@ -466,17 +451,22 @@ public class RandomVariableCuda implements RandomVariable {
 			// of pointers which point to the actual values.
 			final Pointer kernelParameters = Pointer.to(arguments);
 
-			deviceExecutor.submit(new Runnable() { @Override
-				public void run() {
-				//cuCtxSynchronize();
-				// Launching on the same stream (default stream)
-				cuLaunchKernel(function,
-						gridSizeX,  1, 1,      // Grid dimension
-						blockSizeX, 1, 1,      // Block dimension
-						sharedMemorySize * Sizeof.FLOAT, null,               // Shared memory size and stream
-						kernelParameters, null // Kernel- and extra parameters
-						);
-			}});
+			try {
+				deviceExecutor.submit(new Runnable() { @Override
+					public void run() {
+					//cuCtxSynchronize();
+					// Launching on the same stream (default stream)
+					cuLaunchKernel(function,
+							gridSizeX,  1, 1,      // Grid dimension
+							blockSizeX, 1, 1,      // Block dimension
+							sharedMemorySize * Sizeof.FLOAT, null,               // Shared memory size and stream
+							kernelParameters, null // Kernel- and extra parameters
+							);
+				}}).get();
+			} catch (InterruptedException | ExecutionException e) {
+				// TODO Auto-generated catch block
+				e.printStackTrace();
+			}
 		}
 	}
 
@@ -602,7 +592,14 @@ public class RandomVariableCuda implements RandomVariable {
 					Runtime.getRuntime().addShutdownHook(new Thread(new Runnable() {
 						@Override
 						public void run() {
-							DeviceMemoryPool.purge();
+							deviceMemoryPool.purge();
+							deviceExecutor.shutdown();
+							try {
+								deviceExecutor.awaitTermination(1, TimeUnit.SECONDS);
+							} catch (InterruptedException e) {
+								// TODO Auto-generated catch block
+								e.printStackTrace();
+							}
 						}}
 							));					
 				}});

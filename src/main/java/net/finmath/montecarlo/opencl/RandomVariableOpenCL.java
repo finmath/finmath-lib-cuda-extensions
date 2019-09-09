@@ -5,6 +5,7 @@
  */
 package net.finmath.montecarlo.opencl;
 
+import static jcuda.driver.JCudaDriver.cuCtxSynchronize;
 import static org.jocl.CL.CL_CONTEXT_PLATFORM;
 import static org.jocl.CL.CL_MEM_READ_WRITE;
 import static org.jocl.CL.CL_TRUE;
@@ -38,6 +39,7 @@ import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
+import java.util.concurrent.TimeUnit;
 import java.util.function.DoubleBinaryOperator;
 import java.util.function.DoubleUnaryOperator;
 import java.util.function.IntToDoubleFunction;
@@ -60,7 +62,6 @@ import org.jocl.cl_program;
 import net.finmath.functions.DoubleTernaryOperator;
 import net.finmath.montecarlo.RandomVariableFromDoubleArray;
 import net.finmath.montecarlo.RandomVariableFromFloatArray;
-import net.finmath.montecarlo.cuda.RandomVariableCuda;
 import net.finmath.stochastic.RandomVariable;
 
 /**
@@ -155,7 +156,7 @@ public class RandomVariableOpenCL implements RandomVariable {
 		/**
 		 * Percentage of device memory at which we will trigger System.gc() to aggressively reduce references.
 		 */
-		private static final float	vectorsRecyclerPercentageFreeToStartGC		= 0.25f;		// should be set by monitoring GPU mem
+		private static final float	vectorsRecyclerPercentageFreeToStartGC		= 0.15f;		// should be set by monitoring GPU mem
 
 		/**
 		 * Percentage of device memory at which we will try to wait a few milliseconds for recycled objects.
@@ -178,7 +179,7 @@ public class RandomVariableOpenCL implements RandomVariable {
 					while(true) {
 						System.gc();
 						try {
-							Thread.sleep(50);
+							Thread.sleep(200);
 						} catch (final InterruptedException e) {
 							// TODO Auto-generated catch block
 							e.printStackTrace();
@@ -336,7 +337,13 @@ public class RandomVariableOpenCL implements RandomVariable {
 						deviceAllocMemoryBytes -= size * Sizeof.cl_float;
 					}
 				}
+				
+				System.out.println("Size OpCL: " + vectorsInUseReferenceMap.size());
 			}
+		}
+
+		public void purge() {
+			clean();
 		}
 
 		/**
@@ -345,6 +352,7 @@ public class RandomVariableOpenCL implements RandomVariable {
 		 */
 		private static float getDeviceFreeMemPercentage() {
 			float freeRate = 1.0f - 1.1f * (float)deviceAllocMemoryBytes / (float) deviceMaxMemoryBytes;
+//			System.out.println("OpCL: " + deviceMemoryPool.vectorsInUseReferenceMap.size() + "\t" + freeRate);
 			return freeRate;
 		}
 
@@ -462,19 +470,24 @@ public class RandomVariableOpenCL implements RandomVariable {
 			// Set up the kernel parameters: A pointer to an array
 			// of pointers which point to the actual values.
 
-			deviceExecutor.submit(new Runnable() { @Override
-				public void run() {
-				for(int i=0; i<arguments.length; i++) {
-					clSetKernelArg(function, i, argumentSizes[i], arguments[i]);
-				}
-				// Set the work-item dimensions
-				long global_work_size[] = new long[]{ gridSizeX*blockSizeX};
-				long local_work_size[] = null;
-				//cuCtxSynchronize();
-				// Launching on the same stream (default stream)
-				clEnqueueNDRangeKernel(commandQueue, function, 1, null,
-						global_work_size, local_work_size, 0, null, null);
-			}});
+			try {
+				deviceExecutor.submit(new Runnable() { @Override
+					public void run() {
+					for(int i=0; i<arguments.length; i++) {
+						clSetKernelArg(function, i, argumentSizes[i], arguments[i]);
+					}
+					// Set the work-item dimensions
+					long global_work_size[] = new long[]{ gridSizeX*blockSizeX};
+					long local_work_size[] = null;
+					//cuCtxSynchronize();
+					// Launching on the same stream (default stream)
+					clEnqueueNDRangeKernel(commandQueue, function, 1, null,
+							global_work_size, local_work_size, 0, null, null);
+				}}).get();
+			} catch (InterruptedException | ExecutionException e) {
+				// TODO Auto-generated catch block
+				e.printStackTrace();
+			}
 
 		}
 
@@ -651,6 +664,20 @@ public class RandomVariableOpenCL implements RandomVariable {
 			long[] deviceMaxMemoryBytesResult = new long[1];
 			CL.clGetDeviceInfo(device, CL.CL_DEVICE_GLOBAL_MEM_SIZE, Sizeof.cl_long, Pointer.to(deviceMaxMemoryBytesResult), null);
 			DeviceMemoryPool.deviceMaxMemoryBytes = deviceMaxMemoryBytesResult[0];
+
+			Runtime.getRuntime().addShutdownHook(new Thread(new Runnable() {
+				@Override
+				public void run() {
+					deviceMemoryPool.purge();
+					deviceExecutor.shutdown();
+					try {
+						deviceExecutor.awaitTermination(1, TimeUnit.SECONDS);
+					} catch (InterruptedException e) {
+						// TODO Auto-generated catch block
+						e.printStackTrace();
+					}
+				}}
+					));					
 		}
 	}
 
@@ -697,7 +724,7 @@ public class RandomVariableOpenCL implements RandomVariable {
 	 * @return A new instance of RandomVariableCuda wrapping the given DevicePointerReference.
 	 */
 	public static RandomVariableOpenCL of(final double time, final DevicePointerReference realizations, final long size, final int typePriority) {
-		final RandomVariableOpenCL randomVariableOpenCL = of(time, realizations, size, typePriority);
+		final RandomVariableOpenCL randomVariableOpenCL = new RandomVariableOpenCL(time, realizations, size, typePriority);
 		return randomVariableOpenCL;
 	}
 
@@ -831,6 +858,10 @@ public class RandomVariableOpenCL implements RandomVariable {
 
 	public static void clean() {
 		deviceMemoryPool.clean();
+	}
+
+	public static void purge() {
+		deviceMemoryPool.purge();
 	}
 
 	private static RandomVariableOpenCL getRandomVariableCuda(final RandomVariable randomVariable) {

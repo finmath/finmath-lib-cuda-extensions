@@ -136,8 +136,8 @@ public class LIBORMarketModelCalibrationTest {
 	public void cleanAfter() {
 		System.gc();
 		System.runFinalization();
-		RandomVariableCuda.clean();
-		RandomVariableCuda.purge();
+		RandomVariableOpenCL.clean();
+		RandomVariableOpenCL.purge();
 	}
 
 	@Test
