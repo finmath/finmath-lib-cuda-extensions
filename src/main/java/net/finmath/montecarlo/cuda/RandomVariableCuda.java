@@ -351,7 +351,7 @@ public class RandomVariableCuda implements RandomVariable {
 				return freeRate = 0;
 			}
 
-			System.out.println("Cuda: " + RandomVariableCuda.deviceMemoryPool.vectorsInUseReferenceMap.size() + "\t" + freeRate);
+//			System.out.println("Cuda: " + RandomVariableCuda.deviceMemoryPool.vectorsInUseReferenceMap.size() + "\t" + freeRate);
 			return freeRate;
 		}
 
