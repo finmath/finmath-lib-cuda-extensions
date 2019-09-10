@@ -144,9 +144,9 @@ public class RandomVariableOpenCLTest {
 	@Test
 	public void testRandomVariableOpenCL() throws InterruptedException {
 
-		final Random random = new Random();
+		final Random random = new Random(31415);
 
-		for(int testRun=0; testRun<10; testRun++) {
+		for(int testRun=0; testRun<1; testRun++) {
 			final int numberOfPath = 100000;
 			final double[] realizations = new double[numberOfPath];
 			for(int i=0; i<numberOfPath; i++) {
@@ -167,114 +167,112 @@ public class RandomVariableOpenCLTest {
 				final double[] xr1 = hash.apply(rvf[0],f);
 
 				for(int i=0; i<xr0.length; i++) {
-					Assert.assertEquals(xr0[i], xr1[i], xr0[i]*1E-7);
+					Assert.assertEquals(xr0[i], xr1[i], 0.0);
 				}
-				System.out.println("ok");
+				System.out.print(" [ok]");
 			};
 
-			System.out.print("Testing squared.");
+			System.out.print("\nTesting squared...");
 			test.accept((x,y) -> x.squared());
-
-			System.out.print("Testing squared.");
 			test.accept((x,y) -> y.squared());
 
-			System.out.print("Testing add scalar.");
+			System.out.print("\nTesting add scalar...");
 			test.accept((x,y) -> x.add(1.0/3.0));
 			test.accept((x,y) -> y.add(1.0/3.0));
 
-			System.out.print("Testing add.");
+			System.out.print("\nTesting add...");
 			test.accept((x,y) -> x.add(x));
 			test.accept((x,y) -> x.add(y));
 			test.accept((x,y) -> y.add(x));
 			test.accept((x,y) -> y.add(y));
 
-			System.out.print("Testing sub.");
+			System.out.print("\nTesting sub...");
 			test.accept((x,y) -> x.sub(x));
 			test.accept((x,y) -> x.sub(y));
 			test.accept((x,y) -> y.sub(x));
 			test.accept((x,y) -> y.sub(y));
 
-			System.out.print("Testing bus.");
+			System.out.print("\nTesting bus...");
 			test.accept((x,y) -> x.bus(x));
 			test.accept((x,y) -> x.bus(y));
 			test.accept((x,y) -> y.bus(x));
 			test.accept((x,y) -> y.bus(y));
 
-			System.out.print("Testing cap.");
+			System.out.print("\nTesting cap...");
 			test.accept((x,y) -> x.cap(1.0/3.0));
 			test.accept((x,y) -> y.cap(1.0/3.0));
 			test.accept((x,y) -> x.cap(x.sub(1/3)));
 			test.accept((x,y) -> y.cap(x.sub(1/3)));
 			test.accept((x,y) -> y.cap(y.sub(1/3)));
 
-			System.out.print("Testing floor.");
+			System.out.print("\nTesting floor...");
 			test.accept((x,y) -> x.floor(1.0/3.0));
 			test.accept((x,y) -> y.floor(1.0/3.0));
 			test.accept((x,y) -> x.floor(x.add(1/3)));
 			test.accept((x,y) -> y.floor(x.add(1/3)));
 			test.accept((x,y) -> y.floor(y.add(1/3)));
 
-			System.out.print("Testing mult.");
+			System.out.print("\nTesting mult...");
 			test.accept((x,y) -> x.mult(x));
 			test.accept((x,y) -> x.mult(y));
 			test.accept((x,y) -> y.mult(x));
 			test.accept((x,y) -> y.mult(y));
 
-			System.out.print("Testing mult scalar.");
+			System.out.print("\nTesting mult scalar...");
 			test.accept((x,y) -> x.mult(3.1415));
 			test.accept((x,y) -> x.mult(1.0/3.0));
 			test.accept((x,y) -> y.mult(3.1415));
 			test.accept((x,y) -> y.mult(1.0/3.0));
 
-			System.out.print("Testing div.");
+			System.out.print("\nTesting div...");
 			test.accept((x,y) -> x.div(x));
 			test.accept((x,y) -> x.div(y));
 			test.accept((x,y) -> y.div(x));
 			test.accept((x,y) -> y.div(y));
 
-			System.out.print("Testing div scalar.");
+			System.out.print("\nTesting div scalar...");
 			test.accept((x,y) -> x.div(3.1415));
 			test.accept((x,y) -> x.div(1.0/3.0));
 			test.accept((x,y) -> y.div(3.1415));
 			test.accept((x,y) -> y.div(1.0/3.0));
 
-			System.out.print("Testing vid.");
+			System.out.print("\nTesting vid...");
 			test.accept((x,y) -> x.vid(x));
 			test.accept((x,y) -> x.vid(y));
 			test.accept((x,y) -> y.vid(x));
 			test.accept((x,y) -> y.vid(y));
 
-			System.out.print("Testing exp.");
+			System.out.print("\nTesting exp...");
 			test.accept((x,y) -> x.exp());
 			test.accept((x,y) -> y.exp());
 
-			System.out.print("Testing log.");
+			System.out.print("\nTesting log...");
 			test.accept((x,y) -> x.log());
 			test.accept((x,y) -> y.log());
 
-			System.out.print("Testing invert.");
+			System.out.print("\nTesting invert...");
 			test.accept((x,y) -> x.invert());
 			test.accept((x,y) -> y.invert());
 
-			System.out.print("Testing abs.");
+			System.out.print("\nTesting abs...");
 			test.accept((x,y) -> x.abs());
 			test.accept((x,y) -> y.abs());
 
-			System.out.print("Testing accrue.");
+			System.out.print("\nTesting accrue...");
 			test.accept((x,y) -> x.accrue(x, 2.0));
 			test.accept((x,y) -> x.accrue(x, 1.0/3.0));
 			test.accept((x,y) -> x.accrue(y, 1.0/3.0));
 			test.accept((x,y) -> y.accrue(x, 1.0/3.0));
 			test.accept((x,y) -> y.accrue(y, 1.0/3.0));
 
-			System.out.print("Testing discount.");
+			System.out.print("\nTesting discount...");
 			test.accept((x,y) -> x.discount(x, 2.0));
 			test.accept((x,y) -> x.discount(x, 1.0/3.0));
 			test.accept((x,y) -> x.discount(y, 1.0/3.0));
 			test.accept((x,y) -> y.discount(x, 1.0/3.0));
 			test.accept((x,y) -> y.discount(y, 1.0/3.0));
 
-			System.out.print("Testing add product");
+			System.out.print("\nTesting add product...");
 			test.accept((x,y) -> x.addProduct(x, x));
 			test.accept((x,y) -> x.addProduct(x, y));
 			test.accept((x,y) -> x.addProduct(y, x));
@@ -284,13 +282,13 @@ public class RandomVariableOpenCLTest {
 			test.accept((x,y) -> y.addProduct(y, x));
 			test.accept((x,y) -> y.addProduct(y, y));
 
-			System.out.print("Testing add product scalar");
+			System.out.print("\nTesting add product scalar...");
 			test.accept((x,y) -> x.addProduct(x, 1.0/3.0));
 			test.accept((x,y) -> x.addProduct(y, 1.0/3.0));
 			test.accept((x,y) -> y.addProduct(x, 1.0/3.0));
 			test.accept((x,y) -> y.addProduct(y, 1.0/3.0));
 
-			System.out.print("Testing add sum product");
+			System.out.print("\nTesting add sum product...");
 			test.accept((x,y) -> x.addSumProduct(new RandomVariable[] { x , x }, new RandomVariable[] { x , x }));
 			test.accept((x,y) -> x.addSumProduct(new RandomVariable[] { x , x }, new RandomVariable[] { x , y }));
 			test.accept((x,y) -> x.addSumProduct(new RandomVariable[] { x , y }, new RandomVariable[] { y , y }));
@@ -300,11 +298,13 @@ public class RandomVariableOpenCLTest {
 			test.accept((x,y) -> y.addSumProduct(new RandomVariable[] { x , y }, new RandomVariable[] { y , y }));
 			test.accept((x,y) -> y.addSumProduct(new RandomVariable[] { y , y }, new RandomVariable[] { y , y }));
 
-			System.out.print("Testing getAverage");
+			System.out.print("\nTesting getAverage...");
 			test.accept((x,y) -> new RandomVariableFromFloatArray(x.getAverage()));
 			test.accept((x,y) -> new RandomVariableFromFloatArray(y.getAverage()));
 			test.accept((x,y) -> new RandomVariableFromFloatArray(x.getAverage(x)));
 			test.accept((x,y) -> new RandomVariableFromFloatArray(y.getAverage(y)));
+
+			System.out.print("\n");
 
 		}
 	}
