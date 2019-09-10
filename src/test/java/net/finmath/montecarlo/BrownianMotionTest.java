@@ -10,8 +10,8 @@ import java.text.DecimalFormat;
 import java.util.Arrays;
 import java.util.Collection;
 
+import org.junit.After;
 import org.junit.Assert;
-import org.junit.Before;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.junit.runners.Parameterized;
@@ -53,19 +53,10 @@ public class BrownianMotionTest {
 		this.testCase = testCase;
 	}
 
-	@Before
+	@After
 	public void cleanUp() {
-		System.gc();
-		System.runFinalization();
-		try {
-			RandomVariableCuda.clean();
-		}
-		catch(Exception e) {};
-
-		try {
-			RandomVariableOpenCL.clean();
-		}
-		catch(Exception e) {};
+		RandomVariableCuda.purge();
+		RandomVariableOpenCL.purge();
 	}
 
 	@Test

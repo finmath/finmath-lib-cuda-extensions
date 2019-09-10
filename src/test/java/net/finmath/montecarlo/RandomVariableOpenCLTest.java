@@ -10,8 +10,8 @@ import java.util.Random;
 import java.util.function.BiFunction;
 import java.util.function.Consumer;
 
+import org.junit.After;
 import org.junit.Assert;
-import org.junit.Before;
 import org.junit.Test;
 
 import net.finmath.montecarlo.cuda.RandomVariableCuda;
@@ -27,19 +27,10 @@ import net.finmath.stochastic.RandomVariable;
  */
 public class RandomVariableOpenCLTest {
 
-	@Before
+	@After
 	public void cleanUp() {
-		System.gc();
-		System.runFinalization();
-		try {
-			RandomVariableCuda.clean();
-		}
-		catch(Exception e) {};
-
-		try {
-			RandomVariableOpenCL.clean();
-		}
-		catch(Exception e) {};
+		RandomVariableCuda.purge();
+		RandomVariableOpenCL.purge();
 	}
 
 	@Test
@@ -77,7 +68,7 @@ public class RandomVariableOpenCLTest {
 		randomVariable = randomVariable.div(2.0);
 
 		System.out.println(Arrays.toString(randomVariable.getRealizations()));
-		
+
 		// The random variable has average value 2.0
 		final double average = randomVariable.getAverage();
 		Assert.assertTrue(average == 2.0);
@@ -172,9 +163,9 @@ public class RandomVariableOpenCLTest {
 			};
 
 			final Consumer<BiFunction<RandomVariable,RandomVariable,RandomVariable>> test = f -> {
-				double[] xr0 = hash.apply(rvf[0],f);
-				double[] xr1 = hash.apply(rvf[0],f);
-				
+				final double[] xr0 = hash.apply(rvf[0],f);
+				final double[] xr1 = hash.apply(rvf[0],f);
+
 				for(int i=0; i<xr0.length; i++) {
 					Assert.assertEquals(xr0[i], xr1[i], xr0[i]*1E-7);
 				}

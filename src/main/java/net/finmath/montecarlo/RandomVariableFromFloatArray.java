@@ -1357,7 +1357,7 @@ public class RandomVariableFromFloatArray implements RandomVariable {
 		final double newTime = Math.max(Math.max(time, factor1.getFiltrationTime()), factor2.getFiltrationTime());
 
 		if(isDeterministic() && factor1.isDeterministic() && factor2.isDeterministic()) {
-			double newValueIfNonStochastic = valueIfNonStochastic + (factor1.doubleValue() * factor2.doubleValue());
+			final double newValueIfNonStochastic = valueIfNonStochastic + (factor1.doubleValue() * factor2.doubleValue());
 			return new RandomVariableFromDoubleArray(newTime, newValueIfNonStochastic);
 		}
 		else if(factor1.isDeterministic() && factor2.isDeterministic()) {

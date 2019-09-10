@@ -10,8 +10,8 @@ import java.util.Random;
 import java.util.function.BiFunction;
 import java.util.function.Consumer;
 
+import org.junit.After;
 import org.junit.Assert;
-import org.junit.Before;
 import org.junit.Test;
 
 import net.finmath.montecarlo.cuda.RandomVariableCuda;
@@ -28,19 +28,10 @@ import net.finmath.stochastic.Scalar;
  */
 public class RandomVariableCudaTest {
 
-	@Before
+	@After
 	public void cleanUp() {
-		System.gc();
-		System.runFinalization();
-		try {
-			RandomVariableCuda.clean();
-		}
-		catch(Exception e) {};
-
-		try {
-			RandomVariableOpenCL.clean();
-		}
-		catch(Exception e) {};
+		RandomVariableCuda.purge();
+		RandomVariableOpenCL.purge();
 	}
 
 	@Test

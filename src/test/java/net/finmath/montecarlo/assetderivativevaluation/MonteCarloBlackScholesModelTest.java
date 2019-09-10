@@ -10,6 +10,7 @@ import java.text.DecimalFormat;
 import java.util.Arrays;
 import java.util.Collection;
 
+import org.junit.After;
 import org.junit.Assert;
 import org.junit.Before;
 import org.junit.Test;
@@ -54,7 +55,7 @@ public class MonteCarloBlackScholesModelTest {
 			{ "BrownianMotionLazyInitOpenCL" },				// Test case 4: Java implementation using MersenneTwister with OpenCL RandomVariable
 		});
 	}
-	
+
 	static final DecimalFormat formatterReal2	= new DecimalFormat(" 0.00");
 	static final DecimalFormat formatterReal4	= new DecimalFormat(" 0.0000");
 	static final DecimalFormat formatterSci4	= new DecimalFormat(" 0.0000E00;-0.0000E00");
@@ -84,19 +85,10 @@ public class MonteCarloBlackScholesModelTest {
 		this.testCase = testCase;
 	}
 
-	@Before
+	@After
 	public void cleanUp() {
-		System.gc();
-		System.runFinalization();
-		try {
-			RandomVariableCuda.clean();
-		}
-		catch(Exception e) {};
-
-		try {
-			RandomVariableOpenCL.clean();
-		}
-		catch(Exception e) {};
+		RandomVariableCuda.purge();
+		RandomVariableOpenCL.purge();
 	}
 
 	@Before

@@ -17,7 +17,6 @@ import java.util.Map;
 
 import org.junit.After;
 import org.junit.Assert;
-import org.junit.Before;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.junit.runners.Parameterized;
@@ -119,27 +118,10 @@ public class LIBORMarketModelCalibrationTest {
 		return new CalibrationProduct(swaptionMonteCarlo, targetVolatility, 1.0);
 	}
 
-	@Before
-	public void cleanUp() {
-		System.gc();
-		System.runFinalization();
-		try {
-			RandomVariableCuda.clean();
-		}
-		catch(Exception e) {};
-
-		try {
-			RandomVariableOpenCL.clean();
-		}
-		catch(Exception e) {};
-	}
-	
 	@After
-	public void cleanAfter() {
-		System.gc();
-		System.runFinalization();
-		RandomVariableOpenCL.purge();
+	public void cleanUp() {
 		RandomVariableCuda.purge();
+		RandomVariableOpenCL.purge();
 	}
 
 	@Test

@@ -8,8 +8,8 @@ package net.finmath.montecarlo;
 
 import java.text.DecimalFormat;
 
+import org.junit.After;
 import org.junit.Assert;
-import org.junit.Before;
 import org.junit.Test;
 
 import net.finmath.montecarlo.cuda.RandomVariableCuda;
@@ -30,19 +30,10 @@ public class BrownianMotionMemoryTest {
 	static final DecimalFormat formatterSci4	= new DecimalFormat(" 0.0000E00;-0.0000E00");
 	static final DecimalFormat formatterSci1	= new DecimalFormat(" 0E00;-0.E00");
 
-	@Before
+	@After
 	public void cleanUp() {
-		System.gc();
-		System.runFinalization();
-		try {
-			RandomVariableCuda.clean();
-		}
-		catch(Exception e) {};
-
-		try {
-			RandomVariableOpenCL.clean();
-		}
-		catch(Exception e) {};
+		RandomVariableCuda.purge();
+		RandomVariableOpenCL.purge();
 	}
 
 	@Test

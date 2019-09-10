@@ -5,7 +5,6 @@
  */
 package net.finmath.montecarlo.opencl;
 
-import static jcuda.driver.JCudaDriver.cuCtxSynchronize;
 import static org.jocl.CL.CL_CONTEXT_PLATFORM;
 import static org.jocl.CL.CL_MEM_READ_WRITE;
 import static org.jocl.CL.CL_TRUE;
@@ -82,7 +81,7 @@ import net.finmath.stochastic.RandomVariable;
  * There is a CPU implementation in {@link RandomVariableFromFloatArray} which give exactly the same results for all methods (checked by unit test).
  *
  * <b>Configuration</b>
- * 
+ *
  * The class can be configured with system property to use a chosen OpenCL device. The poperties are:
  * <dl>
  * 	<dt>
@@ -101,8 +100,8 @@ import net.finmath.stochastic.RandomVariable;
  * 		"GPU" with index "-1".
  * 	</dd>
  * </dl>
- * 
- * 
+ *
+ *
  * @author Christian Fries
  * @version 2.1
  */
@@ -171,24 +170,6 @@ public class RandomVariableOpenCL implements RandomVariable {
 		private static long	deviceAllocMemoryBytes = 0;
 		private static long	deviceMaxMemoryBytes;
 
-		// Thread to collect weak references - will be worked on for a future version.
-		static {
-			new Thread(new Runnable() {
-				@Override
-				public void run() {
-					while(true) {
-						System.gc();
-						try {
-							Thread.sleep(1000);
-						} catch (final InterruptedException e) {
-							// TODO Auto-generated catch block
-							e.printStackTrace();
-						}
-					}
-				}
-			}).start();
-		}
-
 		/**
 		 * Get a Java object ({@link DevicePointerReference}) representing a vector allocated on the GPU memory (device memory).
 		 *
@@ -218,7 +199,7 @@ public class RandomVariableOpenCL implements RandomVariable {
 			cl_mem cuDevicePtr = null;
 
 			// Check for object to recycle
-			ReferenceQueue<DevicePointerReference> vectorsToRecycleReferenceQueue = vectorsToRecycleReferenceQueueMap.computeIfAbsent(new Integer((int)size), key ->  {
+			final ReferenceQueue<DevicePointerReference> vectorsToRecycleReferenceQueue = vectorsToRecycleReferenceQueueMap.computeIfAbsent(new Integer((int)size), key ->  {
 				logger.info("Creating reference queue for vector size " + size);
 				return new ReferenceQueue<DevicePointerReference>();
 			});
@@ -282,8 +263,8 @@ public class RandomVariableOpenCL implements RandomVariable {
 					cuDevicePtr =
 							deviceExecutor.submit(new Callable<cl_mem>() { @Override
 								public cl_mem call() {
-								cl_mem cuDevicePtr = CL.clCreateBuffer(context, 
-										CL_MEM_READ_WRITE, 
+								final cl_mem cuDevicePtr = CL.clCreateBuffer(context,
+										CL_MEM_READ_WRITE,
 										size * Sizeof.cl_float, null, errorCode);
 
 								return cuDevicePtr;
@@ -316,8 +297,8 @@ public class RandomVariableOpenCL implements RandomVariable {
 			synchronized (lock) {
 				// Clean up all remaining pointers
 				for(final Entry<Integer, ReferenceQueue<DevicePointerReference>> entry : vectorsToRecycleReferenceQueueMap.entrySet()) {
-					int size = entry.getKey();
-					ReferenceQueue<DevicePointerReference> vectorsToRecycleReferenceQueue = entry.getValue();
+					final int size = entry.getKey();
+					final ReferenceQueue<DevicePointerReference> vectorsToRecycleReferenceQueue = entry.getValue();
 
 					Reference<? extends DevicePointerReference> reference;
 					while((reference = vectorsToRecycleReferenceQueue.poll()) != null) {
@@ -338,21 +319,22 @@ public class RandomVariableOpenCL implements RandomVariable {
 						deviceAllocMemoryBytes -= size * Sizeof.cl_float;
 					}
 				}
-
-				System.out.println("Size OpCL: " + vectorsInUseReferenceMap.size());
 			}
 		}
 
 		public void purge() {
+			System.gc();
+			System.runFinalization();
 			clean();
+			logger.info("OpenCL vectors in use: " + vectorsInUseReferenceMap.size() + ". Available device memory: " + getDeviceFreeMemPercentage()*100 + "%");
 		}
 
 		/**
-		 * 
+		 *
 		 * @return Returns the (estimated) percentage amount of free memory on the device.
 		 */
 		private static float getDeviceFreeMemPercentage() {
-			float freeRate = 1.0f - 1.1f * (float)deviceAllocMemoryBytes / (float) deviceMaxMemoryBytes;
+			final float freeRate = 1.0f - 1.1f * (float)deviceAllocMemoryBytes / (float) deviceMaxMemoryBytes;
 			//			System.out.println("OpCL: " + deviceMemoryPool.vectorsInUseReferenceMap.size() + "\t" + freeRate);
 			return freeRate;
 		}
@@ -376,12 +358,12 @@ public class RandomVariableOpenCL implements RandomVariable {
 			return devicePointerReference;
 		}
 
-		public float[] getValuesAsFloat(DevicePointerReference devicePtr, int size) {
+		public float[] getValuesAsFloat(final DevicePointerReference devicePtr, final int size) {
 			final float[] result = new float[size];
 			try {
 				deviceExecutor.submit(new Runnable() { @Override
 					public void run() {
-					clEnqueueReadBuffer(commandQueue, devicePtr.get(), true, 0, 
+					clEnqueueReadBuffer(commandQueue, devicePtr.get(), true, 0,
 							size * Sizeof.cl_float, Pointer.to(result), 0, null, null);
 				}}).get();
 			} catch (InterruptedException | ExecutionException e) {
@@ -477,8 +459,8 @@ public class RandomVariableOpenCL implements RandomVariable {
 					clSetKernelArg(function, i, argumentSizes[i], arguments[i]);
 				}
 				// Set the work-item dimensions
-				long global_work_size[] = new long[]{ gridSizeX*blockSizeX};
-				long local_work_size[] = null;
+				final long global_work_size[] = new long[]{ gridSizeX*blockSizeX};
+				final long local_work_size[] = null;
 				//cuCtxSynchronize();
 				// Launching on the same stream (default stream)
 				clEnqueueNDRangeKernel(commandQueue, function, 1, null,
@@ -546,8 +528,8 @@ public class RandomVariableOpenCL implements RandomVariable {
 	static {
 		synchronized (deviceMemoryPool) {
 
-			String	openCLDeviceTypeSTring = System.getProperty("net.finmath.montecarlo.opencl.RandomVariableOpenCL.deviceType", "GPU");
-			int		openCLDeviceIndex = Integer.parseInt(System.getProperty("net.finmath.montecarlo.opencl.RandomVariableOpenCL.deviceType", "-1"));
+			final String	openCLDeviceTypeSTring = System.getProperty("net.finmath.montecarlo.opencl.RandomVariableOpenCL.deviceType", "GPU");
+			final int		openCLDeviceIndex = Integer.parseInt(System.getProperty("net.finmath.montecarlo.opencl.RandomVariableOpenCL.deviceType", "-1"));
 
 			final long deviceType;
 			switch(openCLDeviceTypeSTring) {
@@ -573,7 +555,7 @@ public class RandomVariableOpenCL implements RandomVariable {
 			try {
 				final URL cuFileURL = RandomVariableOpenCL.class.getClassLoader().getResource("net/finmath/montecarlo/RandomVariableCudaKernel.cl");
 				clFileName = Paths.get(cuFileURL.toURI()).toFile().getAbsolutePath();
-			} catch (URISyntaxException e) {
+			} catch (final URISyntaxException e) {
 				// TODO Auto-generated catch block
 				e.printStackTrace();
 			}
@@ -582,26 +564,26 @@ public class RandomVariableOpenCL implements RandomVariable {
 			CL.setExceptionsEnabled(true);
 
 			// Obtain the number of platforms
-			int numPlatformsArray[] = new int[1];
+			final int numPlatformsArray[] = new int[1];
 			clGetPlatformIDs(0, null, numPlatformsArray);
-			int numPlatforms = numPlatformsArray[0];
+			final int numPlatforms = numPlatformsArray[0];
 
 			// Obtain a platform ID
-			cl_platform_id platforms[] = new cl_platform_id[numPlatforms];
+			final cl_platform_id platforms[] = new cl_platform_id[numPlatforms];
 			clGetPlatformIDs(platforms.length, platforms, null);
-			cl_platform_id platform = platforms[platformIndex];
+			final cl_platform_id platform = platforms[platformIndex];
 
 			// Initialize the context properties
-			cl_context_properties contextProperties = new cl_context_properties();
+			final cl_context_properties contextProperties = new cl_context_properties();
 			contextProperties.addProperty(CL_CONTEXT_PLATFORM, platform);
 
 			// Obtain the number of devices for the platform
-			int numDevicesArray[] = new int[1];
+			final int numDevicesArray[] = new int[1];
 			clGetDeviceIDs(platform, deviceType, 0, null, numDevicesArray);
-			int numDevices = numDevicesArray[0];
+			final int numDevices = numDevicesArray[0];
 
-			// Obtain a device ID 
-			cl_device_id devices[] = new cl_device_id[numDevices];
+			// Obtain a device ID
+			final cl_device_id devices[] = new cl_device_id[numDevices];
 			clGetDeviceIDs(platform, deviceType, numDevices, devices, null);
 
 			/*
@@ -621,10 +603,10 @@ public class RandomVariableOpenCL implements RandomVariable {
 			//	        commandQueue = CL.clCreateCommandQueueWithProperties(context, device, properties, null);
 
 			// Program Setup
-			String source = readFile(clFileName);
+			final String source = readFile(clFileName);
 
 			// Create the program
-			cl_program cpProgram = clCreateProgramWithSource(context, 1, new String[]{ source }, null, null);
+			final cl_program cpProgram = clCreateProgramWithSource(context, 1, new String[]{ source }, null, null);
 
 			// Build the program
 			clBuildProgram(cpProgram, 0, null, "-cl-mad-enable", null, null);
@@ -657,7 +639,7 @@ public class RandomVariableOpenCL implements RandomVariable {
 			//				reducePartial = clCreateKernel(cpProgram, "reducePartial", null);
 			//				reduceFloatVectorToDoubleScalar = clCreateKernel(cpProgram, "reduceFloatVectorToDoubleScalar", null);
 
-			long[] deviceMaxMemoryBytesResult = new long[1];
+			final long[] deviceMaxMemoryBytesResult = new long[1];
 			CL.clGetDeviceInfo(device, CL.CL_DEVICE_GLOBAL_MEM_SIZE, Sizeof.cl_long, Pointer.to(deviceMaxMemoryBytesResult), null);
 			DeviceMemoryPool.deviceMaxMemoryBytes = deviceMaxMemoryBytesResult[0];
 
@@ -668,28 +650,28 @@ public class RandomVariableOpenCL implements RandomVariable {
 					deviceExecutor.shutdown();
 					try {
 						deviceExecutor.awaitTermination(1, TimeUnit.SECONDS);
-					} catch (InterruptedException e) {
+					} catch (final InterruptedException e) {
 						// TODO Auto-generated catch block
 						e.printStackTrace();
 					}
 				}}
-					));					
+					));
 		}
 	}
 
 	/**
-	 * Helper function which reads the file with the given name and returns 
+	 * Helper function which reads the file with the given name and returns
 	 * the contents of this file as a String. Will exit the application
 	 * if the file can not be read.
-	 * 
+	 *
 	 * @param fileName The name of the file to read.
 	 * @return The contents of the file
 	 */
-	private static String readFile(String fileName)
+	private static String readFile(final String fileName)
 	{
 		try(BufferedReader br = new BufferedReader(new InputStreamReader(new FileInputStream(fileName))))
 		{
-			StringBuffer sb = new StringBuffer();
+			final StringBuffer sb = new StringBuffer();
 			String line = null;
 			while (true)
 			{
@@ -702,7 +684,7 @@ public class RandomVariableOpenCL implements RandomVariable {
 			}
 			return sb.toString();
 		}
-		catch (IOException e)
+		catch (final IOException e)
 		{
 			e.printStackTrace();
 			System.exit(1);
