@@ -3,11 +3,11 @@ finmath lib cuda extensions
 
 ****************************************
 
-**Enabling finmath lib with Cuda via jCuda. - Running finmath lib models on a GPU.**
+**Enabling finmath lib with Cuda and OpenCL. - Running finmath lib models on a GPU.**
 
 ****************************************
 
-The *finmath lib cuda extensions* provide a Cuda implementation of the [finmath lib](http://finmath.net/finmath-lib/) interfaces `RandomVariable` and `BrownianMotion` compatible with finmath lib 4.0.12 or later
+The *finmath lib cuda extensions* provide a **Cuda** and **OpenCL** implementation of the [finmath lib](http://finmath.net/finmath-lib/) interfaces `RandomVariable` and `BrownianMotion` compatible with finmath lib 4.0.12 or later
 (tested on GRID GPU Kepler GK105, GeForce GTX 1080, GeForce GT 750M).
 
 #[[
@@ -19,6 +19,8 @@ A `RandomVariableCudaFactory` is provided, which can be injected in any finmath 
 The implementation supports type priorities (see http://ssrn.com/abstract=3246127 ) and the default priority of `RandomVariableCuda` is 20. For example: operators involving CPU and GPU vectors will result in GPU vectors.
 
 The `RandomVariableCudaFactory` can be combined with *algorithmic differentiation* AAD wrappers, for example `RandomVariableDifferentiableAAD`, to allow algorithmic differentiation together with calculations performed on the GPU. For the type priority: objects allowing for algorithmic differentiation (AAD) have higher priority, AAD on GPU has higher priority than AAD on CPU.
+
+For OpenCL you may use `RandomVariableOpenCLFactory` and `RandomVariableOpenCL` respectively
 
 #[[
 ### BrownianMotion
