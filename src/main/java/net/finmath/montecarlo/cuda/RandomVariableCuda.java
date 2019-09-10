@@ -144,7 +144,7 @@ public class RandomVariableCuda implements RandomVariable {
 						System.gc();
 						System.runFinalization();
 						try {
-							Thread.sleep(200);
+							Thread.sleep(1000);
 						} catch (final InterruptedException e) {
 							// TODO Auto-generated catch block
 							e.printStackTrace();
