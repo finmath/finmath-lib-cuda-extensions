@@ -94,7 +94,7 @@ public class RandomVariableCuda implements RandomVariable {
 	 * The memory pool is provided for vectors of different length.
 	 *
 	 * Implementation details:
-	 * The map vectorsToRecycleReferenceQueueMap maps each vector length to a ReferenceQueue<RandomVariableCuda> holding
+	 * The map vectorsToRecycleReferenceQueueMap maps each vector length to a ReferenceQueue&lt;DevicePointerReference&gt; holding
 	 * reference of recycleable vectors. The map vectorsInUseReferenceMap maps this weak reference to a Cuda vector.
 	 *
 	 * @author Christian Fries
@@ -615,6 +615,7 @@ public class RandomVariableCuda implements RandomVariable {
 	 *
 	 * @param time the filtration time, set to 0.0 if not used.
 	 * @param value the value, a constant.
+	 * @return A new instance of RandomVariableCuda with a constant value.
 	 */
 	public static RandomVariableCuda of(final double time, final double value) {
 		final RandomVariableCuda randomVariableCuda = new RandomVariableCuda(time, value, typePriorityDefault);

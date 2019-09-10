@@ -131,7 +131,7 @@ public class RandomVariableOpenCL implements RandomVariable {
 	 * The memory pool is provided for vectors of different length.
 	 *
 	 * Implementation details:
-	 * The map vectorsToRecycleReferenceQueueMap maps each vector length to a ReferenceQueue<RandomVariableCuda> holding
+	 * The map vectorsToRecycleReferenceQueueMap maps each vector length to a ReferenceQueue&lt;DevicePointerReference&gt; holding
 	 * reference of recycleable vectors. The map vectorsInUseReferenceMap maps this weak reference to a Cuda vector.
 	 *
 	 * @author Christian Fries
@@ -712,7 +712,7 @@ public class RandomVariableOpenCL implements RandomVariable {
 	 * @param time the filtration time, set to 0.0 if not used.
 	 * @param realizations A <code>DevicePointerReference</code> referencing a {@link cl_mem} with the given size. Use {@link #getDevicePointer(long)} to create one.
 	 * @param size The size of the vector associated with <code>DevicePointerReference</code>.
-	 * @return A new instance of RandomVariableCuda wrapping the given DevicePointerReference.
+	 * @return A new instance of RandomVariableOpenCL wrapping the given DevicePointerReference.
 	 */
 	public static RandomVariableOpenCL of(final double time, final DevicePointerReference realizations, final long size) {
 		final RandomVariableOpenCL randomVariableOpenCL = new RandomVariableOpenCL(time, realizations, size, typePriorityDefault);
@@ -724,6 +724,7 @@ public class RandomVariableOpenCL implements RandomVariable {
 	 *
 	 * @param time the filtration time, set to 0.0 if not used.
 	 * @param value the value, a constant.
+	 * @return A new instance of RandomVariableOpenCL with a constant value.
 	 */
 	public static RandomVariableOpenCL of(final double time, final double value) {
 		final RandomVariableOpenCL randomVariableOpenCL = new RandomVariableOpenCL(time, value, typePriorityDefault);
