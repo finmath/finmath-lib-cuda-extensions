@@ -225,17 +225,18 @@ public class RandomVariableCuda implements RandomVariable {
 						} catch (IllegalArgumentException | InterruptedException e) {}
 					}
 
-					if(reference != null) {
-						if(logger.isLoggable(Level.FINEST)) {
-							logger.finest("Recycling (2) device pointer " + cuDevicePtr + " from " + reference);
-						}
-						cuDevicePtr = vectorsInUseReferenceMap.remove(reference);
-					}
-					else {
+					if(reference == null) {
 						// Still no pointer found for requested size, consider cleaning all (also other sizes)
 						logger.info("Last resort: Cleaning all unused vectors on device. Device free memory " + deviceFreeMemPercentage*100 + "%");
 						clean();
 					}
+				}
+
+				if(reference != null) {
+					if(logger.isLoggable(Level.FINEST)) {
+						logger.finest("Recycling (2) device pointer " + cuDevicePtr + " from " + reference);
+					}
+					cuDevicePtr = vectorsInUseReferenceMap.remove(reference);
 				}
 			}
 
@@ -451,22 +452,17 @@ public class RandomVariableCuda implements RandomVariable {
 			// of pointers which point to the actual values.
 			final Pointer kernelParameters = Pointer.to(arguments);
 
-			try {
-				deviceExecutor.submit(new Runnable() { @Override
-					public void run() {
-					//cuCtxSynchronize();
-					// Launching on the same stream (default stream)
-					cuLaunchKernel(function,
-							gridSizeX,  1, 1,      // Grid dimension
-							blockSizeX, 1, 1,      // Block dimension
-							sharedMemorySize * Sizeof.FLOAT, null,               // Shared memory size and stream
-							kernelParameters, null // Kernel- and extra parameters
-							);
-				}}).get();
-			} catch (InterruptedException | ExecutionException e) {
-				// TODO Auto-generated catch block
-				e.printStackTrace();
-			}
+			deviceExecutor.submit(new Runnable() { @Override
+				public void run() {
+				//cuCtxSynchronize();
+				// Launching on the same stream (default stream)
+				cuLaunchKernel(function,
+						gridSizeX,  1, 1,      // Grid dimension
+						blockSizeX, 1, 1,      // Block dimension
+						sharedMemorySize * Sizeof.FLOAT, null,               // Shared memory size and stream
+						kernelParameters, null // Kernel- and extra parameters
+						);
+			}});
 		}
 	}
 

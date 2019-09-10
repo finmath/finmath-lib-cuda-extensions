@@ -260,17 +260,18 @@ public class RandomVariableOpenCL implements RandomVariable {
 						} catch (IllegalArgumentException | InterruptedException e) {}
 					}
 
-					if(reference != null) {
-						if(logger.isLoggable(Level.FINEST)) {
-							logger.finest("Recycling (2) device pointer " + cuDevicePtr + " from " + reference);
-						}
-						cuDevicePtr = vectorsInUseReferenceMap.remove(reference);
-					}
-					else {
+					if(reference == null) {
 						// Still no pointer found for requested size, consider cleaning all (also other sizes)
 						logger.info("Last resort: Cleaning all unused vectors on device. Device free memory " + deviceFreeMemPercentage*100 + "%");
 						clean();
 					}
+				}
+
+				if(reference != null) {
+					if(logger.isLoggable(Level.FINEST)) {
+						logger.finest("Recycling (2) device pointer " + cuDevicePtr + " from " + reference);
+					}
+					cuDevicePtr = vectorsInUseReferenceMap.remove(reference);
 				}
 			}
 
@@ -337,7 +338,7 @@ public class RandomVariableOpenCL implements RandomVariable {
 						deviceAllocMemoryBytes -= size * Sizeof.cl_float;
 					}
 				}
-				
+
 				System.out.println("Size OpCL: " + vectorsInUseReferenceMap.size());
 			}
 		}
@@ -352,7 +353,7 @@ public class RandomVariableOpenCL implements RandomVariable {
 		 */
 		private static float getDeviceFreeMemPercentage() {
 			float freeRate = 1.0f - 1.1f * (float)deviceAllocMemoryBytes / (float) deviceMaxMemoryBytes;
-//			System.out.println("OpCL: " + deviceMemoryPool.vectorsInUseReferenceMap.size() + "\t" + freeRate);
+			//			System.out.println("OpCL: " + deviceMemoryPool.vectorsInUseReferenceMap.size() + "\t" + freeRate);
 			return freeRate;
 		}
 
@@ -470,24 +471,19 @@ public class RandomVariableOpenCL implements RandomVariable {
 			// Set up the kernel parameters: A pointer to an array
 			// of pointers which point to the actual values.
 
-			try {
-				deviceExecutor.submit(new Runnable() { @Override
-					public void run() {
-					for(int i=0; i<arguments.length; i++) {
-						clSetKernelArg(function, i, argumentSizes[i], arguments[i]);
-					}
-					// Set the work-item dimensions
-					long global_work_size[] = new long[]{ gridSizeX*blockSizeX};
-					long local_work_size[] = null;
-					//cuCtxSynchronize();
-					// Launching on the same stream (default stream)
-					clEnqueueNDRangeKernel(commandQueue, function, 1, null,
-							global_work_size, local_work_size, 0, null, null);
-				}}).get();
-			} catch (InterruptedException | ExecutionException e) {
-				// TODO Auto-generated catch block
-				e.printStackTrace();
-			}
+			deviceExecutor.submit(new Runnable() { @Override
+				public void run() {
+				for(int i=0; i<arguments.length; i++) {
+					clSetKernelArg(function, i, argumentSizes[i], arguments[i]);
+				}
+				// Set the work-item dimensions
+				long global_work_size[] = new long[]{ gridSizeX*blockSizeX};
+				long local_work_size[] = null;
+				//cuCtxSynchronize();
+				// Launching on the same stream (default stream)
+				clEnqueueNDRangeKernel(commandQueue, function, 1, null,
+						global_work_size, local_work_size, 0, null, null);
+			}});
 
 		}
 

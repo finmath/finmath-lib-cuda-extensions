@@ -61,6 +61,8 @@ public class LIBORMarketModelCalibrationTest {
 			{ ProcessingUnit.GPU_CUDA },
 			{ ProcessingUnit.GPU_CUDA_WITH_CPU_RANDOM },
 			{ ProcessingUnit.GPU_OPENCL_WITH_CPU_RANDOM },
+			{ ProcessingUnit.GPU_OPENCL_WITH_CPU_RANDOM },
+			{ ProcessingUnit.GPU_OPENCL_WITH_CPU_RANDOM },
 			{ ProcessingUnit.CPU },
 		});
 	}
@@ -136,8 +138,8 @@ public class LIBORMarketModelCalibrationTest {
 	public void cleanAfter() {
 		System.gc();
 		System.runFinalization();
-		RandomVariableOpenCL.clean();
 		RandomVariableOpenCL.purge();
+		RandomVariableCuda.purge();
 	}
 
 	@Test
