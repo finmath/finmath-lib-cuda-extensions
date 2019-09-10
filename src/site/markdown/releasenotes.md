@@ -6,6 +6,14 @@ finmath lib cuda extensions Release Notes
 # Release Notes
 
 
+## 4.0.12 (10.09.2019)
+
+### General
+
+- Added support for **OpenCL** via `RandomVariableOpenCL` and `RandomVariableOpenCLFactory`
+
+
+
 ## 4.0.11 (31.08.2019)
 
 ### General
