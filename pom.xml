@@ -288,10 +288,28 @@
 
 	<profiles>
 		<profile>
-			<id>cuda-10.1</id>
+			<id>default</id>
 			<activation>
 				<activeByDefault>true</activeByDefault>
 			</activation>
+			<properties>
+				<envClassifier></envClassifier>
+			</properties>
+			<dependencies>
+				<dependency>
+					<groupId>org.jcuda</groupId>
+					<artifactId>jcuda</artifactId>
+					<version>10.1.0</version>
+				</dependency>
+				<dependency>
+					<groupId>org.jcuda</groupId>
+					<artifactId>jcurand</artifactId>
+					<version>10.1.0</version>
+				</dependency>
+			</dependencies>
+		</profile>
+		<profile>
+			<id>cuda-10.1</id>
 			<properties>
 				<envClassifier>cuda-10.1</envClassifier>
 			</properties>
@@ -307,7 +325,6 @@
 					<version>10.1.0</version>
 				</dependency>
 			</dependencies>
-
 		</profile>
 		<profile>
 			<id>cuda-10.0</id>
