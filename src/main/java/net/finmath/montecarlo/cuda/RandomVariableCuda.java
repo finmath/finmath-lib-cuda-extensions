@@ -123,7 +123,7 @@ public class RandomVariableCuda implements RandomVariable {
 		/**
 		 * Percentage of device memory at which we will try to wait a few milliseconds for recycled objects.
 		 */
-		private static final float	vectorsRecyclerPercentageFreeToWaitForGC	= 0.10f;		// should be set by monitoring GPU mem
+		private static final float	vectorsRecyclerPercentageFreeToWaitForGC	= 0.05f;		// should be set by monitoring GPU mem
 
 		/**
 		 * Maximum time to wait for object recycled objects. (Higher value slows down the code, but prevents out-of-memory).
