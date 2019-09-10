@@ -6,6 +6,7 @@
 package net.finmath.montecarlo;
 
 import java.util.Arrays;
+import java.util.Collection;
 import java.util.Random;
 import java.util.function.BiFunction;
 import java.util.function.Consumer;
@@ -13,20 +14,40 @@ import java.util.function.Consumer;
 import org.junit.After;
 import org.junit.Assert;
 import org.junit.Test;
+import org.junit.runner.RunWith;
+import org.junit.runners.Parameterized;
+import org.junit.runners.Parameterized.Parameters;
 
 import net.finmath.montecarlo.cuda.RandomVariableCuda;
 import net.finmath.montecarlo.cuda.RandomVariableCudaFactory;
 import net.finmath.montecarlo.opencl.RandomVariableOpenCL;
+import net.finmath.montecarlo.opencl.RandomVariableOpenCLFactory;
 import net.finmath.stochastic.RandomVariable;
-import net.finmath.stochastic.Scalar;
 
 /**
- * Test cases for the class net.finmath.montecarlo.RandomVariableFromDoubleArray.
+ * Test cases for the class net.finmath.montecarlo.opencl.RandomVariableOpenCL and net.finmath.montecarlo.cuda.RandomVariableCuda
  *
  * @author Christian Fries
- * @see net.finmath.montecarlo.RandomVariableFromDoubleArray
+ * @see net.finmath.montecarlo.opencl.RandomVariableOpenCL
+ * @see net.finmath.montecarlo.cuda.RandomVariableCuda
  */
-public class RandomVariableCudaTest {
+@RunWith(Parameterized.class)
+public class RandomVariableGPUTest {
+
+	@Parameters
+	public static Collection<Object[]> data() {
+		return Arrays.asList(new Object[][] {
+			{ new RandomVariableOpenCLFactory() },
+			{ new RandomVariableCudaFactory() },
+		});
+	}
+
+	private final AbstractRandomVariableFactory randomVariableFactory;
+
+	public RandomVariableGPUTest(AbstractRandomVariableFactory randomVariableFactory) {
+		super();
+		this.randomVariableFactory = randomVariableFactory;
+	}
 
 	@After
 	public void cleanUp() {
@@ -38,7 +59,7 @@ public class RandomVariableCudaTest {
 	public void testRandomVariableDeterministc() {
 
 		// Create a random variable with a constant
-		RandomVariable randomVariable = new RandomVariableCuda(2.0);
+		RandomVariable randomVariable = randomVariableFactory.createRandomVariable(2.0);
 
 		// Perform some calculations
 		randomVariable = randomVariable.mult(2.0);
@@ -56,13 +77,19 @@ public class RandomVariableCudaTest {
 
 	@Test
 	public void testRandomVariableStochastic() throws InterruptedException {
-		RandomVariable randomVariable = new RandomVariableCuda(new float[] {-4.0f, -2.0f, 0.0f, 2.0f, 4.0f} );
+		RandomVariable randomVariable = randomVariableFactory.createRandomVariable(0.0, new double[] {-4.0f, -2.0f, 0.0f, 2.0f, 4.0f} );
+
+		System.out.println(Arrays.toString(randomVariable.getRealizations()));
 
 		// Perform some calculations
 		randomVariable = randomVariable.add(4.0);
+
+		System.out.println(Arrays.toString(randomVariable.getRealizations()));
 		randomVariable = randomVariable.div(2.0);
 		randomVariable = randomVariable.mult(2.0);
 		randomVariable = randomVariable.div(2.0);
+
+		System.out.println(Arrays.toString(randomVariable.getRealizations()));
 
 		// The random variable has average value 2.0
 		final double average = randomVariable.getAverage();
@@ -74,7 +101,7 @@ public class RandomVariableCudaTest {
 		Assert.assertTrue(randomVariable.getVariance() == 2.0);
 
 		// Multiply two random variables, this will expand the receiver to a stochastic one
-		RandomVariable randomVariable2 = new RandomVariableCuda(3.0);
+		RandomVariable randomVariable2 = new RandomVariableOpenCL(3.0);
 		randomVariable2 = randomVariable2.mult(randomVariable);
 
 		// The random variable has average value 6.0
@@ -86,13 +113,13 @@ public class RandomVariableCudaTest {
 
 	@Test
 	public void testRandomVariableAverage() throws InterruptedException {
-		final int size = 100000;
-		final float[] values = new float[size];
+		final int size = 10000;
+		final double[] values = new double[size];
 		for(int i=0;i<size; i++) {
 			values[i] = (float)i;
 		}
 
-		final RandomVariable randomVariable = new RandomVariableCuda(0.0,values);
+		final RandomVariable randomVariable = randomVariableFactory.createRandomVariable(0.0, values);
 
 		final double average = randomVariable.getAverage();
 
@@ -103,53 +130,50 @@ public class RandomVariableCudaTest {
 	public void testRandomVariableArithmeticSqrtPow() {
 
 		// Create a stochastic random variable
-		final RandomVariable randomVariable = new RandomVariableCuda(0.0, new double[] {3.0, 1.0, 0.0, 2.0, 4.0, 1.0/3.0} );
+		final RandomVariable randomVariable = randomVariableFactory.createRandomVariable(0.0, new double[] {3.0, 1.0, 0.0, 2.0, 4.0, 1.0/3.0} );
 
 		final RandomVariable check = randomVariable.sqrt().sub(randomVariable.pow(0.5));
 
 		// The random variable is identical 0.0
-		Assert.assertTrue(check.getAverage() == 0.0);
-		Assert.assertTrue(check.getVariance() == 0.0);
+		Assert.assertEquals(0.0, check.getAverage(), 1E-15);
+		Assert.assertEquals(0.0, check.getVariance(), 1E-15);
 	}
 
 	@Test
 	public void testRandomVariableArithmeticSquaredPow() {
 
 		// Create a stochastic random variable
-		final RandomVariable randomVariable = new RandomVariableCuda(0.0,
-				new double[] {3.0, 1.0, 0.0, 2.0, 4.0, 1.0/3.0} );
+		final RandomVariable randomVariable = randomVariableFactory.createRandomVariable(0.0, new double[] {3.0, 1.0, 0.0, 2.0, 4.0, 1.0/3.0} );
 
 		final RandomVariable check = randomVariable.squared().sub(randomVariable.pow(2.0));
 
 		// The random variable is identical 0.0
-		Assert.assertTrue(check.getAverage() == 0.0);
-		Assert.assertTrue(check.getVariance() == 0.0);
+		Assert.assertEquals(0.0, check.getAverage(), 1E-15);
+		Assert.assertEquals(0.0, check.getVariance(), 1E-15);
 	}
 
 	@Test
 	public void testRandomVariableStandardDeviation() {
 
 		// Create a stochastic random variable
-		final RandomVariable randomVariable = new RandomVariableCuda(0.0,
-				new double[] {3.0, 1.0, 0.0, 2.0, 4.0, 1.0/3.0} );
+		final RandomVariable randomVariable = randomVariableFactory.createRandomVariable(0.0, new double[] {3.0, 1.0, 0.0, 2.0, 4.0, 1.0/3.0} );
 
-		final double check = randomVariable.getStandardDeviation() - Math.sqrt(randomVariable.getVariance());
-		Assert.assertTrue(check == 0.0);
+		Assert.assertEquals(Math.sqrt(randomVariable.getVariance()), randomVariable.getStandardDeviation(), 1E-15);
 	}
 
 	@Test
-	public void testRandomVariableCuda() throws InterruptedException {
+	public void testRandomVariableOpenCL() throws InterruptedException {
 
-		final Random random = new Random();
+		final Random random = new Random(31415);
 
-		for(int testRun=0; testRun<10; testRun++) {
+		for(int testRun=0; testRun<1; testRun++) {
 			final int numberOfPath = 100000;
 			final double[] realizations = new double[numberOfPath];
 			for(int i=0; i<numberOfPath; i++) {
 				realizations[i]= random.nextDouble();
 			}
 
-			final AbstractRandomVariableFactory[] rvf = { new RandomVariableFloatFactory(), new RandomVariableCudaFactory() };
+			final AbstractRandomVariableFactory[] rvf = { new RandomVariableFloatFactory(), randomVariableFactory };
 
 			final BiFunction<AbstractRandomVariableFactory, BiFunction<RandomVariable,RandomVariable,RandomVariable>, double[]> hash = (rf, f) -> {
 				final RandomVariable x = rf.createRandomVariable(0.0, realizations);
