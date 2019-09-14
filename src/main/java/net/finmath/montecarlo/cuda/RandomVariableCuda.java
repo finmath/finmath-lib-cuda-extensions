@@ -163,7 +163,7 @@ public class RandomVariableCuda implements RandomVariable {
 
 			// Check for object to recycle
 			final ReferenceQueue<DevicePointerReference> vectorsToRecycleReferenceQueue = vectorsToRecycleReferenceQueueMap.computeIfAbsent(new Integer((int)size), key ->  {
-				logger.info("Creating reference queue for vector size " + size);
+				logger.fine("Creating reference queue for vector size " + size);
 				return new ReferenceQueue<DevicePointerReference>();
 			});
 
@@ -206,7 +206,7 @@ public class RandomVariableCuda implements RandomVariable {
 
 					if(reference == null) {
 						// Still no pointer found for requested size, consider cleaning all (also other sizes)
-						logger.info("Last resort: Cleaning all unused vectors on device. Device free memory " + deviceFreeMemPercentage*100 + "%");
+						logger.fine("Last resort: Cleaning all unused vectors on device. Device free memory " + deviceFreeMemPercentage*100 + "%");
 						clean();
 					}
 				}
@@ -296,7 +296,7 @@ public class RandomVariableCuda implements RandomVariable {
 			System.gc();
 			System.runFinalization();
 			clean();
-			logger.info("Cuda vectors in use: " + vectorsInUseReferenceMap.size() + ". Available device memory: " + getDeviceFreeMemPercentage()*100 + "%");
+			logger.fine("Cuda vectors in use: " + vectorsInUseReferenceMap.size() + ". Available device memory: " + getDeviceFreeMemPercentage()*100 + "%");
 		}
 
 		/**
