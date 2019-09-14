@@ -34,6 +34,15 @@ import net.finmath.stochastic.RandomVariable;
 @RunWith(Parameterized.class)
 public class RandomVariableGPUTest {
 
+	/*
+	 * An error tolerance for the unit tests.
+	 * 
+	 * Note: on many hardwares the test succeed with an errorTolerance of 0.
+	 * However, on some systems (maybe depending on the OpenCL version) the floating
+	 * point arithmetic differs by 1 ULP.
+	 */
+	private static final double errorTolerance = 1E-7;
+
 	@Parameters
 	public static Collection<Object[]> data() {
 		return Arrays.asList(new Object[][] {
@@ -135,8 +144,8 @@ public class RandomVariableGPUTest {
 		final RandomVariable check = randomVariable.sqrt().sub(randomVariable.pow(0.5));
 
 		// The random variable is identical 0.0
-		Assert.assertEquals(0.0, check.getAverage(), 1E-15);
-		Assert.assertEquals(0.0, check.getVariance(), 1E-15);
+		Assert.assertEquals(0.0, check.getAverage(), errorTolerance);
+		Assert.assertEquals(0.0, check.getVariance(), errorTolerance);
 	}
 
 	@Test
@@ -148,8 +157,8 @@ public class RandomVariableGPUTest {
 		final RandomVariable check = randomVariable.squared().sub(randomVariable.pow(2.0));
 
 		// The random variable is identical 0.0
-		Assert.assertEquals(0.0, check.getAverage(), 1E-15);
-		Assert.assertEquals(0.0, check.getVariance(), 1E-15);
+		Assert.assertEquals(0.0, check.getAverage(), errorTolerance);
+		Assert.assertEquals(0.0, check.getVariance(), errorTolerance);
 	}
 
 	@Test
@@ -158,7 +167,7 @@ public class RandomVariableGPUTest {
 		// Create a stochastic random variable
 		final RandomVariable randomVariable = randomVariableFactory.createRandomVariable(0.0, new double[] {3.0, 1.0, 0.0, 2.0, 4.0, 1.0/3.0} );
 
-		Assert.assertEquals(Math.sqrt(randomVariable.getVariance()), randomVariable.getStandardDeviation(), 1E-15);
+		Assert.assertEquals(Math.sqrt(randomVariable.getVariance()), randomVariable.getStandardDeviation(), errorTolerance);
 	}
 
 	@Test
