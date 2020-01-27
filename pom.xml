@@ -1,5 +1,7 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
+<project xmlns="http://maven.apache.org/POM/4.0.0"
+	xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+	xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
 	<modelVersion>4.0.0</modelVersion>
 
 	<!-- For publishing to sonatype / central maven repo -->
@@ -14,17 +16,22 @@
 	<version>4.0.13-SNAPSHOT</version>
 	<packaging>jar</packaging>
 
+	<properties>
+		<project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
+		<src.main.java.dir>src/main/java</src.main.java.dir>
+		<src.test.java.dir>src/main/java</src.test.java.dir>
+		<src.main.kotlin.dir>src/main/kotlin</src.main.kotlin.dir>
+		<src.test.kotlin.dir>src/test/kotlin</src.test.kotlin.dir>
+		<kotlin.version>1.2.0</kotlin.version>
+		<junit.version>4.12</junit.version>
+		<finmath-lib.version>4.1.0</finmath-lib.version>
+	</properties>
+
 	<name>finmath-lib-cuda-extensions</name>
 	<description>
 		Enabling finmath-lib to perform Monte-Carlo simulations on the GPGPU using Cuda.
 	</description>
 	<url>http://www.finmath.net/finmath-lib</url>
-
-	<properties>
-		<project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
-		<src.main.dir>src/main/java</src.main.dir>
-		<src.test.dir>src/test/java</src.test.dir>
-	</properties>
 
 	<licenses>
 		<license>
@@ -48,7 +55,7 @@
 		<dependency>
 			<groupId>net.finmath</groupId>
 			<artifactId>finmath-lib</artifactId>
-			<version>4.0.12</version>
+			<version>${finmath-lib.version}</version>
 		</dependency>
 
 		<dependency>

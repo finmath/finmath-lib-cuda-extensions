@@ -24,6 +24,7 @@ import jcuda.runtime.JCuda;
 import net.finmath.montecarlo.AbstractRandomVariableFactory;
 import net.finmath.montecarlo.BrownianMotion;
 import net.finmath.montecarlo.RandomVariableFactory;
+import net.finmath.montecarlo.RandomVariableFromArrayFactory;
 import net.finmath.montecarlo.RandomVariableFromFloatArray;
 import net.finmath.stochastic.RandomVariable;
 import net.finmath.time.TimeDiscretization;
@@ -92,7 +93,7 @@ public class BrownianMotionCudaWithHostRandomVariable implements BrownianMotion,
 		this.numberOfPaths		= numberOfPaths;
 		this.seed				= seed;
 
-		this.randomVariableFactory = new RandomVariableFactory(false); /* randomVariableFactory */
+		this.randomVariableFactory = new RandomVariableFromArrayFactory(false); /* randomVariableFactory */
 
 		this.brownianIncrements	= null; 	// Lazy initialization
 	}
@@ -110,7 +111,7 @@ public class BrownianMotionCudaWithHostRandomVariable implements BrownianMotion,
 			final int numberOfFactors,
 			final int numberOfPaths,
 			final int seed) {
-		this(timeDiscretization, numberOfFactors, numberOfPaths, seed, new RandomVariableFactory());
+		this(timeDiscretization, numberOfFactors, numberOfPaths, seed, new RandomVariableFromArrayFactory());
 	}
 
 	@Override

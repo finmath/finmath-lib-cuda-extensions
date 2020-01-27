@@ -86,11 +86,11 @@ public class BrownianMotionTest {
 			case "BrownianMotionLazyInit":
 			default:
 				brownian = new BrownianMotionLazyInit(timeDiscretization, 1, numberOfPaths, seed,
-						new RandomVariableFactory(true));
+						new RandomVariableFromArrayFactory(true));
 				break;
 			case "BrownianMotionJavaRandom":
 				brownian = new BrownianMotionJavaRandom(timeDiscretization, 1, numberOfPaths, seed,
-						new RandomVariableFactory(true));
+						new RandomVariableFromArrayFactory(true));
 				break;
 			case "BrownianMotionCudaWithHostRandomVariable":
 				brownian = new BrownianMotionCudaWithHostRandomVariable(

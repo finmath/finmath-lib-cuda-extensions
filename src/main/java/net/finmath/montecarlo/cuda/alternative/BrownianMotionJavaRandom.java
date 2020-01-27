@@ -11,6 +11,7 @@ import java.util.Random;
 import net.finmath.montecarlo.AbstractRandomVariableFactory;
 import net.finmath.montecarlo.BrownianMotion;
 import net.finmath.montecarlo.RandomVariableFactory;
+import net.finmath.montecarlo.RandomVariableFromArrayFactory;
 import net.finmath.stochastic.RandomVariable;
 import net.finmath.time.TimeDiscretization;
 
@@ -96,7 +97,7 @@ public class BrownianMotionJavaRandom implements BrownianMotion, Serializable {
 			final int numberOfFactors,
 			final int numberOfPaths,
 			final int seed) {
-		this(timeDiscretization, numberOfFactors, numberOfPaths, seed, new RandomVariableFactory());
+		this(timeDiscretization, numberOfFactors, numberOfPaths, seed, new RandomVariableFromArrayFactory());
 	}
 
 	@Override
