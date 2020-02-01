@@ -75,8 +75,8 @@
 	<build>
 		<defaultGoal>clean install javadoc:javadoc</defaultGoal>
 		<finalName>${project.artifactId}-${project.version}</finalName>
-		<sourceDirectory>${src.main.dir}</sourceDirectory>
-		<testSourceDirectory>${src.test.dir}</testSourceDirectory>
+		<sourceDirectory>${src.main.java.dir}</sourceDirectory>
+		<testSourceDirectory>${src.test.java.dir}</testSourceDirectory>
 		<plugins>
 			<plugin>
 				<groupId>org.apache.maven.plugins</groupId>
@@ -151,6 +151,16 @@
 						</goals>
 					</execution>
 				</executions>
+			</plugin>
+			<plugin>
+				<groupId>org.apache.maven.plugins</groupId>
+				<artifactId>maven-surefire-plugin</artifactId>
+				<version>2.21.0</version>
+				<configuration>
+					<forkCount>1</forkCount>
+					<reuseForks>false</reuseForks>
+					<argLine>-mx6G</argLine>
+				</configuration>
 			</plugin>
 
 			<plugin>
