@@ -47,10 +47,10 @@ public class MonteCarloBlackScholesModelTest {
 	@Parameters
 	public static Collection<Object[]> data() {
 		return Arrays.asList(new Object[][] {
-//			{ "BrownianMotionLazyInitCPUFloat" },			// Test case 1: Java implementation using MersenneTwister
+			//			{ "BrownianMotionLazyInitCPUFloat" },			// Test case 1: Java implementation using MersenneTwister
 			{ "BrownianMotionLazyInitCPUDouble" },			// Test case 2: Java implementation using MersenneTwister
-//			{ "BrownianMotionJavaRandomCPUDouble" },		// Test case 3: Java implementation using Java LCG
-//			{ "BrownianMotionCudaWithHostRandomVariable" },	// Test case 5: Java implementation using Cuda LCG with Host RandomVariable
+			//			{ "BrownianMotionJavaRandomCPUDouble" },		// Test case 3: Java implementation using Java LCG
+			//			{ "BrownianMotionCudaWithHostRandomVariable" },	// Test case 5: Java implementation using Cuda LCG with Host RandomVariable
 			{ "BrownianMotionCudaWithRandomVariableCuda" },	// Test case 6: Java implementation using Cuda LCG with Cuda RandomVariable
 			{ "BrownianMotionLazyInitOpenCL" },				// Test case 4: Java implementation using MersenneTwister with OpenCL RandomVariable
 		});
@@ -114,14 +114,14 @@ public class MonteCarloBlackScholesModelTest {
 					new RandomVariableFromArrayFactory(false));
 			break;
 		case "BrownianMotionLazyInitCPUDouble":
-//			brownian = new BrownianMotionLazyInit(timeDiscretization, 1, numberOfPaths, seed, new RandomVariableFromArrayFactory(true));
+			//			brownian = new BrownianMotionLazyInit(timeDiscretization, 1, numberOfPaths, seed, new RandomVariableFromArrayFactory(true));
 			brownian = brownianCPU;
 			break;
 		case "BrownianMotionJavaRandomCPUDouble":
 			brownian = new BrownianMotionJavaRandom(timeDiscretization, 1, numberOfPaths, seed, new RandomVariableFromArrayFactory(true));
 			break;
 		case "BrownianMotionLazyInitOpenCL":
-//			brownian = new BrownianMotionLazyInit(timeDiscretization, 1, numberOfPaths, seed, new RandomVariableOpenCLFactory());
+			//			brownian = new BrownianMotionLazyInit(timeDiscretization, 1, numberOfPaths, seed, new RandomVariableOpenCLFactory());
 			brownian = brownianCL;
 			break;
 		case "BrownianMotionCudaWithHostRandomVariable":

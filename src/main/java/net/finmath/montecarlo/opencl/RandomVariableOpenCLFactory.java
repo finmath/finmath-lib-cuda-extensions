@@ -12,7 +12,7 @@ import net.finmath.stochastic.RandomVariable;
 
 /**
  * RandomVariableFactory creating CUDA random variables (object implementing RandomVariable running on Cuda).
- * 
+ *
  * @author Christian Fries
  */
 public class RandomVariableOpenCLFactory extends AbstractRandomVariableFactory implements RandomVariableFactory {

@@ -36,7 +36,7 @@ public class RandomVariableGPUTest {
 
 	/*
 	 * An error tolerance for the unit tests.
-	 * 
+	 *
 	 * Note: on many hardwares the test succeed with an errorTolerance of 0.
 	 * However, on some systems (maybe depending on the OpenCL version) the floating
 	 * point arithmetic differs by 1 ULP.
@@ -53,7 +53,7 @@ public class RandomVariableGPUTest {
 
 	private final RandomVariableFactory randomVariableFactory;
 
-	public RandomVariableGPUTest(RandomVariableFactory randomVariableFactory) {
+	public RandomVariableGPUTest(final RandomVariableFactory randomVariableFactory) {
 		super();
 		this.randomVariableFactory = randomVariableFactory;
 	}
@@ -125,14 +125,14 @@ public class RandomVariableGPUTest {
 		final int size = 10000;
 		final double[] values = new double[size];
 		for(int i=0;i<size; i++) {
-			values[i] = (float)i;
+			values[i] = i;
 		}
 
 		final RandomVariable randomVariable = randomVariableFactory.createRandomVariable(0.0, values);
 
 		final double average = randomVariable.getAverage();
 
-		Assert.assertEquals((double)size*((double)size-1.0)/2.0/(double)size, average, 1E-2);
+		Assert.assertEquals(size*(size-1.0)/2.0/size, average, 1E-2);
 	}
 
 	@Test

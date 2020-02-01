@@ -334,7 +334,7 @@ public class RandomVariableOpenCL implements RandomVariable {
 		 * @return Returns the (estimated) percentage amount of free memory on the device.
 		 */
 		private static float getDeviceFreeMemPercentage() {
-			final float freeRate = 1.0f - 1.1f * (float)deviceAllocMemoryBytes / (float) deviceMaxMemoryBytes;
+			final float freeRate = 1.0f - 1.1f * deviceAllocMemoryBytes / deviceMaxMemoryBytes;
 			//			System.out.println("OpCL: " + deviceMemoryPool.vectorsInUseReferenceMap.size() + "\t" + freeRate);
 			return freeRate;
 		}
@@ -459,19 +459,19 @@ public class RandomVariableOpenCL implements RandomVariable {
 					clSetKernelArg(function, i, argumentSizes[i], arguments[i]);
 				}
 				// Set the work-item dimensions
-				final long global_work_size[] = new long[]{ gridSizeX*blockSizeX};
-				final long local_work_size[] = null;
+				final long globalWorkSize[] = new long[]{ gridSizeX*blockSizeX };
+				final long localWorkSize[] = null;
 				//cuCtxSynchronize();
 				// Launching on the same stream (default stream)
 				clEnqueueNDRangeKernel(commandQueue, function, 1, null,
-						global_work_size, local_work_size, 0, null, null);
+						globalWorkSize, localWorkSize, 0, null, null);
 			}});
 
 		}
 
 	}
 
-	public static DeviceMemoryPool deviceMemoryPool = new DeviceMemoryPool();
+	private static DeviceMemoryPool deviceMemoryPool = new DeviceMemoryPool();
 
 	private static final long serialVersionUID = 7620120320663270600L;
 
@@ -491,9 +491,10 @@ public class RandomVariableOpenCL implements RandomVariable {
 	private static final Logger logger = Logger.getLogger("net.finmath");
 
 	private static final ExecutorService deviceExecutor = Executors.newSingleThreadExecutor();
-	public static cl_device_id device;
-	public static cl_context context;
-	public static cl_command_queue commandQueue;
+
+	private static cl_device_id device;
+	private static cl_context context;
+	private static cl_command_queue commandQueue;
 
 	private static cl_kernel capByScalar;
 	private static cl_kernel floorByScalar;
@@ -518,7 +519,7 @@ public class RandomVariableOpenCL implements RandomVariable {
 	private static cl_kernel accrue;
 	private static cl_kernel discount;
 	private static cl_kernel addProduct;
-	private static cl_kernel addProduct_vs;		// add the product of a vector and a scalar
+	private static cl_kernel addProductVectorScalar;		// add the product of a vector and a scalar
 	private static cl_kernel reducePartial;
 	private static cl_kernel reduceFloatVectorToDoubleScalar;
 
@@ -635,7 +636,7 @@ public class RandomVariableOpenCL implements RandomVariable {
 			accrue = clCreateKernel(cpProgram, "accrue", null);
 			discount = clCreateKernel(cpProgram, "discount", null);
 			addProduct = clCreateKernel(cpProgram, "addProduct", null);
-			addProduct_vs = clCreateKernel(cpProgram, "addProduct_vs", null);
+			addProductVectorScalar = clCreateKernel(cpProgram, "addProduct_vs", null);
 			//				reducePartial = clCreateKernel(cpProgram, "reducePartial", null);
 			//				reduceFloatVectorToDoubleScalar = clCreateKernel(cpProgram, "reduceFloatVectorToDoubleScalar", null);
 
@@ -1732,7 +1733,7 @@ public class RandomVariableOpenCL implements RandomVariable {
 		if(factor1.isDeterministic()) {
 			return this.add(factor1.doubleValue() * factor2);
 		} else if(!isDeterministic() && !factor1.isDeterministic()) {
-			final DevicePointerReference result = deviceMemoryPool.callFunctionv2s1(addProduct_vs, size, realizations, getRandomVariableCuda(factor1).realizations, factor2);
+			final DevicePointerReference result = deviceMemoryPool.callFunctionv2s1(addProductVectorScalar, size, realizations, getRandomVariableCuda(factor1).realizations, factor2);
 			return of(newTime, result, size());
 		} else {
 			return this.add(factor1.mult(factor2));

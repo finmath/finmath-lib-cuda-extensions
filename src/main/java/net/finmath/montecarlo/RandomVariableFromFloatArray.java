@@ -1362,21 +1362,17 @@ public class RandomVariableFromFloatArray implements RandomVariable {
 		}
 		else if(factor1.isDeterministic() && factor2.isDeterministic()) {
 			return add(factor1.doubleValue() * factor2.doubleValue());
-		}
-		else if(factor2.isDeterministic()) {
+		} else if(factor2.isDeterministic()) {
 			return this.addProduct(factor1, factor2.doubleValue());
-		}
-		else if(factor1.isDeterministic()) {
+		} else if(factor1.isDeterministic()) {
 			return this.addProduct(factor2, factor1.doubleValue());
-		}
-		else if(!this.isDeterministic() && !factor1.isDeterministic() && !factor2.isDeterministic()) {
+		} else if(!this.isDeterministic() && !factor1.isDeterministic() && !factor2.isDeterministic()) {
 			final float[] newRealizations = new float[Math.max(Math.max(size(), factor1.size()), factor2.size())];
 			for(int i=0; i<newRealizations.length; i++) {
 				newRealizations[i]		 = realizations[i] + (float)factor1.get(i) * (float)factor2.get(i);
 			}
 			return new RandomVariableFromFloatArray(newTime, newRealizations);
-		}
-		else {
+		} else {
 			return this.add(factor1.mult(factor2));
 		}
 	}
