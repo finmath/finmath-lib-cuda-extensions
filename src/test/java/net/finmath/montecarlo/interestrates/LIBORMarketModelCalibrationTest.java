@@ -27,9 +27,9 @@ import net.finmath.marketdata.model.curves.DiscountCurve;
 import net.finmath.marketdata.model.curves.DiscountCurveFromForwardCurve;
 import net.finmath.marketdata.model.curves.ForwardCurve;
 import net.finmath.marketdata.model.curves.ForwardCurveInterpolation;
-import net.finmath.montecarlo.AbstractRandomVariableFactory;
 import net.finmath.montecarlo.BrownianMotion;
 import net.finmath.montecarlo.BrownianMotionView;
+import net.finmath.montecarlo.RandomVariableFactory;
 import net.finmath.montecarlo.RandomVariableFloatFactory;
 import net.finmath.montecarlo.cuda.RandomVariableCuda;
 import net.finmath.montecarlo.cuda.RandomVariableCudaFactory;
@@ -202,7 +202,7 @@ public class LIBORMarketModelCalibrationTest {
 		/*
 		 * Create Brownian motions
 		 */
-		AbstractRandomVariableFactory randomVariableFactory;
+		RandomVariableFactory randomVariableFactory;
 		BrownianMotion brownianMotion;
 		switch(processingUnit) {
 		case CPU:

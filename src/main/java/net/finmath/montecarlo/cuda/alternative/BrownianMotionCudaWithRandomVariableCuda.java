@@ -16,7 +16,6 @@ import jcuda.LogLevel;
 import jcuda.jcurand.JCurand;
 import jcuda.jcurand.curandGenerator;
 import jcuda.runtime.JCuda;
-import net.finmath.montecarlo.AbstractRandomVariableFactory;
 import net.finmath.montecarlo.BrownianMotion;
 import net.finmath.montecarlo.RandomVariableFactory;
 import net.finmath.montecarlo.RandomVariableFromArrayFactory;
@@ -58,7 +57,7 @@ public class BrownianMotionCudaWithRandomVariableCuda implements BrownianMotion,
 	private final int			numberOfPaths;
 	private final int			seed;
 
-	private final AbstractRandomVariableFactory randomVariableFactory;
+	private final RandomVariableFactory randomVariableFactory;
 
 	private transient	RandomVariable[][]	brownianIncrements;
 	private final		Object						brownianIncrementsLazyInitLock = new Object();
@@ -82,7 +81,7 @@ public class BrownianMotionCudaWithRandomVariableCuda implements BrownianMotion,
 			final int numberOfFactors,
 			final int numberOfPaths,
 			final int seed,
-			final AbstractRandomVariableFactory randomVariableFactory) {
+			final RandomVariableFactory randomVariableFactory) {
 		super();
 		this.timeDiscretization = timeDiscretization;
 		this.numberOfFactors	= numberOfFactors;

@@ -51,9 +51,9 @@ public class RandomVariableGPUTest {
 		});
 	}
 
-	private final AbstractRandomVariableFactory randomVariableFactory;
+	private final RandomVariableFactory randomVariableFactory;
 
-	public RandomVariableGPUTest(AbstractRandomVariableFactory randomVariableFactory) {
+	public RandomVariableGPUTest(RandomVariableFactory randomVariableFactory) {
 		super();
 		this.randomVariableFactory = randomVariableFactory;
 	}
@@ -182,9 +182,9 @@ public class RandomVariableGPUTest {
 				realizations[i]= random.nextDouble();
 			}
 
-			final AbstractRandomVariableFactory[] rvf = { new RandomVariableFloatFactory(), randomVariableFactory };
+			final RandomVariableFactory[] rvf = { new RandomVariableFloatFactory(), randomVariableFactory };
 
-			final BiFunction<AbstractRandomVariableFactory, BiFunction<RandomVariable,RandomVariable,RandomVariable>, double[]> hash = (rf, f) -> {
+			final BiFunction<RandomVariableFactory, BiFunction<RandomVariable,RandomVariable,RandomVariable>, double[]> hash = (rf, f) -> {
 				final RandomVariable x = rf.createRandomVariable(0.0, realizations);
 				final RandomVariable y = rf.createRandomVariable(0.0, realizations[0]);
 				final double[] xr = f.apply(x,y).getRealizations();

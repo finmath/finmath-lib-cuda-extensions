@@ -7,13 +7,15 @@
 package net.finmath.montecarlo.opencl;
 
 import net.finmath.montecarlo.AbstractRandomVariableFactory;
+import net.finmath.montecarlo.RandomVariableFactory;
 import net.finmath.stochastic.RandomVariable;
 
 /**
+ * RandomVariableFactory creating CUDA random variables (object implementing RandomVariable running on Cuda).
+ * 
  * @author Christian Fries
- *
  */
-public class RandomVariableOpenCLFactory extends AbstractRandomVariableFactory {
+public class RandomVariableOpenCLFactory extends AbstractRandomVariableFactory implements RandomVariableFactory {
 
 	private static final long serialVersionUID = 1L;
 
