@@ -62,8 +62,14 @@ public class RandomVariableGPUTest {
 
 	@After
 	public void cleanUp() {
-		RandomVariableCuda.purge();
-		RandomVariableOpenCL.purge();
+		try {
+			RandomVariableCuda.purge();
+		}
+		catch(Exception | Error e) {}
+		try {
+			RandomVariableOpenCL.purge();
+		}
+		catch(Exception | Error e) {}
 	}
 
 	@Test
@@ -104,7 +110,7 @@ public class RandomVariableGPUTest {
 
 		// The random variable has average value 2.0
 		final double average = randomVariable.getAverage();
-		Assert.assertTrue(average == 2.0);
+		Assert.assertEquals("Average", 2.0, average, 1E-7);
 
 		final double[] result = randomVariable.getRealizations();
 
@@ -134,7 +140,7 @@ public class RandomVariableGPUTest {
 
 		final double average = randomVariable.getAverage();
 
-		Assert.assertEquals(size*(size-1.0)/2.0/size, average, 1E-2);
+		Assert.assertEquals("Average", size*(size-1.0)/2.0/size, average, 1E-7);
 	}
 
 	@Test

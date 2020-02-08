@@ -55,8 +55,14 @@ public class BrownianMotionTest {
 
 	@After
 	public void cleanUp() {
-		RandomVariableCuda.purge();
-		RandomVariableOpenCL.purge();
+		try {
+			RandomVariableCuda.purge();
+		}
+		catch(Exception | Error e) {}
+		try {
+			RandomVariableOpenCL.purge();
+		}
+		catch(Exception | Error e) {}
 	}
 
 	@Test
