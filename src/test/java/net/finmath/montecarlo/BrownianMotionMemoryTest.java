@@ -75,8 +75,8 @@ public class BrownianMotionMemoryTest {
 			final double mean		= brownianRealization.getAverage();
 			final double variance	= brownianRealization.getVariance();
 
-			Assert.assertTrue(Math.abs(mean         ) < 3.0 * Math.pow(dt,0.5) / Math.pow(numberOfPaths,0.5));
-			Assert.assertTrue(Math.abs(variance - dt) < 3.0 * Math.pow(dt,1.0) / Math.pow(numberOfPaths,0.5));
+			Assert.assertEquals("mean", 0.0, mean, 3.0 * Math.pow(dt,0.5) / Math.pow(numberOfPaths,0.5));
+			Assert.assertEquals("variance", dt, variance, 3.0 * Math.pow(dt,1.0) / Math.pow(numberOfPaths,0.5));
 		}
 
 		final long millisEnd = System.currentTimeMillis();
