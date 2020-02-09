@@ -43,17 +43,17 @@ public class RandomVariableGPUTest {
 	 */
 	private static final double errorTolerance = 1E-7;
 
-	@Parameters
+	@Parameters(name="{0}")
 	public static Collection<Object[]> data() {
 		return Arrays.asList(new Object[][] {
-			{ new RandomVariableOpenCLFactory() },
-			{ new RandomVariableCudaFactory() },
+			{ "OpenCL", new RandomVariableOpenCLFactory() },
+			{ "Cuda", new RandomVariableCudaFactory() },
 		});
 	}
 
 	private final RandomVariableFactory randomVariableFactory;
 
-	public RandomVariableGPUTest(final RandomVariableFactory randomVariableFactory) {
+	public RandomVariableGPUTest(final String name, final RandomVariableFactory randomVariableFactory) {
 		super();
 		this.randomVariableFactory = randomVariableFactory;
 		
