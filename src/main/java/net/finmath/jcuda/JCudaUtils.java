@@ -53,8 +53,12 @@ public class JCudaUtils
 
 		final String[] command = {
 				"nvcc",
-				"-arch",
-				"sm_30",
+				"-gencode",
+				"arch=sm_12",
+				"-gencode",
+				"arch=sm_20",
+				"-gencode",
+				"arch=sm_30",
 				"-fmad",
 				"false",
 				modelString,
