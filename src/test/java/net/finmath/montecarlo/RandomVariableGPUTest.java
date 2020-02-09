@@ -179,7 +179,7 @@ public class RandomVariableGPUTest {
 	}
 
 	@Test
-	public void testRandomVariableOpenCL() throws InterruptedException {
+	public void testRandomVariableOperators() throws InterruptedException {
 
 		final Random random = new Random(31415);
 
@@ -201,10 +201,10 @@ public class RandomVariableGPUTest {
 
 			final Consumer<BiFunction<RandomVariable,RandomVariable,RandomVariable>> test = f -> {
 				final double[] xr0 = hash.apply(rvf[0],f);
-				final double[] xr1 = hash.apply(rvf[0],f);
+				final double[] xr1 = hash.apply(rvf[1],f);
 
 				for(int i=0; i<xr0.length; i++) {
-					Assert.assertEquals(xr0[i], xr1[i], 0.0);
+					Assert.assertEquals(xr0[i], xr1[i], 2E-7*(1+Math.abs(xr0[i])));
 				}
 				System.out.print(" [ok]");
 			};

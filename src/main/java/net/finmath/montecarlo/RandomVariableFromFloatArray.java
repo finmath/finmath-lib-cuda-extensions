@@ -335,7 +335,7 @@ public class RandomVariableFromFloatArray implements RandomVariable {
 	@Override
 	public double getAverage(final RandomVariable probabilities) {
 		if(isDeterministic()) {
-			return valueIfNonStochastic;
+			return valueIfNonStochastic * probabilities.getAverage();
 		}
 		if(size() == 0) {
 			return Double.NaN;
