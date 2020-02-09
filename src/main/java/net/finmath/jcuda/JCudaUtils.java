@@ -27,7 +27,7 @@ public class JCudaUtils
 	 * @throws IOException Thrown if an I/O error occurs.
 	 * @throws URISyntaxException Thrown if the cuFileURL cannot be converted to an URI.
 	 */
-	public static String preparePtxFile(final URL cuFileURL) throws IOException, URISyntaxException
+	public static String preparePtxFile(final URL cuFileURL, final String arch) throws IOException, URISyntaxException
 	{
 		final String cuFileName = Paths.get(cuFileURL.toURI()).toFile().getAbsolutePath();
 		int endIndex = cuFileName.lastIndexOf('.');
@@ -53,12 +53,8 @@ public class JCudaUtils
 
 		final String[] command = {
 				"nvcc",
-				"-gencode",
-				"arch=sm_12",
-				"-gencode",
-				"arch=sm_20",
-				"-gencode",
-				"arch=sm_30",
+				"-arch",
+				arch,
 				"-fmad",
 				"false",
 				modelString,

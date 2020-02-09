@@ -509,23 +509,34 @@ public class RandomVariableCuda implements RandomVariable {
 			JCudaDriver.setExceptionsEnabled(true);
 			JCudaDriver.setLogLevel(LogLevel.LOG_DEBUG);
 
+			// Initialize the driver and create a context for the first device.
+			cuInit(0);
+			cuDeviceGet(device, 0);
+
 			/*
 			 * Set blockSize according to compute capabilities
 			 */
 			int[] majorComputeCapability = new int[1];
+			int[] minorComputeCapability = new int[1];
 			JCudaDriver.cuDeviceGetAttribute(majorComputeCapability, CUdevice_attribute.CU_DEVICE_ATTRIBUTE_COMPUTE_CAPABILITY_MAJOR, device);
+			JCudaDriver.cuDeviceGetAttribute(minorComputeCapability, CUdevice_attribute.CU_DEVICE_ATTRIBUTE_COMPUTE_CAPABILITY_MINOR, device);
 			if(majorComputeCapability[0] >= 2) {
 				blockSizeX = 1024;
 			}
 			else {
 				blockSizeX = 512;
 			}
-			
+
+			/*
+			 * Set arch
+			 */
+			final String arch = "sm_" + majorComputeCapability[0] + minorComputeCapability[0];
+
 			// Create the PTX file by calling the NVCC
 			String ptxFileName = null;
 			try {
 				final URL cuFileURL = RandomVariableCuda.class.getClassLoader().getResource("net/finmath/montecarlo/RandomVariableCudaKernel.cu");
-				ptxFileName = net.finmath.jcuda.JCudaUtils.preparePtxFile(cuFileURL);
+				ptxFileName = net.finmath.jcuda.JCudaUtils.preparePtxFile(cuFileURL, arch);
 			} catch (IOException | URISyntaxException e) {
 				// TODO Auto-generated catch block
 				e.printStackTrace();
@@ -534,9 +545,6 @@ public class RandomVariableCuda implements RandomVariable {
 			final String ptxFileName2 = ptxFileName;
 			deviceExecutor.submit(new Runnable() { @Override
 				public void run() {
-				// Initialize the driver and create a context for the first device.
-				cuInit(0);
-				cuDeviceGet(device, 0);
 				//				cuCtxCreate(context, jcuda.driver.CUctx_flags.CU_CTX_SCHED_BLOCKING_SYNC, device);
 				cuCtxCreate(context, jcuda.driver.CUctx_flags.CU_CTX_SCHED_AUTO, device);
 
