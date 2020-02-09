@@ -357,6 +357,24 @@
 				</dependency>
 			</dependencies>
 		</profile>
+		<profile>
+			<id>cuda-6.0</id>
+			<properties>
+				<envClassifier>cuda-6.0</envClassifier>
+			</properties>
+			<dependencies>
+				<dependency>
+					<groupId>jcuda</groupId>
+					<artifactId>jcuda</artifactId>
+					<version>0.6.0</version>
+				</dependency>
+				<dependency>
+					<groupId>jcuda</groupId>
+					<artifactId>jcurand</artifactId>
+					<version>0.6.0</version>
+				</dependency>
+			</dependencies>
+		</profile>
 	</profiles>
 	<issueManagement>
 		<system>GitHub</system>
@@ -456,6 +474,15 @@
 		</plugins>
 	</reporting>
 
+	<repositories>
+		<repository>
+			<id>jcuda-6</id>
+			<url>
+				https://github.com/MysterionRise/mavenized-jcuda/tree/master/repo
+			</url>
+		</repository>
+	</repositories>
+	
 	<distributionManagement>
 
 		<!-- maven repositories inherited from parent pom -->
