@@ -118,7 +118,7 @@ public class RandomVariableGPUTest {
 		Assert.assertTrue(randomVariable.getVariance() == 2.0);
 
 		// Multiply two random variables, this will expand the receiver to a stochastic one
-		RandomVariable randomVariable2 = new RandomVariableOpenCL(3.0);
+		RandomVariable randomVariable2 = randomVariableFactory.createRandomVariable(3.0);
 		randomVariable2 = randomVariable2.mult(randomVariable);
 
 		// The random variable has average value 6.0
