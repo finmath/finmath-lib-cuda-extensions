@@ -40,6 +40,7 @@ import jcuda.Pointer;
 import jcuda.Sizeof;
 import jcuda.driver.CUcontext;
 import jcuda.driver.CUdevice;
+import jcuda.driver.CUdevice_attribute;
 import jcuda.driver.CUdeviceptr;
 import jcuda.driver.CUfunction;
 import jcuda.driver.CUmodule;
@@ -88,7 +89,7 @@ public class RandomVariableCuda implements RandomVariable {
 		}
 	}
 
-	public static final int blockSizeX = 1024;
+	public static final int blockSizeX;
 
 	/**
 	 * A memory pool for the GPU vectors.
@@ -508,6 +509,18 @@ public class RandomVariableCuda implements RandomVariable {
 			JCudaDriver.setExceptionsEnabled(true);
 			JCudaDriver.setLogLevel(LogLevel.LOG_DEBUG);
 
+			/*
+			 * Set blockSize according to compute capabilities
+			 */
+			int[] majorComputeCapability = new int[1];
+			JCudaDriver.cuDeviceGetAttribute(majorComputeCapability, CUdevice_attribute.CU_DEVICE_ATTRIBUTE_COMPUTE_CAPABILITY_MAJOR, device);
+			if(majorComputeCapability[0] >= 2) {
+				blockSizeX = 1024;
+			}
+			else {
+				blockSizeX = 512;
+			}
+			
 			// Create the PTX file by calling the NVCC
 			String ptxFileName = null;
 			try {
