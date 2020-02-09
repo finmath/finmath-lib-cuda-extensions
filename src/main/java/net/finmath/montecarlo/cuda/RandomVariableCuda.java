@@ -88,6 +88,8 @@ public class RandomVariableCuda implements RandomVariable {
 		}
 	}
 
+	public static final int blockSizeX = 1024;
+
 	/**
 	 * A memory pool for the GPU vectors.
 	 *
@@ -422,7 +424,6 @@ public class RandomVariableCuda implements RandomVariable {
 		}
 
 		public void callFunction(final CUfunction function, final long resultSize, final Pointer[] arguments) {
-			final int blockSizeX = 1024;
 			final int gridSizeX = (int)Math.ceil((double)resultSize / blockSizeX);
 			callFunction(function, arguments, gridSizeX, blockSizeX, 0);
 		}
