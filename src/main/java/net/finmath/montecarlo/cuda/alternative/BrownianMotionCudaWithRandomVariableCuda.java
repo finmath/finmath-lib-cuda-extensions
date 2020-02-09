@@ -156,7 +156,8 @@ public class BrownianMotionCudaWithRandomVariableCuda implements BrownianMotion,
 		final curandGenerator generator = new curandGenerator();
 
 		// Create pseudo-random number generator
-		curandCreateGenerator(generator, CURAND_RNG_PSEUDO_MTGP32);
+//		curandCreateGenerator(generator, CURAND_RNG_PSEUDO_MTGP32);
+		curandCreateGenerator(generator, jcuda.jcurand.curandRngType.CURAND_RNG_PSEUDO_DEFAULT);
 
 		// Set seed
 		curandSetPseudoRandomGeneratorSeed(generator, seed);
