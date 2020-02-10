@@ -3,7 +3,9 @@ finmath lib cuda extensions
 
 ****************************************
 
-**Enabling finmath lib with Cuda via jCuda. - Running finmath lib models on a GPU.**
+**Vector class (RandomVarible) running on GPUs (Cuda and OpenCL).**
+
+**Enabling finmath lib with Cuda (via jcuda) and OpenCL (via jocl). - Running finmath lib models on a GPU.**
 
 ****************************************
 
@@ -89,13 +91,38 @@ cd finmath-lib-cuda-extensions
 mvn clean package
 ```
 
-This will build the version using Cuda 10.1. For Cuda 10.0 use
+If everything goes well, you will see unit test run. Note that some of the tests may fail if the device (GPU) has not enough memory. 
+
+### Profiles
+
+The default profile will build the version using Cuda 10.1.
+
+#### Cuda 10.0
+
+For Cuda 10.0 use
 
 ```
 mvn -P cuda-10.0 clean package
 ```
 
-If everything goes well, you will see unit test run. Note that some of the tests may fail if the device (GPU) has not enough memory. 
+#### Cuda 9.2
+
+For Cuda 9.2 use
+
+```
+mvn -P cuda-9.2 clean package
+```
+
+#### Cuda 6.0
+
+For Cuda 6.0 use
+
+```
+mvn -P cuda-6.0 clean package
+```
+
+For Cuda 6.0 the jcuda binaries are not unpacked automatically and have to be installed manually. Set LD_LIBRARY_PATH (*nix environment variable) or java.library.path (Java system property) to the jcuda platform specific binaries.
+
 
 Trying on Amazon EC2
 -------------------------------------

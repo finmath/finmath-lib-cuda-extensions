@@ -358,6 +358,24 @@
 			</dependencies>
 		</profile>
 		<profile>
+			<id>cuda-9.2</id>
+			<properties>
+				<envClassifier>cuda-9.2</envClassifier>
+			</properties>
+			<dependencies>
+				<dependency>
+					<groupId>org.jcuda</groupId>
+					<artifactId>jcuda</artifactId>
+					<version>0.9.2</version>
+				</dependency>
+				<dependency>
+					<groupId>org.jcuda</groupId>
+					<artifactId>jcurand</artifactId>
+					<version>0.9.2</version>
+				</dependency>
+			</dependencies>
+		</profile>
+		<profile>
 			<id>cuda-6.0</id>
 			<properties>
 				<envClassifier>cuda-6.0</envClassifier>
