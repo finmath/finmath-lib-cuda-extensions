@@ -21,16 +21,13 @@ import static org.jocl.CL.clGetPlatformIDs;
 import static org.jocl.CL.clReleaseMemObject;
 import static org.jocl.CL.clSetKernelArg;
 
-import java.io.BufferedReader;
 import java.io.FileInputStream;
 import java.io.IOException;
-import java.io.InputStreamReader;
+import java.io.InputStream;
 import java.lang.ref.Reference;
 import java.lang.ref.ReferenceQueue;
 import java.lang.ref.WeakReference;
 import java.net.URISyntaxException;
-import java.net.URL;
-import java.nio.file.Paths;
 import java.util.Map;
 import java.util.Map.Entry;
 import java.util.concurrent.Callable;
@@ -62,6 +59,7 @@ import net.finmath.functions.DoubleTernaryOperator;
 import net.finmath.montecarlo.RandomVariableFromDoubleArray;
 import net.finmath.montecarlo.RandomVariableFromFloatArray;
 import net.finmath.stochastic.RandomVariable;
+import net.finmath.util.FileUtils;
 
 /**
  * This class represents a random variable being the evaluation of a stochastic process
@@ -550,17 +548,6 @@ public class RandomVariableOpenCL implements RandomVariable {
 			final int deviceIndex;		// will be a property.
 
 
-
-			// Create the PTX file by calling the NVCC
-			String clFileName = null;
-			try {
-				final URL cuFileURL = RandomVariableOpenCL.class.getClassLoader().getResource("net/finmath/montecarlo/RandomVariableCudaKernel.cl");
-				clFileName = Paths.get(cuFileURL.toURI()).toFile().getAbsolutePath();
-			} catch (final URISyntaxException e) {
-				// TODO Auto-generated catch block
-				e.printStackTrace();
-			}
-
 			// Enable exceptions and subsequently omit error checks in this sample
 			CL.setExceptionsEnabled(true);
 
@@ -603,8 +590,14 @@ public class RandomVariableOpenCL implements RandomVariable {
 			//	        org.jocl.cl_queue_properties properties = new org.jocl.cl_queue_properties();
 			//	        commandQueue = CL.clCreateCommandQueueWithProperties(context, device, properties, null);
 
-			// Program Setup
-			final String source = readFile(clFileName);
+			// Read our OpenCL kernel from file
+			InputStream inputStreamOfSource = null;
+			try {
+				inputStreamOfSource = FileUtils.getInputStreamForResource("net/finmath/montecarlo/RandomVariableCudaKernel.cl");
+			} catch (URISyntaxException | IOException e) {
+				throw new RuntimeException(e);
+			}
+			final String source = FileUtils.readToString(inputStreamOfSource);
 
 			// Create the program
 			final cl_program cpProgram = clCreateProgramWithSource(context, 1, new String[]{ source }, null, null);
@@ -657,39 +650,6 @@ public class RandomVariableOpenCL implements RandomVariable {
 					}
 				}}
 					));
-		}
-	}
-
-	/**
-	 * Helper function which reads the file with the given name and returns
-	 * the contents of this file as a String. Will exit the application
-	 * if the file can not be read.
-	 *
-	 * @param fileName The name of the file to read.
-	 * @return The contents of the file
-	 */
-	private static String readFile(final String fileName)
-	{
-		try(BufferedReader br = new BufferedReader(new InputStreamReader(new FileInputStream(fileName))))
-		{
-			final StringBuffer sb = new StringBuffer();
-			String line = null;
-			while (true)
-			{
-				line = br.readLine();
-				if (line == null)
-				{
-					break;
-				}
-				sb.append(line).append("\n");
-			}
-			return sb.toString();
-		}
-		catch (final IOException e)
-		{
-			e.printStackTrace();
-			System.exit(1);
-			return null;
 		}
 	}
 

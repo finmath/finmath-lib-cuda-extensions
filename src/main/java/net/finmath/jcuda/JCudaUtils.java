@@ -1,13 +1,13 @@
 package net.finmath.jcuda;
 
-import java.io.ByteArrayOutputStream;
 import java.io.File;
 import java.io.IOException;
-import java.io.InputStream;
 import java.net.URISyntaxException;
 import java.net.URL;
 import java.nio.file.Paths;
 import java.util.Arrays;
+
+import net.finmath.util.FileUtils;
 
 /**
  * Adapted from JCuda examples: Reads a CUDA file, compiles it to a PTX file
@@ -23,6 +23,7 @@ public class JCudaUtils
 	 * PTX file is returned.
 	 *
 	 * @param cuFileURL The name of the .cu file
+	 * @param arch String specifying the architecture (see nvcc command, -arch argument). Examples are sm_12, sm_20, sm_30
 	 * @return The name of the PTX file.
 	 * @throws IOException Thrown if an I/O error occurs.
 	 * @throws URISyntaxException Thrown if the cuFileURL cannot be converted to an URI.
@@ -68,8 +69,8 @@ public class JCudaUtils
 		System.out.println("Executing\n"+Arrays.toString(command));
 		final Process process = Runtime.getRuntime().exec(command);
 
-		final String errorMessage = new String(toByteArray(process.getErrorStream()));
-		final String outputMessage = new String(toByteArray(process.getInputStream()));
+		final String errorMessage = new String(FileUtils.readToByteArray(process.getErrorStream()));
+		final String outputMessage = new String(FileUtils.readToByteArray(process.getInputStream()));
 		int exitValue = 0;
 		try
 		{
@@ -93,28 +94,5 @@ public class JCudaUtils
 
 		System.out.println("Finished creating PTX file");
 		return ptxFileName;
-	}
-
-	/**
-	 * Fully reads the given InputStream and returns it as a byte array
-	 *
-	 * @param inputStream The input stream to read
-	 * @return The byte array containing the data from the input stream
-	 * @throws IOException If an I/O error occurs
-	 */
-	private static byte[] toByteArray(final InputStream inputStream) throws IOException
-	{
-		final ByteArrayOutputStream baos = new ByteArrayOutputStream();
-		final byte buffer[] = new byte[8192];
-		while (true)
-		{
-			final int read = inputStream.read(buffer);
-			if (read == -1)
-			{
-				break;
-			}
-			baos.write(buffer, 0, read);
-		}
-		return baos.toByteArray();
 	}
 }
