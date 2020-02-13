@@ -22,44 +22,6 @@ import net.finmath.montecarlo.opencl.RandomVariableOpenCL;
 public class FileUtils {
 
 	/**
-	 * Get the input stream of a resource file.
-	 * 
-	 * @param resourceName File name of the resource (absolute path).
-	 * @return Corresponding input stream.
-	 * @throws URISyntaxException Thrown if the URI was malformed.
-	 * @throws IOException Thrown if the file could not be opened.
-	 */
-	public static InputStream getInputStreamForResource(String resourceName) throws URISyntaxException, IOException {
-		// Get the input stream of a resource (may be in a Jar file).
-		final URI uri = RandomVariableOpenCL.class.getClassLoader().getResource(resourceName).toURI();
-		return getInputStreamForURI(uri);	
-	}
-
-	/**
-	 * Get the input stream of a resource file.
-	 * 
-	 * @param resourceName File name of the resource (absolute path).
-	 * @return Corresponding input stream.
-	 * @throws URISyntaxException Thrown if the URI was malformed.
-	 * @throws IOException Thrown if the file could not be opened.
-	 */
-	public static InputStream getInputStreamForURI(final URI uri) throws URISyntaxException, IOException {
-		// Get the input stream of an uri (may be in a Jar file).
-		try
-		{
-			FileSystems.getFileSystem(uri);
-		}
-		catch( FileSystemNotFoundException e )
-		{
-			Map<String, String> env = new HashMap<>();
-			env.put("create", "true");
-			FileSystems.newFileSystem(uri, env);
-		}
-		return Files.newInputStream(Paths.get(uri));
-
-	}
-
-	/**
 	 * Fully reads the given InputStream and returns it as a string.
 	 *
 	 * @param inputStream The input stream to read.

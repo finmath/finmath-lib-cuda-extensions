@@ -591,13 +591,14 @@ public class RandomVariableOpenCL implements RandomVariable {
 			//	        commandQueue = CL.clCreateCommandQueueWithProperties(context, device, properties, null);
 
 			// Read our OpenCL kernel from file
-			InputStream inputStreamOfSource = null;
-			try {
-				inputStreamOfSource = FileUtils.getInputStreamForResource("net/finmath/montecarlo/RandomVariableCudaKernel.cl");
-			} catch (URISyntaxException | IOException e) {
+			String resourceName = "/net/finmath/montecarlo/RandomVariableCudaKernel.cl";
+
+			final String source;
+			try(InputStream inputStreamOfSource = RandomVariableOpenCL.class.getResourceAsStream(resourceName)) {
+				source = FileUtils.readToString(inputStreamOfSource);
+			} catch (IOException e) {
 				throw new RuntimeException(e);
 			}
-			final String source = FileUtils.readToString(inputStreamOfSource);
 
 			// Create the program
 			final cl_program cpProgram = clCreateProgramWithSource(context, 1, new String[]{ source }, null, null);

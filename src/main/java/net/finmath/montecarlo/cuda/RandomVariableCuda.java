@@ -15,6 +15,7 @@ import static jcuda.driver.JCudaDriver.cuModuleGetFunction;
 import static jcuda.driver.JCudaDriver.cuModuleLoad;
 
 import java.io.IOException;
+import java.io.InputStream;
 import java.lang.ref.Reference;
 import java.lang.ref.ReferenceQueue;
 import java.lang.ref.WeakReference;
@@ -535,11 +536,9 @@ public class RandomVariableCuda implements RandomVariable {
 
 			// Create the PTX file by calling the NVCC
 			String ptxFileName = null;
-			try {
-				final URI cuFileURI = RandomVariableCuda.class.getClassLoader().getResource("net/finmath/montecarlo/RandomVariableCudaKernel.cu").toURI();
-				ptxFileName = net.finmath.jcuda.JCudaUtils.preparePtxFile(cuFileURI, arch);
+			try(final InputStream cuFileStream = RandomVariableCuda.class.getResourceAsStream("/net/finmath/montecarlo/RandomVariableCudaKernel.cu")) {
+				ptxFileName = net.finmath.jcuda.JCudaUtils.preparePtxFile(cuFileStream, arch);
 			} catch (IOException | URISyntaxException e) {
-				// TODO Auto-generated catch block
 				e.printStackTrace();
 			}
 

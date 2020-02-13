@@ -28,21 +28,18 @@ public class JCudaUtils
 	 * compiled from the given file using NVCC. The name of the
 	 * PTX file is returned.
 	 *
-	 * @param cuFileURI The name of the .cu file
+	 * @param cuFileStream The name of the .cu file
 	 * @param arch String specifying the architecture (see nvcc command, -arch argument). Examples are sm_12, sm_20, sm_30
 	 * @return The name of the PTX file.
 	 * @throws IOException Thrown if an I/O error occurs.
 	 * @throws URISyntaxException Thrown if the cuFileURL cannot be converted to an URI.
 	 */
-	public static String preparePtxFile(final URI cuFileURI, final String arch) throws IOException, URISyntaxException
+	public static String preparePtxFile(final InputStream cuFileStream, final String arch) throws IOException, URISyntaxException
 	{
 //		final String cuFileName = Paths.get(cuFileURI).toFile().getAbsolutePath();
-		String cuFileName;
-		try(final InputStream inputStream = FileUtils.getInputStreamForURI(cuFileURI)) {;
-			Path file = Files.createTempFile("RandomVariableCudaKernel", "cu");		
-			Files.copy(inputStream, file, StandardCopyOption.REPLACE_EXISTING);
-			cuFileName = file.toFile().getAbsolutePath();
-		}
+			Path file = Files.createTempFile("RandomVariableCudaKernel", ".cu");		
+			Files.copy(cuFileStream, file, StandardCopyOption.REPLACE_EXISTING);
+			String cuFileName = file.toFile().getAbsolutePath();
 		
 		int endIndex = cuFileName.lastIndexOf('.');
 		if (endIndex == -1)
