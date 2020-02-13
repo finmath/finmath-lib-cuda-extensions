@@ -394,6 +394,7 @@
 			</dependencies>
 		</profile>
 	</profiles>
+
 	<issueManagement>
 		<system>GitHub</system>
 		<url>https://github.com/finmath/finmath-lib-cuda-extensions/issues</url>
