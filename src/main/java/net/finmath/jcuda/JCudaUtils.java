@@ -2,9 +2,15 @@ package net.finmath.jcuda;
 
 import java.io.File;
 import java.io.IOException;
+import java.io.InputStream;
+import java.net.URI;
 import java.net.URISyntaxException;
 import java.net.URL;
+import java.nio.file.Files;
+import java.nio.file.Path;
 import java.nio.file.Paths;
+import java.nio.file.StandardCopyOption;
+import java.nio.file.attribute.FileAttribute;
 import java.util.Arrays;
 
 import net.finmath.util.FileUtils;
@@ -22,15 +28,22 @@ public class JCudaUtils
 	 * compiled from the given file using NVCC. The name of the
 	 * PTX file is returned.
 	 *
-	 * @param cuFileURL The name of the .cu file
+	 * @param cuFileURI The name of the .cu file
 	 * @param arch String specifying the architecture (see nvcc command, -arch argument). Examples are sm_12, sm_20, sm_30
 	 * @return The name of the PTX file.
 	 * @throws IOException Thrown if an I/O error occurs.
 	 * @throws URISyntaxException Thrown if the cuFileURL cannot be converted to an URI.
 	 */
-	public static String preparePtxFile(final URL cuFileURL, final String arch) throws IOException, URISyntaxException
+	public static String preparePtxFile(final URI cuFileURI, final String arch) throws IOException, URISyntaxException
 	{
-		final String cuFileName = Paths.get(cuFileURL.toURI()).toFile().getAbsolutePath();
+//		final String cuFileName = Paths.get(cuFileURI).toFile().getAbsolutePath();
+		String cuFileName;
+		try(final InputStream inputStream = FileUtils.getInputStreamForURI(cuFileURI)) {;
+			Path file = Files.createTempFile("RandomVariableCudaKernel", "cu");		
+			Files.copy(inputStream, file, StandardCopyOption.REPLACE_EXISTING);
+			cuFileName = file.toFile().getAbsolutePath();
+		}
+		
 		int endIndex = cuFileName.lastIndexOf('.');
 		if (endIndex == -1)
 		{

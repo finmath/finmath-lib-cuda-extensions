@@ -18,6 +18,7 @@ import java.io.IOException;
 import java.lang.ref.Reference;
 import java.lang.ref.ReferenceQueue;
 import java.lang.ref.WeakReference;
+import java.net.URI;
 import java.net.URISyntaxException;
 import java.net.URL;
 import java.util.Map;
@@ -535,8 +536,8 @@ public class RandomVariableCuda implements RandomVariable {
 			// Create the PTX file by calling the NVCC
 			String ptxFileName = null;
 			try {
-				final URL cuFileURL = RandomVariableCuda.class.getClassLoader().getResource("net/finmath/montecarlo/RandomVariableCudaKernel.cu");
-				ptxFileName = net.finmath.jcuda.JCudaUtils.preparePtxFile(cuFileURL, arch);
+				final URI cuFileURI = RandomVariableCuda.class.getClassLoader().getResource("net/finmath/montecarlo/RandomVariableCudaKernel.cu").toURI();
+				ptxFileName = net.finmath.jcuda.JCudaUtils.preparePtxFile(cuFileURI, arch);
 			} catch (IOException | URISyntaxException e) {
 				// TODO Auto-generated catch block
 				e.printStackTrace();

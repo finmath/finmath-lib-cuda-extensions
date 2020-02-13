@@ -2,15 +2,18 @@ package net.finmath.util;
 
 import java.io.BufferedReader;
 import java.io.ByteArrayOutputStream;
+import java.io.File;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.InputStreamReader;
+import java.net.URI;
 import java.net.URISyntaxException;
 import java.net.URL;
 import java.nio.file.FileSystemNotFoundException;
 import java.nio.file.FileSystems;
 import java.nio.file.Files;
 import java.nio.file.Paths;
+import java.nio.file.StandardCopyOption;
 import java.util.HashMap;
 import java.util.Map;
 
@@ -28,19 +31,32 @@ public class FileUtils {
 	 */
 	public static InputStream getInputStreamForResource(String resourceName) throws URISyntaxException, IOException {
 		// Get the input stream of a resource (may be in a Jar file).
-		final URL cuFileURL = RandomVariableOpenCL.class.getClassLoader().getResource(resourceName);
+		final URI uri = RandomVariableOpenCL.class.getClassLoader().getResource(resourceName).toURI();
+		return getInputStreamForURI(uri);	
+	}
+
+	/**
+	 * Get the input stream of a resource file.
+	 * 
+	 * @param resourceName File name of the resource (absolute path).
+	 * @return Corresponding input stream.
+	 * @throws URISyntaxException Thrown if the URI was malformed.
+	 * @throws IOException Thrown if the file could not be opened.
+	 */
+	public static InputStream getInputStreamForURI(final URI uri) throws URISyntaxException, IOException {
+		// Get the input stream of an uri (may be in a Jar file).
 		try
 		{
-			FileSystems.getFileSystem(cuFileURL.toURI());
+			FileSystems.getFileSystem(uri);
 		}
 		catch( FileSystemNotFoundException e )
 		{
 			Map<String, String> env = new HashMap<>();
 			env.put("create", "true");
-			FileSystems.newFileSystem(cuFileURL.toURI(), env);
+			FileSystems.newFileSystem(uri, env);
 		}
-		return Files.newInputStream(Paths.get(cuFileURL.toURI()));
-	
+		return Files.newInputStream(Paths.get(uri));
+
 	}
 
 	/**
@@ -97,4 +113,10 @@ public class FileUtils {
 		return baos.toByteArray();
 	}
 
+	public static void writeInputStreamToFile(final InputStream inputStream, final File targetFile) throws IOException {
+		java.nio.file.Files.copy(
+				inputStream, 
+				targetFile.toPath(), 
+				StandardCopyOption.REPLACE_EXISTING);
+	}
 }
