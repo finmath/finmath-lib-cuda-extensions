@@ -2,22 +2,9 @@ package net.finmath.util;
 
 import java.io.BufferedReader;
 import java.io.ByteArrayOutputStream;
-import java.io.File;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.InputStreamReader;
-import java.net.URI;
-import java.net.URISyntaxException;
-import java.net.URL;
-import java.nio.file.FileSystemNotFoundException;
-import java.nio.file.FileSystems;
-import java.nio.file.Files;
-import java.nio.file.Paths;
-import java.nio.file.StandardCopyOption;
-import java.util.HashMap;
-import java.util.Map;
-
-import net.finmath.montecarlo.opencl.RandomVariableOpenCL;
 
 public class FileUtils {
 
@@ -73,12 +60,5 @@ public class FileUtils {
 			baos.write(buffer, 0, read);
 		}
 		return baos.toByteArray();
-	}
-
-	public static void writeInputStreamToFile(final InputStream inputStream, final File targetFile) throws IOException {
-		java.nio.file.Files.copy(
-				inputStream, 
-				targetFile.toPath(), 
-				StandardCopyOption.REPLACE_EXISTING);
 	}
 }

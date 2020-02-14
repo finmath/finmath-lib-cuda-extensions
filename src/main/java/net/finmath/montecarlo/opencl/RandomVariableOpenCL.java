@@ -21,13 +21,11 @@ import static org.jocl.CL.clGetPlatformIDs;
 import static org.jocl.CL.clReleaseMemObject;
 import static org.jocl.CL.clSetKernelArg;
 
-import java.io.FileInputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.lang.ref.Reference;
 import java.lang.ref.ReferenceQueue;
 import java.lang.ref.WeakReference;
-import java.net.URISyntaxException;
 import java.util.Map;
 import java.util.Map.Entry;
 import java.util.concurrent.Callable;

@@ -29,7 +29,6 @@ import net.finmath.montecarlo.cuda.alternative.BrownianMotionCudaWithHostRandomV
 import net.finmath.montecarlo.cuda.alternative.BrownianMotionCudaWithRandomVariableCuda;
 import net.finmath.montecarlo.cuda.alternative.BrownianMotionJavaRandom;
 import net.finmath.montecarlo.model.AbstractProcessModel;
-import net.finmath.montecarlo.opencl.RandomVariableOpenCL;
 import net.finmath.montecarlo.opencl.RandomVariableOpenCLFactory;
 import net.finmath.montecarlo.process.EulerSchemeFromProcessModel;
 import net.finmath.montecarlo.process.MonteCarloProcessFromProcessModel;

@@ -8,7 +8,6 @@ package net.finmath.montecarlo.cuda.alternative;
 import static jcuda.jcurand.JCurand.curandCreateGenerator;
 import static jcuda.jcurand.JCurand.curandDestroyGenerator;
 import static jcuda.jcurand.JCurand.curandSetPseudoRandomGeneratorSeed;
-import static jcuda.jcurand.curandRngType.CURAND_RNG_PSEUDO_MTGP32;
 
 import java.io.Serializable;
 
