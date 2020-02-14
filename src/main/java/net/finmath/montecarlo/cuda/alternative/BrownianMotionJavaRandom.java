@@ -131,7 +131,9 @@ public class BrownianMotionJavaRandom implements BrownianMotion, Serializable {
 	 */
 	private void doGenerateBrownianMotion() {
 		if(brownianIncrements != null)
+		{
 			return;	// Nothing to do
+		}
 
 		// Create random number sequence generator
 		final Random random = new Random(seed);
@@ -214,21 +216,27 @@ public class BrownianMotionJavaRandom implements BrownianMotion, Serializable {
 
 	@Override
 	public boolean equals(final Object o) {
-		if (this == o)
+		if (this == o) {
 			return true;
-		if (o == null || getClass() != o.getClass())
+		}
+		if (o == null || getClass() != o.getClass()) {
 			return false;
+		}
 
 		final BrownianMotionJavaRandom that = (BrownianMotionJavaRandom) o;
 
-		if (numberOfFactors != that.numberOfFactors)
+		if (numberOfFactors != that.numberOfFactors) {
 			return false;
-		if (numberOfPaths != that.numberOfPaths)
+		}
+		if (numberOfPaths != that.numberOfPaths) {
 			return false;
-		if (seed != that.seed)
+		}
+		if (seed != that.seed) {
 			return false;
-		if (!timeDiscretization.equals(that.timeDiscretization))
+		}
+		if (!timeDiscretization.equals(that.timeDiscretization)) {
 			return false;
+		}
 
 		return true;
 	}

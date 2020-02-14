@@ -4,12 +4,14 @@ import java.io.File;
 import java.io.IOException;
 import java.io.InputStream;
 import java.net.URISyntaxException;
+import java.nio.charset.Charset;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.StandardCopyOption;
 import java.util.Arrays;
+import java.util.logging.Logger;
 
-import net.finmath.util.FileUtils;
+import org.apache.commons.io.IOUtils;
 
 /**
  * Adapted from JCuda examples: Reads a CUDA file, compiles it to a PTX file
@@ -18,6 +20,8 @@ import net.finmath.util.FileUtils;
  */
 public class JCudaUtils
 {
+	private static Logger logger = Logger.getLogger("net.finmath");
+
 	/**
 	 * The extension of the given file name is replaced with "ptx".
 	 * If the file with the resulting name does not exist, it is
@@ -44,12 +48,14 @@ public class JCudaUtils
 		}
 		final String ptxFileName = cuFileName.substring(0, endIndex+1)+"ptx";
 		final File ptxFile = new File(ptxFileName);
-		if (ptxFile.exists())
+		if (ptxFile.exists()) {
 			return ptxFileName;
+		}
 
 		final File cuFile = new File(cuFileName);
-		if (!cuFile.exists())
+		if (!cuFile.exists()) {
 			throw new IOException("Input file not found: "+cuFileName);
+		}
 
 		/*
 		 * Check for 64 bit or 32 bit
@@ -70,11 +76,11 @@ public class JCudaUtils
 
 		//		String command = "nvcc " + modelString + " -ptx " + "" + cuFile.getPath() + " -o " + ptxFileName;
 
-		System.out.println("Executing\n"+Arrays.toString(command));
+		logger.info("Executing\n"+Arrays.toString(command));
 		final Process process = Runtime.getRuntime().exec(command);
 
-		final String errorMessage = new String(FileUtils.readToByteArray(process.getErrorStream()));
-		final String outputMessage = new String(FileUtils.readToByteArray(process.getInputStream()));
+		final String errorMessage = IOUtils.toString(process.getErrorStream(), Charset.defaultCharset());
+		final String outputMessage = IOUtils.toString(process.getInputStream(), Charset.defaultCharset());
 		int exitValue = 0;
 		try
 		{
@@ -83,20 +89,20 @@ public class JCudaUtils
 		catch (final InterruptedException e)
 		{
 			Thread.currentThread().interrupt();
-			throw new IOException(
-					"Interrupted while waiting for nvcc output", e);
+			throw new IOException("Interrupted while waiting for nvcc output", e);
 		}
 
 		if (exitValue != 0)
 		{
-			System.out.println("nvcc process exitValue "+exitValue);
-			System.out.println("errorMessage:\n"+errorMessage);
-			System.out.println("outputMessage:\n"+outputMessage);
-			throw new IOException(
-					"Could not create .ptx file: "+errorMessage);
+			logger.severe("nvcc process exitValue "+ exitValue +
+					"\nerrorMessage: "+errorMessage + 
+					"\noutputMessage: "+outputMessage);
+
+			throw new IOException("Could not create .ptx file: "+errorMessage);
 		}
 
-		System.out.println("Finished creating PTX file");
+		logger.info("Finished creating PTX file");
+
 		return ptxFileName;
 	}
 }

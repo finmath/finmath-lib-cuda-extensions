@@ -26,6 +26,7 @@ import java.io.InputStream;
 import java.lang.ref.Reference;
 import java.lang.ref.ReferenceQueue;
 import java.lang.ref.WeakReference;
+import java.nio.charset.Charset;
 import java.util.Map;
 import java.util.Map.Entry;
 import java.util.concurrent.Callable;
@@ -41,6 +42,7 @@ import java.util.logging.Level;
 import java.util.logging.Logger;
 import java.util.stream.DoubleStream;
 
+import org.apache.commons.io.IOUtils;
 import org.jocl.CL;
 import org.jocl.Pointer;
 import org.jocl.Sizeof;
@@ -57,7 +59,6 @@ import net.finmath.functions.DoubleTernaryOperator;
 import net.finmath.montecarlo.RandomVariableFromDoubleArray;
 import net.finmath.montecarlo.RandomVariableFromFloatArray;
 import net.finmath.stochastic.RandomVariable;
-import net.finmath.util.FileUtils;
 
 /**
  * This class represents a random variable being the evaluation of a stochastic process
@@ -330,8 +331,8 @@ public class RandomVariableOpenCL implements RandomVariable {
 		 * @return Returns the (estimated) percentage amount of free memory on the device.
 		 */
 		private static float getDeviceFreeMemPercentage() {
-			final float freeRate = 1.0f - 1.1f * deviceAllocMemoryBytes / deviceMaxMemoryBytes;
-			//			System.out.println("OpCL: " + deviceMemoryPool.vectorsInUseReferenceMap.size() + "\t" + freeRate);
+			final float freeRate = 1.0f - 1.1f * (float)deviceAllocMemoryBytes / (float) deviceMaxMemoryBytes;
+			System.out.println("OpCL: " + deviceMemoryPool.vectorsInUseReferenceMap.size() + "\t" + freeRate);
 			return freeRate;
 		}
 
@@ -593,7 +594,7 @@ public class RandomVariableOpenCL implements RandomVariable {
 
 			final String source;
 			try(InputStream inputStreamOfSource = RandomVariableOpenCL.class.getResourceAsStream(resourceName)) {
-				source = FileUtils.readToString(inputStreamOfSource);
+				source = IOUtils.toString(inputStreamOfSource, Charset.defaultCharset());
 			} catch (final IOException e) {
 				throw new RuntimeException(e);
 			}
@@ -804,9 +805,9 @@ public class RandomVariableOpenCL implements RandomVariable {
 	}
 
 	private static RandomVariableOpenCL getRandomVariableCuda(final RandomVariable randomVariable) {
-		if(randomVariable instanceof RandomVariableOpenCL)
+		if(randomVariable instanceof RandomVariableOpenCL) {
 			return (RandomVariableOpenCL)randomVariable;
-		else {
+		} else {
 			final RandomVariableOpenCL randomVariableCuda = new RandomVariableOpenCL(randomVariable.getFiltrationTime(), randomVariable.getRealizations());
 			return randomVariableCuda;
 		}
@@ -857,24 +858,27 @@ public class RandomVariableOpenCL implements RandomVariable {
 
 	@Override
 	public double get(final int pathOrState) {
-		if(isDeterministic())
+		if(isDeterministic()) {
 			return valueIfNonStochastic;
-		else
+		} else {
 			throw new UnsupportedOperationException();
+		}
 	}
 
 	@Override
 	public int size() {
-		if(isDeterministic())
+		if(isDeterministic()) {
 			return 1;
-		else
+		} else {
 			return (int)this.size;
+		}
 	}
 
 	@Override
 	public double getMin() {
-		if(isDeterministic())
+		if(isDeterministic()) {
 			return valueIfNonStochastic;
+		}
 
 		final double[] realizations = getRealizations();
 
@@ -892,8 +896,9 @@ public class RandomVariableOpenCL implements RandomVariable {
 
 	@Override
 	public double getMax() {
-		if(isDeterministic())
+		if(isDeterministic()) {
 			return valueIfNonStochastic;
+		}
 
 		final double[] realizations = getRealizations();
 
@@ -910,10 +915,12 @@ public class RandomVariableOpenCL implements RandomVariable {
 
 	@Override
 	public double getAverage() {
-		if(isDeterministic())
+		if(isDeterministic()) {
 			return valueIfNonStochastic;
-		if(size() == 0)
+		}
+		if(size() == 0) {
 			return Double.NaN;
+		}
 
 		// TODO: Use kernel
 		return (new RandomVariableFromFloatArray(getFiltrationTime(), deviceMemoryPool.getValuesAsFloat(realizations, size()))).getAverage();
@@ -930,10 +937,12 @@ public class RandomVariableOpenCL implements RandomVariable {
 
 	@Override
 	public double getVariance() {
-		if(isDeterministic())
+		if(isDeterministic()) {
 			return 0.0;
-		if(size() == 0)
+		}
+		if(size() == 0) {
 			return Double.NaN;
+		}
 
 		final double average = getAverage();
 		return this.squared().getAverage() - average*average;
@@ -947,60 +956,72 @@ public class RandomVariableOpenCL implements RandomVariable {
 
 	@Override
 	public double getSampleVariance() {
-		if(isDeterministic() || size() == 1)
+		if(isDeterministic() || size() == 1) {
 			return 0.0;
-		if(size() == 0)
+		}
+		if(size() == 0) {
 			return Double.NaN;
+		}
 
 		return getVariance() * size()/(size()-1);
 	}
 
 	@Override
 	public double getStandardDeviation() {
-		if(isDeterministic())
+		if(isDeterministic()) {
 			return 0.0;
-		if(size() == 0)
+		}
+		if(size() == 0) {
 			return Double.NaN;
+		}
 
 		return Math.sqrt(getVariance());
 	}
 
 	@Override
 	public double getStandardDeviation(final RandomVariable probabilities) {
-		if(isDeterministic())
+		if(isDeterministic()) {
 			return 0.0;
-		if(size() == 0)
+		}
+		if(size() == 0) {
 			return Double.NaN;
+		}
 
 		return Math.sqrt(getVariance(probabilities));
 	}
 
 	@Override
 	public double getStandardError() {
-		if(isDeterministic())
+		if(isDeterministic()) {
 			return 0.0;
-		if(size() == 0)
+		}
+		if(size() == 0) {
 			return Double.NaN;
+		}
 
 		return getStandardDeviation()/Math.sqrt(size());
 	}
 
 	@Override
 	public double getStandardError(final RandomVariable probabilities) {
-		if(isDeterministic())
+		if(isDeterministic()) {
 			return 0.0;
-		if(size() == 0)
+		}
+		if(size() == 0) {
 			return Double.NaN;
+		}
 
 		return getStandardDeviation(probabilities)/Math.sqrt(size());
 	}
 
 	@Override
 	public double getQuantile(final double quantile) {
-		if(isDeterministic())
+		if(isDeterministic()) {
 			return valueIfNonStochastic;
-		if(size() == 0)
+		}
+		if(size() == 0) {
 			return Double.NaN;
+		}
 
 		final double[] realizations = getRealizations();
 
@@ -1014,22 +1035,27 @@ public class RandomVariableOpenCL implements RandomVariable {
 
 	@Override
 	public double getQuantile(final double quantile, final RandomVariable probabilities) {
-		if(isDeterministic())
+		if(isDeterministic()) {
 			return valueIfNonStochastic;
-		if(size() == 0)
+		}
+		if(size() == 0) {
 			return Double.NaN;
+		}
 
 		throw new RuntimeException("Method not implemented.");
 	}
 
 	@Override
 	public double getQuantileExpectation(final double quantileStart, final double quantileEnd) {
-		if(isDeterministic())
+		if(isDeterministic()) {
 			return valueIfNonStochastic;
-		if(size() == 0)
+		}
+		if(size() == 0) {
 			return Double.NaN;
-		if(quantileStart > quantileEnd)
+		}
+		if(quantileStart > quantileEnd) {
 			return getQuantileExpectation(quantileEnd, quantileStart);
+		}
 
 		final double[] realizationsSorted = getRealizations();
 		java.util.Arrays.sort(realizationsSorted);
@@ -1138,16 +1164,18 @@ public class RandomVariableOpenCL implements RandomVariable {
 		if(isDeterministic()) {
 			final double[] result = new double[] { valueIfNonStochastic };
 			return result;
-		} else
+		} else {
 			return getDoubleArray(deviceMemoryPool.getValuesAsFloat(realizations, size()));
+		}
 	}
 
 	@Override
 	public Double doubleValue() {
-		if(isDeterministic())
+		if(isDeterministic()) {
 			return valueIfNonStochastic;
-		else
+		} else {
 			throw new UnsupportedOperationException("The random variable is non-deterministic");
+		}
 	}
 
 	@Override
@@ -1304,8 +1332,9 @@ public class RandomVariableOpenCL implements RandomVariable {
 		if(isDeterministic()) {
 			final double newValueIfNonStochastic = valueIfNonStochastic * valueIfNonStochastic;
 			return of(time, newValueIfNonStochastic);
-		} else
+		} else {
 			return this.mult(this);
+		}
 	}
 
 	@Override
@@ -1406,9 +1435,10 @@ public class RandomVariableOpenCL implements RandomVariable {
 
 	@Override
 	public RandomVariable add(final RandomVariable randomVariable) {
-		if(randomVariable.getTypePriority() > this.getTypePriority())
+		if(randomVariable.getTypePriority() > this.getTypePriority()) {
 			// Check type priority
 			return randomVariable.add(this);
+		}
 
 		// Set time of this random variable to maximum of time with respect to which measurability is known.
 		final double newTime = Math.max(time, randomVariable.getFiltrationTime());
@@ -1417,11 +1447,11 @@ public class RandomVariableOpenCL implements RandomVariable {
 			final double newValueIfNonStochastic = valueIfNonStochastic + randomVariable.doubleValue();
 			return of(newTime, newValueIfNonStochastic);
 		}
-		else if(isDeterministic())
+		else if(isDeterministic()) {
 			return getRandomVariableCuda(randomVariable).add(valueIfNonStochastic);
-		else if(randomVariable.isDeterministic())
+		} else if(randomVariable.isDeterministic()) {
 			return this.add(randomVariable.doubleValue());
-		else {
+		} else {
 			final DevicePointerReference result = deviceMemoryPool.callFunctionv2s0(add, size, realizations, getRandomVariableCuda(randomVariable).realizations);
 			return of(time, result, size());
 		}
@@ -1429,9 +1459,10 @@ public class RandomVariableOpenCL implements RandomVariable {
 
 	@Override
 	public RandomVariable sub(final RandomVariable randomVariable) {
-		if(randomVariable.getTypePriority() > this.getTypePriority())
+		if(randomVariable.getTypePriority() > this.getTypePriority()) {
 			// Check type priority
 			return randomVariable.bus(this);
+		}
 
 		// Set time of this random variable to maximum of time with respect to which measurability is known.
 		final double newTime = Math.max(time, randomVariable.getFiltrationTime());
@@ -1440,11 +1471,11 @@ public class RandomVariableOpenCL implements RandomVariable {
 			final double newValueIfNonStochastic = valueIfNonStochastic - randomVariable.doubleValue();
 			return of(newTime, newValueIfNonStochastic);
 		}
-		else if(isDeterministic())
+		else if(isDeterministic()) {
 			return getRandomVariableCuda(randomVariable).bus(valueIfNonStochastic);
-		else if(randomVariable.isDeterministic())
+		} else if(randomVariable.isDeterministic()) {
 			return this.sub(randomVariable.doubleValue());
-		else {
+		} else {
 			final DevicePointerReference result = deviceMemoryPool.callFunctionv2s0(sub, size, realizations, getRandomVariableCuda(randomVariable).realizations);
 			return of(time, result, size());
 		}
@@ -1452,9 +1483,10 @@ public class RandomVariableOpenCL implements RandomVariable {
 
 	@Override
 	public RandomVariable bus(final RandomVariable randomVariable) {
-		if(randomVariable.getTypePriority() > this.getTypePriority())
+		if(randomVariable.getTypePriority() > this.getTypePriority()) {
 			// Check type priority
 			return randomVariable.sub(this);
+		}
 
 		// Set time of this random variable to maximum of time with respect to which measurability is known.
 		final double newTime = Math.max(time, randomVariable.getFiltrationTime());
@@ -1463,11 +1495,11 @@ public class RandomVariableOpenCL implements RandomVariable {
 			final double newValueIfNonStochastic = -valueIfNonStochastic + randomVariable.doubleValue();
 			return of(newTime, newValueIfNonStochastic);
 		}
-		else if(isDeterministic())
+		else if(isDeterministic()) {
 			return getRandomVariableCuda(randomVariable).sub(valueIfNonStochastic);
-		else if(randomVariable.isDeterministic())
+		} else if(randomVariable.isDeterministic()) {
 			return this.bus(randomVariable.doubleValue());
-		else {
+		} else {
 			// flipped arguments
 			final DevicePointerReference result = deviceMemoryPool.callFunctionv2s0(sub, size, getRandomVariableCuda(randomVariable).realizations, realizations);
 			return of(time, result, size());
@@ -1476,9 +1508,10 @@ public class RandomVariableOpenCL implements RandomVariable {
 
 	@Override
 	public RandomVariable mult(final RandomVariable randomVariable) {
-		if(randomVariable.getTypePriority() > this.getTypePriority())
+		if(randomVariable.getTypePriority() > this.getTypePriority()) {
 			// Check type priority
 			return randomVariable.mult(this);
+		}
 
 		// Set time of this random variable to maximum of time with respect to which measurability is known.
 		final double newTime = Math.max(time, randomVariable.getFiltrationTime());
@@ -1487,11 +1520,11 @@ public class RandomVariableOpenCL implements RandomVariable {
 			final double newValueIfNonStochastic = valueIfNonStochastic * randomVariable.doubleValue();
 			return of(newTime, newValueIfNonStochastic);
 		}
-		else if(randomVariable.isDeterministic())
+		else if(randomVariable.isDeterministic()) {
 			return this.mult(randomVariable.doubleValue());
-		else if(isDeterministic() && !randomVariable.isDeterministic())
+		} else if(isDeterministic() && !randomVariable.isDeterministic()) {
 			return getRandomVariableCuda(randomVariable).mult(this.valueIfNonStochastic);
-		else {
+		} else {
 			final DevicePointerReference result = deviceMemoryPool.callFunctionv2s0(mult, size, realizations, getRandomVariableCuda(randomVariable).realizations);
 			return of(newTime, result, size());
 		}
@@ -1499,9 +1532,10 @@ public class RandomVariableOpenCL implements RandomVariable {
 
 	@Override
 	public RandomVariable div(final RandomVariable randomVariable) {
-		if(randomVariable.getTypePriority() > this.getTypePriority())
+		if(randomVariable.getTypePriority() > this.getTypePriority()) {
 			// Check type priority
 			return randomVariable.vid(this);
+		}
 
 		// Set time of this random variable to maximum of time with respect to which measurability is known.
 		final double newTime = Math.max(time, randomVariable.getFiltrationTime());
@@ -1510,11 +1544,11 @@ public class RandomVariableOpenCL implements RandomVariable {
 			final double newValueIfNonStochastic = valueIfNonStochastic / randomVariable.doubleValue();
 			return of(newTime, newValueIfNonStochastic);
 		}
-		else if(isDeterministic())
+		else if(isDeterministic()) {
 			return getRandomVariableCuda(randomVariable).vid(valueIfNonStochastic);
-		else if(randomVariable.isDeterministic())
+		} else if(randomVariable.isDeterministic()) {
 			return this.div(randomVariable.doubleValue());
-		else {
+		} else {
 			final DevicePointerReference result = deviceMemoryPool.callFunctionv2s0(cuDiv, size, realizations, getRandomVariableCuda(randomVariable).realizations);
 			return of(newTime, result, size());
 		}
@@ -1522,9 +1556,10 @@ public class RandomVariableOpenCL implements RandomVariable {
 
 	@Override
 	public RandomVariable vid(final RandomVariable randomVariable) {
-		if(randomVariable.getTypePriority() > this.getTypePriority())
+		if(randomVariable.getTypePriority() > this.getTypePriority()) {
 			// Check type priority
 			return randomVariable.vid(this);
+		}
 
 		// Set time of this random variable to maximum of time with respect to which measurability is known.
 		final double newTime = Math.max(time, randomVariable.getFiltrationTime());
@@ -1533,11 +1568,11 @@ public class RandomVariableOpenCL implements RandomVariable {
 			final double newValueIfNonStochastic = randomVariable.doubleValue() / valueIfNonStochastic;
 			return of(newTime, newValueIfNonStochastic);
 		}
-		else if(isDeterministic())
+		else if(isDeterministic()) {
 			return getRandomVariableCuda(randomVariable).div(valueIfNonStochastic);
-		else if(randomVariable.isDeterministic())
+		} else if(randomVariable.isDeterministic()) {
 			return this.vid(randomVariable.doubleValue());
-		else {
+		} else {
 			// flipped arguments
 			final DevicePointerReference result = deviceMemoryPool.callFunctionv2s0(cuDiv, size, getRandomVariableCuda(randomVariable).realizations, realizations);
 			return of(newTime, result, size());
@@ -1546,9 +1581,10 @@ public class RandomVariableOpenCL implements RandomVariable {
 
 	@Override
 	public RandomVariable cap(final RandomVariable randomVariable) {
-		if(randomVariable.getTypePriority() > this.getTypePriority())
+		if(randomVariable.getTypePriority() > this.getTypePriority()) {
 			// Check type priority
 			return randomVariable.cap(this);
+		}
 
 		// Set time of this random variable to maximum of time with respect to which measurability is known.
 		final double newTime = Math.max(time, randomVariable.getFiltrationTime());
@@ -1557,9 +1593,9 @@ public class RandomVariableOpenCL implements RandomVariable {
 			final double newValueIfNonStochastic = Math.min(valueIfNonStochastic, randomVariable.doubleValue());
 			return of(newTime, newValueIfNonStochastic);
 		}
-		else if(isDeterministic())
+		else if(isDeterministic()) {
 			return randomVariable.cap(valueIfNonStochastic);
-		else {
+		} else {
 			final DevicePointerReference result = deviceMemoryPool.callFunctionv2s0(cap, size, realizations, getRandomVariableCuda(randomVariable).realizations);
 			return of(newTime, result, size());
 		}
@@ -1567,9 +1603,10 @@ public class RandomVariableOpenCL implements RandomVariable {
 
 	@Override
 	public RandomVariable floor(final RandomVariable randomVariable) {
-		if(randomVariable.getTypePriority() > this.getTypePriority())
+		if(randomVariable.getTypePriority() > this.getTypePriority()) {
 			// Check type priority
 			return randomVariable.floor(this);
+		}
 
 		// Set time of this random variable to maximum of time with respect to which measurability is known.
 		final double newTime = Math.max(time, randomVariable.getFiltrationTime());
@@ -1578,11 +1615,11 @@ public class RandomVariableOpenCL implements RandomVariable {
 			final double newValueIfNonStochastic = Math.max(valueIfNonStochastic, randomVariable.doubleValue());
 			return of(newTime, newValueIfNonStochastic);
 		}
-		else if(isDeterministic())
+		else if(isDeterministic()) {
 			return getRandomVariableCuda(randomVariable).floor(valueIfNonStochastic);
-		else if(randomVariable.isDeterministic())
+		} else if(randomVariable.isDeterministic()) {
 			return this.floor(randomVariable.doubleValue());
-		else {
+		} else {
 			final DevicePointerReference result = deviceMemoryPool.callFunctionv2s0(cuFloor, size, realizations, getRandomVariableCuda(randomVariable).realizations);
 			return of(newTime, result, size());
 		}
@@ -1590,18 +1627,19 @@ public class RandomVariableOpenCL implements RandomVariable {
 
 	@Override
 	public RandomVariable accrue(final RandomVariable rate, final double periodLength) {
-		if(rate.getTypePriority() > this.getTypePriority())
+		if(rate.getTypePriority() > this.getTypePriority()) {
 			// Check type priority
 			return rate.mult(periodLength).add(1.0).mult(this);
+		}
 
 		// Set time of this random variable to maximum of time with respect to which measurability is known.
 		final double newTime = Math.max(time, rate.getFiltrationTime());
 
-		if(rate.isDeterministic())
+		if(rate.isDeterministic()) {
 			return this.mult(1.0 + rate.doubleValue() * periodLength);
-		else if(isDeterministic() && !rate.isDeterministic())
+		} else if(isDeterministic() && !rate.isDeterministic()) {
 			return getRandomVariableCuda(rate.mult(periodLength).add(1.0).mult(valueIfNonStochastic));
-		else {
+		} else {
 			final DevicePointerReference result = deviceMemoryPool.callFunctionv2s1(accrue, size, realizations, getRandomVariableCuda(rate).realizations, periodLength);
 			return of(newTime, result, size());
 		}
@@ -1609,18 +1647,20 @@ public class RandomVariableOpenCL implements RandomVariable {
 
 	@Override
 	public RandomVariable discount(final RandomVariable rate, final double periodLength) {
-		if(rate.getTypePriority() > this.getTypePriority())
+		if(rate.getTypePriority() > this.getTypePriority()) {
 			// Check type priority
 			return rate.mult(periodLength).add(1.0).invert().mult(this);
+		}
 
 		// Set time of this random variable to maximum of time with respect to which measurability is known.
 		final double newTime = Math.max(time, rate.getFiltrationTime());
 
-		if(rate.isDeterministic())
+		if(rate.isDeterministic()) {
 			return this.div(1.0 + rate.doubleValue() * periodLength);
-		else if(isDeterministic() && !rate.isDeterministic()) {
-			if(valueIfNonStochastic == 0)
+		} else if(isDeterministic() && !rate.isDeterministic()) {
+			if(valueIfNonStochastic == 0) {
 				return this;
+			}
 			return (getRandomVariableCuda(rate.mult(periodLength).add(1.0)).vid(valueIfNonStochastic));
 		}
 		else {
@@ -1642,27 +1682,30 @@ public class RandomVariableOpenCL implements RandomVariable {
 
 	@Override
 	public RandomVariable addProduct(final RandomVariable factor1, final double factor2) {
-		if(factor1.getTypePriority() > this.getTypePriority())
+		if(factor1.getTypePriority() > this.getTypePriority()) {
 			// Check type priority
 			return factor1.mult(factor2).add(this);
+		}
 
 		// Set time of this random variable to maximum of time with respect to which measurability is known.
 		final double newTime = Math.max(time, factor1.getFiltrationTime());
 
-		if(factor1.isDeterministic())
+		if(factor1.isDeterministic()) {
 			return this.add(factor1.doubleValue() * factor2);
-		else if(!isDeterministic() && !factor1.isDeterministic()) {
+		} else if(!isDeterministic() && !factor1.isDeterministic()) {
 			final DevicePointerReference result = deviceMemoryPool.callFunctionv2s1(addProductVectorScalar, size, realizations, getRandomVariableCuda(factor1).realizations, factor2);
 			return of(newTime, result, size());
-		} else
+		} else {
 			return this.add(factor1.mult(factor2));
+		}
 	}
 
 	@Override
 	public RandomVariable addProduct(final RandomVariable factor1, final RandomVariable factor2) {
-		if(factor1.getTypePriority() > this.getTypePriority() || factor2.getTypePriority() > this.getTypePriority())
+		if(factor1.getTypePriority() > this.getTypePriority() || factor2.getTypePriority() > this.getTypePriority()) {
 			// Check type priority
 			return factor1.mult(factor2).add(this);
+		}
 
 		// Set time of this random variable to maximum of time with respect to which measurability is known.
 		final double newTime = Math.max(Math.max(time, factor1.getFiltrationTime()), factor2.getFiltrationTime());
@@ -1671,17 +1714,18 @@ public class RandomVariableOpenCL implements RandomVariable {
 			final double newValueIfNonStochastic = valueIfNonStochastic + (factor1.doubleValue() * factor2.doubleValue());
 			return of(newTime, newValueIfNonStochastic);
 		}
-		else if(factor1.isDeterministic() && factor2.isDeterministic())
+		else if(factor1.isDeterministic() && factor2.isDeterministic()) {
 			return add(factor1.doubleValue() * factor2.doubleValue());
-		else if(factor2.isDeterministic())
+		} else if(factor2.isDeterministic()) {
 			return this.addProduct(factor1, factor2.doubleValue());
-		else if(factor1.isDeterministic())
+		} else if(factor1.isDeterministic()) {
 			return this.addProduct(factor2, factor1.doubleValue());
-		else if(!isDeterministic() && !factor1.isDeterministic() && !factor2.isDeterministic()) {
+		} else if(!isDeterministic() && !factor1.isDeterministic() && !factor2.isDeterministic()) {
 			final DevicePointerReference result = deviceMemoryPool.callFunctionv3s0(addProduct, size, realizations, getRandomVariableCuda(factor1).realizations, getRandomVariableCuda(factor2).realizations);
 			return of(newTime, result, size());
-		} else
+		} else {
 			return this.add(factor1.mult(factor2));
+		}
 	}
 
 	@Override
@@ -1738,8 +1782,9 @@ public class RandomVariableOpenCL implements RandomVariable {
 	}
 
 	private double reduce() {
-		if(this.isDeterministic())
+		if(this.isDeterministic()) {
 			return valueIfNonStochastic;
+		}
 
 		RandomVariableOpenCL reduced = this;
 		while(reduced.size() > 1) {
