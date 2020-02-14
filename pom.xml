@@ -306,11 +306,9 @@
 	<profiles>
 		<profile>
 			<id>default</id>
-			<!--
 			<activation>
 				<activeByDefault>true</activeByDefault>
 			</activation>
-			 -->
 			<properties>
 				<envClassifier />
 			</properties>
@@ -329,6 +327,12 @@
 		</profile>
 		<profile>
 			<id>cuda-10.1</id>
+			<activation>
+				<property>
+					<name>cuda.version</name>
+					<value>10.1</value>
+				</property>
+			</activation>
 			<properties>
 				<envClassifier>cuda-10.1</envClassifier>
 			</properties>
@@ -347,9 +351,14 @@
 		</profile>
 		<profile>
 			<id>cuda-10.0</id>
+			<activation>
+				<property>
+					<name>cuda.version</name>
+					<value>10.0</value>
+				</property>
+			</activation>
 			<properties>
 				<envClassifier>cuda-10.0</envClassifier>
-				<finmath-cuda.classifier>-cuda-10.0</finmath-cuda.classifier>
 			</properties>
 			<dependencies>
 				<dependency>
@@ -366,9 +375,14 @@
 		</profile>
 		<profile>
 			<id>cuda-9.2</id>
+			<activation>
+				<property>
+					<name>cuda.version</name>
+					<value>9.2</value>
+				</property>
+			</activation>
 			<properties>
 				<envClassifier>cuda-9.2</envClassifier>
-				<finmath-cuda.classifier>-cuda-9.2</finmath-cuda.classifier>
 			</properties>
 			<dependencies>
 				<dependency>
@@ -384,10 +398,39 @@
 			</dependencies>
 		</profile>
 		<profile>
+			<id>cuda-8.0</id>
+			<activation>
+				<property>
+					<name>cuda.version</name>
+					<value>8.0</value>
+				</property>
+			</activation>
+			<properties>
+				<envClassifier>cuda-8.0</envClassifier>
+			</properties>
+			<dependencies>
+				<dependency>
+					<groupId>org.jcuda</groupId>
+					<artifactId>jcuda</artifactId>
+					<version>0.8.0</version>
+				</dependency>
+				<dependency>
+					<groupId>org.jcuda</groupId>
+					<artifactId>jcurand</artifactId>
+					<version>0.8.0</version>
+				</dependency>
+			</dependencies>
+		</profile>
+		<profile>
 			<id>cuda-6.0</id>
+			<activation>
+				<property>
+					<name>cuda.version</name>
+					<value>6.0</value>
+				</property>
+			</activation>
 			<properties>
 				<envClassifier>cuda-6.0</envClassifier>
-				<finmath-cuda.classifier>-cuda-6.0</finmath-cuda.classifier>
 			</properties>
 			<dependencies>
 				<dependency>
