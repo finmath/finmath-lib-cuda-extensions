@@ -350,7 +350,7 @@
 			<id>cuda-10.0</id>
 			<properties>
 				<envClassifier>cuda-10.0</envClassifier>
-				<finmath-cuda.classifier></finmath-cuda.classifier>
+				<finmath-cuda.classifier>-cuda-10.0</finmath-cuda.classifier>
 			</properties>
 			<dependencies>
 				<dependency>
@@ -369,7 +369,7 @@
 			<id>cuda-9.2</id>
 			<properties>
 				<envClassifier>cuda-9.2</envClassifier>
-				<finmath-cuda.classifier></finmath-cuda.classifier>
+				<finmath-cuda.classifier>-cuda-9.2</finmath-cuda.classifier>
 			</properties>
 			<dependencies>
 				<dependency>
@@ -388,7 +388,7 @@
 			<id>cuda-6.0</id>
 			<properties>
 				<envClassifier>cuda-6.0</envClassifier>
-				<finmath-cuda.classifier></finmath-cuda.classifier>
+				<finmath-cuda.classifier>-cuda-6.0</finmath-cuda.classifier>
 			</properties>
 			<dependencies>
 				<dependency>
