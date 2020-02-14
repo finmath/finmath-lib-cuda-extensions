@@ -12,7 +12,7 @@
 	</parent>
 
 	<groupId>net.finmath</groupId>
-	<artifactId>finmath-lib-cuda-extensions${finmath-cuda.classifier}</artifactId>
+	<artifactId>finmath-lib-cuda-extensions</artifactId>
 	<!-- issue: we cannot use the classifier, because the dependencies will differ -->
 	<version>4.1.1-SNAPSHOT</version>
 	<packaging>jar</packaging>
@@ -32,7 +32,6 @@
 		<kotlin.version>1.2.0</kotlin.version>
 		<junit.version>4.12</junit.version>
 		<finmath-lib.version>4.1.0</finmath-lib.version>
-		<finmath-cuda.classifier></finmath-cuda.classifier>
 	</properties>
 
 	<licenses>
@@ -312,7 +311,6 @@
 			</activation>
 			<properties>
 				<envClassifier />
-				<finmath-cuda.classifier></finmath-cuda.classifier>
 			</properties>
 			<dependencies>
 				<dependency>
@@ -331,7 +329,6 @@
 			<id>cuda-10.1</id>
 			<properties>
 				<envClassifier>cuda-10.1</envClassifier>
-				<finmath-cuda.classifier>cuda-10.1</finmath-cuda.classifier>
 			</properties>
 			<dependencies>
 				<dependency>
