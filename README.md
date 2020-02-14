@@ -74,7 +74,9 @@ Installation / Build
 
 Binary distribution is available via Maven central.
 
-You have to have NVIDIA Cuda 10.1 installed. The Maven configuration comes with profiles for Cuda 10.0 and 10.1. If you like to use a different version, you can try to switch the JCuda version in the Maven pom.xml.
+You have to have NVIDIA Cuda 10.1 installed. The Maven configuration comes with profiles for Cuda 8.0, 9.2, 10.0 and 10.1.
+If you like to use a different version, you can try to switch the JCuda version by setting the property cuda.version
+on the Maven command line.
 
 To build the project yourself and run the unit tests from the source repository:
 
@@ -91,37 +93,13 @@ cd finmath-lib-cuda-extensions
 mvn clean package
 ```
 
+This will build the version using Cuda 10.1. For Cuda 10.0 use
+
+```
+mvn -Dcuda.version=10.0 clean package
+```
+
 If everything goes well, you will see unit test run. Note that some of the tests may fail if the device (GPU) has not enough memory. 
-
-### Profiles
-
-The default profile will build the version using Cuda 10.1.
-
-#### Cuda 10.0
-
-For Cuda 10.0 use
-
-```
-mvn -P cuda-10.0 clean package
-```
-
-#### Cuda 9.2
-
-For Cuda 9.2 use
-
-```
-mvn -P cuda-9.2 clean package
-```
-
-#### Cuda 6.0
-
-For Cuda 6.0 use
-
-```
-mvn -P cuda-6.0 clean package
-```
-
-For Cuda 6.0 the jcuda binaries are not unpacked automatically and have to be installed manually. Set LD_LIBRARY_PATH (*nix environment variable) or java.library.path (Java system property) to the jcuda platform specific binaries.
 
 
 Trying on Amazon EC2
@@ -205,6 +183,73 @@ Calibration to Swaptions using CPU    calculation time = 719.33 sec    RMS Error
 Calibration to Swaptions using GPU    calculation time =  51.70 sec    RMS Error.....: 0.480%.
 ```
 (LIBOR Market Model with stochastic volatility, 6 factors, 163840 paths)
+
+
+Profiles for Other Cuda Versions
+-------------------------------------
+
+The default profile will build the version using Cuda 10.1.
+
+#### Cuda 10.0
+
+For Cuda 10.0 use
+
+```
+mvn -Pcuda-10.0 clean package
+```
+
+or
+
+```
+mvn -Dcuda.version=10.0 clean package
+```
+
+#### Cuda 9.2
+
+For Cuda 9.2 use
+
+```
+mvn -Pcuda-9.2 clean package
+```
+
+or
+
+```
+mvn -Dcuda.version=9.2 clean package
+```
+
+#### Cuda 8.0
+
+For Cuda 8.0 use
+
+```
+mvn -P cuda-8.0 clean package
+```
+
+or
+
+```
+mvn -Dcuda.version=8.0 clean package
+```
+
+#### Cuda 6.0
+
+For Cuda 6.0 use
+
+```
+mvn -P cuda-6.0 clean package
+```
+
+or
+
+```
+mvn -Dcuda.version=6.0 clean package
+```
+
+
+For Cuda 6.0 the jcuda binaries are not unpacked automatically and have to be installed manually. Set LD_LIBRARY_PATH (*nix environment variable) or java.library.path (Java system property) to the jcuda platform specific binaries.
+
+
 
 References
 -------
