@@ -306,9 +306,11 @@
 	<profiles>
 		<profile>
 			<id>default</id>
+			<!--
 			<activation>
 				<activeByDefault>true</activeByDefault>
 			</activation>
+			 -->
 			<properties>
 				<envClassifier />
 			</properties>
