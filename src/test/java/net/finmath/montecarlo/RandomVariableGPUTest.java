@@ -56,7 +56,7 @@ public class RandomVariableGPUTest {
 	public RandomVariableGPUTest(final String name, final RandomVariableFactory randomVariableFactory) {
 		super();
 		this.randomVariableFactory = randomVariableFactory;
-		
+
 		System.out.println("Running with " + randomVariableFactory);
 	}
 

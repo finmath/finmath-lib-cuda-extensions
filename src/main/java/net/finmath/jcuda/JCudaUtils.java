@@ -32,11 +32,11 @@ public class JCudaUtils
 	 */
 	public static String preparePtxFile(final InputStream cuFileStream, final String arch) throws IOException, URISyntaxException
 	{
-//		final String cuFileName = Paths.get(cuFileURI).toFile().getAbsolutePath();
-			Path file = Files.createTempFile("RandomVariableCudaKernel", ".cu");		
-			Files.copy(cuFileStream, file, StandardCopyOption.REPLACE_EXISTING);
-			String cuFileName = file.toFile().getAbsolutePath();
-		
+		//		final String cuFileName = Paths.get(cuFileURI).toFile().getAbsolutePath();
+		final Path file = Files.createTempFile("RandomVariableCudaKernel", ".cu");
+		Files.copy(cuFileStream, file, StandardCopyOption.REPLACE_EXISTING);
+		final String cuFileName = file.toFile().getAbsolutePath();
+
 		int endIndex = cuFileName.lastIndexOf('.');
 		if (endIndex == -1)
 		{
@@ -44,14 +44,12 @@ public class JCudaUtils
 		}
 		final String ptxFileName = cuFileName.substring(0, endIndex+1)+"ptx";
 		final File ptxFile = new File(ptxFileName);
-		if (ptxFile.exists()) {
+		if (ptxFile.exists())
 			return ptxFileName;
-		}
 
 		final File cuFile = new File(cuFileName);
-		if (!cuFile.exists()) {
+		if (!cuFile.exists())
 			throw new IOException("Input file not found: "+cuFileName);
-		}
 
 		/*
 		 * Check for 64 bit or 32 bit

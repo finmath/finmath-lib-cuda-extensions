@@ -51,7 +51,7 @@ public class MonteCarloBlackScholesModelTest {
 			//			{ "BrownianMotionJavaRandomCPUDouble" },		// Test case 3: Java implementation using Java LCG
 			{ "BrownianMotionCudaWithHostRandomVariable" },	// Test case 5: Java implementation using Cuda LCG with Host RandomVariable
 			{ "BrownianMotionCudaWithRandomVariableCuda" },	// Test case 6: Java implementation using Cuda LCG with Cuda RandomVariable
-//			{ "BrownianMotionLazyInitOpenCL" },				// Test case 4: Java implementation using MersenneTwister with OpenCL RandomVariable
+			//			{ "BrownianMotionLazyInitOpenCL" },				// Test case 4: Java implementation using MersenneTwister with OpenCL RandomVariable
 		});
 	}
 
@@ -84,7 +84,7 @@ public class MonteCarloBlackScholesModelTest {
 	static final BrownianMotion brownianCL = new BrownianMotionLazyInit(new TimeDiscretizationFromArray(0.0 /* initial */, numberOfTimeSteps, deltaT), 1, numberOfPaths, seed,
 			new RandomVariableOpenCLFactory());
 	static {
-//		brownianCL.getBrownianIncrement(1, 0);
+		//		brownianCL.getBrownianIncrement(1, 0);
 		brownianCPU.getBrownianIncrement(1, 0);
 	}
 
@@ -98,7 +98,7 @@ public class MonteCarloBlackScholesModelTest {
 	@After
 	public void cleanUp() {
 		RandomVariableCuda.purge();
-//		RandomVariableOpenCL.purge();
+		//		RandomVariableOpenCL.purge();
 	}
 
 	@Before

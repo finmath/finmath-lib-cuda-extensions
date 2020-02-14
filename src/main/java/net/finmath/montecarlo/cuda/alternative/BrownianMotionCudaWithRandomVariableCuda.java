@@ -140,9 +140,7 @@ public class BrownianMotionCudaWithRandomVariableCuda implements BrownianMotion,
 	 */
 	private void doGenerateBrownianMotion() {
 		if(brownianIncrements != null)
-		{
 			return;	// Nothing to do
-		}
 
 		// Enable exceptions and omit all subsequent error checks
 		JCuda.setExceptionsEnabled(true);
@@ -155,7 +153,7 @@ public class BrownianMotionCudaWithRandomVariableCuda implements BrownianMotion,
 		final curandGenerator generator = new curandGenerator();
 
 		// Create pseudo-random number generator
-//		curandCreateGenerator(generator, CURAND_RNG_PSEUDO_MTGP32);
+		//		curandCreateGenerator(generator, CURAND_RNG_PSEUDO_MTGP32);
 		curandCreateGenerator(generator, jcuda.jcurand.curandRngType.CURAND_RNG_PSEUDO_DEFAULT);
 
 		// Set seed
@@ -219,27 +217,21 @@ public class BrownianMotionCudaWithRandomVariableCuda implements BrownianMotion,
 
 	@Override
 	public boolean equals(final Object o) {
-		if (this == o) {
+		if (this == o)
 			return true;
-		}
-		if (o == null || getClass() != o.getClass()) {
+		if (o == null || getClass() != o.getClass())
 			return false;
-		}
 
 		final BrownianMotionCudaWithRandomVariableCuda that = (BrownianMotionCudaWithRandomVariableCuda) o;
 
-		if (numberOfFactors != that.numberOfFactors) {
+		if (numberOfFactors != that.numberOfFactors)
 			return false;
-		}
-		if (numberOfPaths != that.numberOfPaths) {
+		if (numberOfPaths != that.numberOfPaths)
 			return false;
-		}
-		if (seed != that.seed) {
+		if (seed != that.seed)
 			return false;
-		}
-		if (!timeDiscretization.equals(that.timeDiscretization)) {
+		if (!timeDiscretization.equals(that.timeDiscretization))
 			return false;
-		}
 
 		return true;
 	}
