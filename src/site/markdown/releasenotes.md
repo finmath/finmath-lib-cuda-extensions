@@ -10,6 +10,7 @@ finmath lib cuda extensions Release Notes
 
 ### General
 
+- Extracted interface `RandomVariableDifferentiableFactory`.
 - Improved support for libraries referencing finmath-lib-cuda-extensions as a Maven dependency. 
 - Added examples to finmath experiments.
 
@@ -25,7 +26,7 @@ finmath lib cuda extensions Release Notes
 
 ### General
 
-- Added support for **OpenCL** via `RandomVariableOpenCL` and `RandomVariableOpenCLFactory`
+- Added support for **OpenCL** via `RandomVariableOpenCLFactory` and `RandomVariableOpenCLFactory`
 
 
 
