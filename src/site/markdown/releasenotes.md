@@ -6,6 +6,21 @@ finmath lib cuda extensions Release Notes
 # Release Notes
 
 
+## 4.1.1 (15.02.2020)
+
+### General
+
+- Improved support for libraries referencing finmath-lib-cuda-extensions as a Maven dependency. 
+- Added examples to finmath experiments.
+
+
+### Cuda
+
+- Allowing to select the cuda version via a command line or settings.xml property (cuda.version).
+- Added support for legacy versions Cuda 9.2, Cuda 6.0
+
+
+
 ## 4.0.12 (10.09.2019)
 
 ### General
