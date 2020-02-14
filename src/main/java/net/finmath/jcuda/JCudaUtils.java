@@ -76,7 +76,7 @@ public class JCudaUtils
 
 		//		String command = "nvcc " + modelString + " -ptx " + "" + cuFile.getPath() + " -o " + ptxFileName;
 
-		logger.info("Executing\n"+Arrays.toString(command));
+		logger.fine("Executing\n"+Arrays.toString(command));
 		final Process process = Runtime.getRuntime().exec(command);
 
 		final String errorMessage = IOUtils.toString(process.getErrorStream(), Charset.defaultCharset());
@@ -89,12 +89,17 @@ public class JCudaUtils
 		catch (final InterruptedException e)
 		{
 			Thread.currentThread().interrupt();
+			logger.severe("nvcc process exitValue "+ exitValue +
+					"\ncommand: "+Arrays.toString(command) +
+					"\nerrorMessage: "+errorMessage + 
+					"\noutputMessage: "+outputMessage);
 			throw new IOException("Interrupted while waiting for nvcc output", e);
 		}
 
 		if (exitValue != 0)
 		{
 			logger.severe("nvcc process exitValue "+ exitValue +
+					"\ncommand: "+Arrays.toString(command) +
 					"\nerrorMessage: "+errorMessage + 
 					"\noutputMessage: "+outputMessage);
 
