@@ -106,7 +106,7 @@ public class JCudaUtils
 			throw new IOException("Could not create .ptx file: "+errorMessage);
 		}
 
-		logger.info("Finished creating PTX file");
+		logger.fine("Finished creating PTX file");
 
 		return ptxFileName;
 	}
