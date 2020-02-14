@@ -501,7 +501,7 @@
 		<repository>
 			<id>jcuda-6</id>
 			<url>
-				https://github.com/MysterionRise/mavenized-jcuda/tree/master/repo
+				https://raw.githubusercontent.com/MysterionRise/mavenized-jcuda/master/repo
 			</url>
 		</repository>
 	</repositories>
