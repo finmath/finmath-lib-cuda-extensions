@@ -91,7 +91,7 @@ public class JCudaUtils
 			Thread.currentThread().interrupt();
 			logger.severe("nvcc process exitValue "+ exitValue +
 					"\ncommand: "+Arrays.toString(command) +
-					"\nerrorMessage: "+errorMessage + 
+					"\nerrorMessage: "+errorMessage +
 					"\noutputMessage: "+outputMessage);
 			throw new IOException("Interrupted while waiting for nvcc output", e);
 		}
@@ -100,7 +100,7 @@ public class JCudaUtils
 		{
 			logger.severe("nvcc process exitValue "+ exitValue +
 					"\ncommand: "+Arrays.toString(command) +
-					"\nerrorMessage: "+errorMessage + 
+					"\nerrorMessage: "+errorMessage +
 					"\noutputMessage: "+outputMessage);
 
 			throw new IOException("Could not create .ptx file: "+errorMessage);
