@@ -3,7 +3,7 @@ finmath lib cuda extensions
 
 ****************************************
 
-**Vector class (RandomVarible) running on GPUs (Cuda and OpenCL).**
+**Vector class (RandomVariable) running on GPUs (Cuda and OpenCL).**
 
 **Enabling finmath lib with Cuda (via jcuda) and OpenCL (via jocl). - Running finmath lib models on a GPU.**
 
