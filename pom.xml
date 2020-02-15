@@ -13,16 +13,14 @@
 
 	<groupId>net.finmath</groupId>
 	<artifactId>finmath-lib-cuda-extensions</artifactId>
-	<!-- issue: we cannot use the classifier, because the dependencies will 
-		differ -->
 	<version>4.1.1-SNAPSHOT</version>
 	<packaging>jar</packaging>
 
 	<name>finmath-lib-cuda-extensions</name>
 	<description>
-		Enabling finmath-lib to perform Monte-Carlo simulations on the GPGPU using Cuda.
+		Vector class (RandomVarible) running on GPUs (Cuda and OpenCL). Enabling finmath lib with Cuda (via jcuda) and OpenCL (via jocl). - Running finmath lib models on a GPU.**
 	</description>
-	<url>http://www.finmath.net/finmath-lib</url>
+	<url>http://finmath.net/finmath-lib-cuda-extensions</url>
 
 	<properties>
 		<project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
@@ -32,7 +30,7 @@
 		<src.test.kotlin.dir>src/test/kotlin</src.test.kotlin.dir>
 		<kotlin.version>1.2.0</kotlin.version>
 		<junit.version>4.12</junit.version>
-		<finmath-lib.version>4.1.0</finmath-lib.version>
+		<finmath-lib.version>4.1.1</finmath-lib.version>
 	</properties>
 
 	<licenses>
@@ -75,7 +73,7 @@
 		<dependency>
 			<groupId>junit</groupId>
 			<artifactId>junit</artifactId>
-			<version>4.12</version>
+			<version>${junit.version}</version>
 			<scope>test</scope>
 		</dependency>
 
@@ -222,7 +220,7 @@
 			<plugin>
 				<groupId>org.openclover</groupId>
 				<artifactId>clover-maven-plugin</artifactId>
-				<version>4.2.0</version>
+				<version>4.3.1</version>
 				<configuration>
 				</configuration>
 				<executions>
