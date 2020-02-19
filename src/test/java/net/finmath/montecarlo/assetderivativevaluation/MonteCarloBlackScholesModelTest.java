@@ -25,10 +25,12 @@ import net.finmath.montecarlo.BrownianMotionLazyInit;
 import net.finmath.montecarlo.RandomVariableFromArrayFactory;
 import net.finmath.montecarlo.assetderivativevaluation.models.BlackScholesModel;
 import net.finmath.montecarlo.cuda.RandomVariableCuda;
+import net.finmath.montecarlo.cuda.RandomVariableCudaFactory;
 import net.finmath.montecarlo.cuda.alternative.BrownianMotionCudaWithHostRandomVariable;
 import net.finmath.montecarlo.cuda.alternative.BrownianMotionCudaWithRandomVariableCuda;
 import net.finmath.montecarlo.cuda.alternative.BrownianMotionJavaRandom;
 import net.finmath.montecarlo.model.AbstractProcessModel;
+import net.finmath.montecarlo.opencl.RandomVariableOpenCL;
 import net.finmath.montecarlo.opencl.RandomVariableOpenCLFactory;
 import net.finmath.montecarlo.process.EulerSchemeFromProcessModel;
 import net.finmath.montecarlo.process.MonteCarloProcessFromProcessModel;
@@ -67,7 +69,7 @@ public class MonteCarloBlackScholesModelTest {
 	private final double	volatility     = 0.30;
 
 	// Process discretization properties
-	private final static int		numberOfPaths		= 100000;
+	private final static int		numberOfPaths		= 1000000;
 	private final static int		numberOfTimeSteps	= 100;
 	private final static double	deltaT				= 1.0;
 
@@ -83,9 +85,14 @@ public class MonteCarloBlackScholesModelTest {
 
 	static final BrownianMotion brownianCL = new BrownianMotionLazyInit(new TimeDiscretizationFromArray(0.0 /* initial */, numberOfTimeSteps, deltaT), 1, numberOfPaths, seed,
 			new RandomVariableOpenCLFactory());
+
+	static final BrownianMotion brownianCuda = new BrownianMotionLazyInit(new TimeDiscretizationFromArray(0.0 /* initial */, numberOfTimeSteps, deltaT), 1, numberOfPaths, seed,
+			new RandomVariableCudaFactory());
+
 	static {
-		//		brownianCL.getBrownianIncrement(1, 0);
-		brownianCPU.getBrownianIncrement(1, 0);
+		try { brownianCuda.getBrownianIncrement(1, 0); } catch(Error e) {};
+		try { brownianCL.getBrownianIncrement(1, 0); } catch(Error e) {};
+		try { brownianCPU.getBrownianIncrement(1, 0); } catch(Error e) {};
 	}
 
 	private final String testCase;
@@ -97,8 +104,14 @@ public class MonteCarloBlackScholesModelTest {
 
 	@After
 	public void cleanUp() {
-		RandomVariableCuda.purge();
-		//		RandomVariableOpenCL.purge();
+		try {
+			RandomVariableCuda.purge();
+		}
+		catch(Exception | Error e) {}
+		try {
+			RandomVariableOpenCL.purge();
+		}
+		catch(Exception | Error e) {}
 	}
 
 	@Before
@@ -124,12 +137,8 @@ public class MonteCarloBlackScholesModelTest {
 			brownian = brownianCL;
 			break;
 		case "BrownianMotionCudaWithHostRandomVariable":
-			brownian = new BrownianMotionCudaWithHostRandomVariable(
-					timeDiscretization,
-					1,
-					numberOfPaths,
-					seed
-					);
+			// brownian = new BrownianMotionCudaWithHostRandomVariable(timeDiscretization, 1, numberOfPaths, seed);
+			brownian = brownianCuda;
 			break;
 		case "BrownianMotionCudaWithRandomVariableCuda":
 			brownian = new BrownianMotionCudaWithRandomVariableCuda(
