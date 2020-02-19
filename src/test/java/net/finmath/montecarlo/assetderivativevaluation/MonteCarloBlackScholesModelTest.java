@@ -48,12 +48,13 @@ public class MonteCarloBlackScholesModelTest {
 	@Parameters
 	public static Collection<Object[]> data() {
 		return Arrays.asList(new Object[][] {
-			//			{ "BrownianMotionLazyInitCPUFloat" },			// Test case 1: Java implementation using MersenneTwister
-			{ "BrownianMotionLazyInitCPUDouble" },			// Test case 2: Java implementation using MersenneTwister
-			//			{ "BrownianMotionJavaRandomCPUDouble" },		// Test case 3: Java implementation using Java LCG
-			{ "BrownianMotionCudaWithHostRandomVariable" },	// Test case 5: Java implementation using Cuda LCG with Host RandomVariable
-			{ "BrownianMotionCudaWithRandomVariableCuda" },	// Test case 6: Java implementation using Cuda LCG with Cuda RandomVariable
-			{ "BrownianMotionLazyInitOpenCL" },				// Test case 4: Java implementation using MersenneTwister with OpenCL RandomVariable
+//			{ "BrownianMotionOnCPUSimulationUsingCPUFloat" },			// Test case 4: Java implementation using MersenneTwister
+//			{ "BrownianMotionJavaRandomSimulationUsingCPUDouble" },		// Test case 5: Java implementation using Java LCG
+//			{ "BrownianMotionCudaWithHostRandomVariable" },	// Test case 6: Java implementation using Cuda LCG with Host RandomVariable
+//			{ "BrownianMotionCudaWithRandomVariableCuda" },	// Test case 7: Java implementation using Cuda LCG with Cuda RandomVariable
+			{ "SimulationUsingCPUDouble" },			// Test case 1: Java implementation using MersenneTwister with CPU Double RandomVariable
+			{ "SimulationUsingOpenCL" },				// Test case 2: Java implementation using MersenneTwister with OpenCL RandomVariable
+			{ "SimulationUsingCuda" },				// Test case 3: Java implementation using MersenneTwister with Cuda RandomVariable
 		});
 	}
 
@@ -120,23 +121,23 @@ public class MonteCarloBlackScholesModelTest {
 		final TimeDiscretization timeDiscretization = new TimeDiscretizationFromArray(0.0 /* initial */, numberOfTimeSteps, deltaT);
 
 		switch(testCase) {
-		case "BrownianMotionLazyInitCPUFloat":
+		case "BrownianMotionOnCPUSimulationUsingCPUFloat":
 		default:
 			brownian = new BrownianMotionLazyInit(timeDiscretization, 1, numberOfPaths, seed,
 					new RandomVariableFromArrayFactory(false));
 			break;
-		case "BrownianMotionLazyInitCPUDouble":
+		case "SimulationUsingCPUDouble":
 			//			brownian = new BrownianMotionLazyInit(timeDiscretization, 1, numberOfPaths, seed, new RandomVariableFromArrayFactory(true));
 			brownian = brownianCPU;
 			break;
-		case "BrownianMotionJavaRandomCPUDouble":
+		case "BrownianMotionJavaRandomSimulationUsingCPUDouble":
 			brownian = new BrownianMotionJavaRandom(timeDiscretization, 1, numberOfPaths, seed, new RandomVariableFromArrayFactory(true));
 			break;
-		case "BrownianMotionLazyInitOpenCL":
+		case "SimulationUsingOpenCL":
 			//			brownian = new BrownianMotionLazyInit(timeDiscretization, 1, numberOfPaths, seed, new RandomVariableOpenCLFactory());
 			brownian = brownianCL;
 			break;
-		case "BrownianMotionCudaWithHostRandomVariable":
+		case "SimulationUsingCuda":
 			// brownian = new BrownianMotionCudaWithHostRandomVariable(timeDiscretization, 1, numberOfPaths, seed);
 			brownian = brownianCuda;
 			break;
