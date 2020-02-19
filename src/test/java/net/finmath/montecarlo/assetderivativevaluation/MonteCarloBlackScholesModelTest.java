@@ -180,14 +180,14 @@ public class MonteCarloBlackScholesModelTest {
 
 		final double valueAnalytic = AnalyticFormulas.blackScholesOptionValue(initialValue, riskFreeRate, volatility, optionMaturity, optionStrike);
 
-		System.out.print(testCase + "\t");
-		System.out.print("   value Monte-Carlo = " + formatterReal4.format(value));
-		System.out.print("\t value analytic    = " + formatterReal4.format(valueAnalytic));
-
 		final long millisEnd = System.currentTimeMillis();
 
-		System.out.println("\t calculation time = " + formatterReal2.format((millisEnd - millisStart)/1000.0) + " sec.");
-
+		System.out.print(String.format("%-25s", testCase));
+		System.out.print("\t calculation time = " + formatterReal2.format((millisEnd - millisStart)/1000.0) + " sec.");
+		System.out.print("\t value Monte-Carlo = " + formatterReal4.format(value));
+		System.out.print("\t value analytic    = " + formatterReal4.format(valueAnalytic));
+		System.out.println();
+		
 		Assert.assertEquals(valueAnalytic, value, 0.005);
 	}
 }
