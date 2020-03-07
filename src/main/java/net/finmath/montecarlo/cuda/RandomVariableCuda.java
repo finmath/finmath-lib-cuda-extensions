@@ -318,7 +318,7 @@ public class RandomVariableCuda implements RandomVariable {
 					return freeRate;
 				}}).get();
 			} catch (InterruptedException | ExecutionException e) {
-				return freeRate = 0;
+				freeRate = 0;
 			}
 			//			System.out.println("Cuda: " + deviceMemoryPool.vectorsInUseReferenceMap.size() + "\t" + freeRate);
 			return freeRate;
@@ -534,7 +534,7 @@ public class RandomVariableCuda implements RandomVariable {
 
 			// Create the PTX file by calling the NVCC
 			String ptxFileName = null;
-			try(final InputStream cuFileStream = RandomVariableCuda.class.getResourceAsStream("/net/finmath/montecarlo/RandomVariableCudaKernel.cu")) {
+			try(InputStream cuFileStream = RandomVariableCuda.class.getResourceAsStream("/net/finmath/montecarlo/RandomVariableCudaKernel.cu")) {
 				ptxFileName = net.finmath.jcuda.JCudaUtils.preparePtxFile(cuFileStream, arch);
 			} catch (IOException | URISyntaxException e) {
 				e.printStackTrace();
@@ -829,7 +829,7 @@ public class RandomVariableCuda implements RandomVariable {
 
 		final double[] realizations = getRealizations();
 
-		// TODO: Use kernel
+		// TODO Use kernel
 		double min = Double.MAX_VALUE;
 		if(realizations.length != 0)
 		{
@@ -849,7 +849,7 @@ public class RandomVariableCuda implements RandomVariable {
 
 		final double[] realizations = getRealizations();
 
-		// TODO: Use kernel
+		// TODO Use kernel
 		double max = -Double.MAX_VALUE;
 		if(realizations.length != 0) {
 			max = realizations[0];
@@ -869,7 +869,7 @@ public class RandomVariableCuda implements RandomVariable {
 			return Double.NaN;
 		}
 
-		// TODO: Use kernel
+		// TODO Use kernel
 		return (new RandomVariableFromFloatArray(getFiltrationTime(), deviceMemoryPool.getValuesAsFloat(realizations, size()))).getAverage();
 
 		//RandomVariable reduced = reduceToDouble();

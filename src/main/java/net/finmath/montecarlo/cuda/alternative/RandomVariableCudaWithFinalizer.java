@@ -1393,7 +1393,7 @@ public class RandomVariableCudaWithFinalizer implements RandomVariable {
 			throws IOException
 	{
 		final ByteArrayOutputStream baos = new ByteArrayOutputStream();
-		final byte buffer[] = new byte[8192];
+		final byte[] buffer = new byte[8192];
 		while (true)
 		{
 			final int read = inputStream.read(buffer);

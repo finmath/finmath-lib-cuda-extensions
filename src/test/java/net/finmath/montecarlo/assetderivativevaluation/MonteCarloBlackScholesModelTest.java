@@ -26,7 +26,6 @@ import net.finmath.montecarlo.RandomVariableFromArrayFactory;
 import net.finmath.montecarlo.assetderivativevaluation.models.BlackScholesModel;
 import net.finmath.montecarlo.cuda.RandomVariableCuda;
 import net.finmath.montecarlo.cuda.RandomVariableCudaFactory;
-import net.finmath.montecarlo.cuda.alternative.BrownianMotionCudaWithHostRandomVariable;
 import net.finmath.montecarlo.cuda.alternative.BrownianMotionCudaWithRandomVariableCuda;
 import net.finmath.montecarlo.cuda.alternative.BrownianMotionJavaRandom;
 import net.finmath.montecarlo.model.AbstractProcessModel;
@@ -48,10 +47,10 @@ public class MonteCarloBlackScholesModelTest {
 	@Parameters
 	public static Collection<Object[]> data() {
 		return Arrays.asList(new Object[][] {
-//			{ "BrownianMotionOnCPUSimulationUsingCPUFloat" },			// Test case 4: Java implementation using MersenneTwister
-//			{ "BrownianMotionJavaRandomSimulationUsingCPUDouble" },		// Test case 5: Java implementation using Java LCG
-//			{ "BrownianMotionCudaWithHostRandomVariable" },	// Test case 6: Java implementation using Cuda LCG with Host RandomVariable
-//			{ "BrownianMotionCudaWithRandomVariableCuda" },	// Test case 7: Java implementation using Cuda LCG with Cuda RandomVariable
+			//			{ "BrownianMotionOnCPUSimulationUsingCPUFloat" },			// Test case 4: Java implementation using MersenneTwister
+			//			{ "BrownianMotionJavaRandomSimulationUsingCPUDouble" },		// Test case 5: Java implementation using Java LCG
+			//			{ "BrownianMotionCudaWithHostRandomVariable" },	// Test case 6: Java implementation using Cuda LCG with Host RandomVariable
+			//			{ "BrownianMotionCudaWithRandomVariableCuda" },	// Test case 7: Java implementation using Cuda LCG with Cuda RandomVariable
 			{ "SimulationUsingCPUDouble" },			// Test case 1: Java implementation using MersenneTwister with CPU Double RandomVariable
 			{ "SimulationUsingOpenCL" },				// Test case 2: Java implementation using MersenneTwister with OpenCL RandomVariable
 			{ "SimulationUsingCuda" },				// Test case 3: Java implementation using MersenneTwister with Cuda RandomVariable
@@ -70,11 +69,11 @@ public class MonteCarloBlackScholesModelTest {
 	private final double	volatility     = 0.30;
 
 	// Process discretization properties
-	private final static int		numberOfPaths		= 1000000;
-	private final static int		numberOfTimeSteps	= 100;
-	private final static double	deltaT				= 1.0;
+	private static final int		numberOfPaths		= 1000000;
+	private static final int		numberOfTimeSteps	= 100;
+	private static final double	deltaT				= 1.0;
 
-	private final static int		seed				= 31415;
+	private static final int		seed				= 31415;
 
 	// Product properties
 	private final int		assetIndex = 0;
@@ -91,9 +90,9 @@ public class MonteCarloBlackScholesModelTest {
 			new RandomVariableCudaFactory());
 
 	static {
-		try { brownianCuda.getBrownianIncrement(1, 0); } catch(Error e) {};
-		try { brownianCL.getBrownianIncrement(1, 0); } catch(Error e) {};
-		try { brownianCPU.getBrownianIncrement(1, 0); } catch(Error e) {};
+		try { brownianCuda.getBrownianIncrement(1, 0); } catch(final Error e) {}
+		try { brownianCL.getBrownianIncrement(1, 0); } catch(final Error e) {}
+		try { brownianCPU.getBrownianIncrement(1, 0); } catch(final Error e) {}
 	}
 
 	private final String testCase;
@@ -187,7 +186,7 @@ public class MonteCarloBlackScholesModelTest {
 		System.out.print("\t value Monte-Carlo = " + formatterReal4.format(value));
 		System.out.print("\t value analytic    = " + formatterReal4.format(valueAnalytic));
 		System.out.println();
-		
+
 		Assert.assertEquals(valueAnalytic, value, 0.005);
 	}
 }

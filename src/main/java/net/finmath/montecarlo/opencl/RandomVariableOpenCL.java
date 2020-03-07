@@ -456,8 +456,8 @@ public class RandomVariableOpenCL implements RandomVariable {
 					clSetKernelArg(function, i, argumentSizes[i], arguments[i]);
 				}
 				// Set the work-item dimensions
-				final long globalWorkSize[] = new long[]{ gridSizeX*blockSizeX };
-				final long localWorkSize[] = null;
+				final long[] globalWorkSize = new long[]{ gridSizeX*blockSizeX };
+				final long[] localWorkSize = null;
 				//cuCtxSynchronize();
 				// Launching on the same stream (default stream)
 				clEnqueueNDRangeKernel(commandQueue, function, 1, null,
@@ -551,12 +551,12 @@ public class RandomVariableOpenCL implements RandomVariable {
 			CL.setExceptionsEnabled(true);
 
 			// Obtain the number of platforms
-			final int numPlatformsArray[] = new int[1];
+			final int[] numPlatformsArray = new int[1];
 			clGetPlatformIDs(0, null, numPlatformsArray);
 			final int numPlatforms = numPlatformsArray[0];
 
 			// Obtain a platform ID
-			final cl_platform_id platforms[] = new cl_platform_id[numPlatforms];
+			final cl_platform_id[] platforms = new cl_platform_id[numPlatforms];
 			clGetPlatformIDs(platforms.length, platforms, null);
 			final cl_platform_id platform = platforms[platformIndex];
 
@@ -565,12 +565,12 @@ public class RandomVariableOpenCL implements RandomVariable {
 			contextProperties.addProperty(CL_CONTEXT_PLATFORM, platform);
 
 			// Obtain the number of devices for the platform
-			final int numDevicesArray[] = new int[1];
+			final int[] numDevicesArray = new int[1];
 			clGetDeviceIDs(platform, deviceType, 0, null, numDevicesArray);
 			final int numDevices = numDevicesArray[0];
 
 			// Obtain a device ID
-			final cl_device_id devices[] = new cl_device_id[numDevices];
+			final cl_device_id[] devices = new cl_device_id[numDevices];
 			clGetDeviceIDs(platform, deviceType, numDevices, devices, null);
 
 			/*
@@ -882,7 +882,7 @@ public class RandomVariableOpenCL implements RandomVariable {
 
 		final double[] realizations = getRealizations();
 
-		// TODO: Use kernel
+		// TODO Use kernel
 		double min = Double.MAX_VALUE;
 		if(realizations.length != 0)
 		{
@@ -902,7 +902,7 @@ public class RandomVariableOpenCL implements RandomVariable {
 
 		final double[] realizations = getRealizations();
 
-		// TODO: Use kernel
+		// TODO Use kernel
 		double max = -Double.MAX_VALUE;
 		if(realizations.length != 0) {
 			max = realizations[0];
@@ -922,7 +922,7 @@ public class RandomVariableOpenCL implements RandomVariable {
 			return Double.NaN;
 		}
 
-		// TODO: Use kernel
+		// TODO Use kernel
 		return (new RandomVariableFromFloatArray(getFiltrationTime(), deviceMemoryPool.getValuesAsFloat(realizations, size()))).getAverage();
 
 		//RandomVariable reduced = reduceToDouble();
