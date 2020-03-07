@@ -180,6 +180,7 @@
 				</configuration>
 			</plugin>
 
+			<!-- Publish the site to GitHub gh-pages: use mvn site site:deploy site-deploy -->
 			<plugin>
 				<groupId>org.apache.maven.plugins</groupId>
 				<artifactId>maven-site-plugin</artifactId>
