@@ -31,6 +31,7 @@
 		<kotlin.version>1.2.0</kotlin.version>
 		<!-- libs -->
 		<finmath-lib.version>4.1.2</finmath-lib.version>
+		<commons-io.version>2.6</commons-io.version>
 		<junit.version>4.12</junit.version>
 		<!-- maven plugins -->
 		<surefire.version>2.21.0</surefire.version>
@@ -78,7 +79,7 @@
 		<dependency>
 			<groupId>commons-io</groupId>
 			<artifactId>commons-io</artifactId>
-			<version>2.6</version>
+			<version>${commons-io.version}</version>
 		</dependency>
 
 		<dependency>
