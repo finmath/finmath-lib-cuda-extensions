@@ -30,7 +30,7 @@
 		<src.test.kotlin.dir>src/test/kotlin</src.test.kotlin.dir>
 		<kotlin.version>1.2.0</kotlin.version>
 		<!-- libs -->
-		<finmath-lib.version>4.1.1</finmath-lib.version>
+		<finmath-lib.version>4.1.2</finmath-lib.version>
 		<junit.version>4.12</junit.version>
 		<!-- maven plugins -->
 		<surefire.version>2.21.0</surefire.version>
