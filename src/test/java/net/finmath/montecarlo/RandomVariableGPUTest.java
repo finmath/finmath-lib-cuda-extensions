@@ -18,6 +18,8 @@ import org.junit.runner.RunWith;
 import org.junit.runners.Parameterized;
 import org.junit.runners.Parameterized.Parameters;
 
+import net.finmath.montecarlo.cpu.RandomVariableFloatFactory;
+import net.finmath.montecarlo.cpu.RandomVariableFromFloatArray;
 import net.finmath.montecarlo.cuda.RandomVariableCuda;
 import net.finmath.montecarlo.cuda.RandomVariableCudaFactory;
 import net.finmath.montecarlo.opencl.RandomVariableOpenCL;

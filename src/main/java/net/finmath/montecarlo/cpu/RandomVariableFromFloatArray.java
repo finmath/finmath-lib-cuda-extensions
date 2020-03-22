@@ -3,7 +3,7 @@
  *
  * Created on 09.02.2006
  */
-package net.finmath.montecarlo;
+package net.finmath.montecarlo.cpu;
 
 import java.util.Arrays;
 import java.util.List;
@@ -18,6 +18,7 @@ import java.util.stream.IntStream;
 import org.apache.commons.math3.util.FastMath;
 
 import net.finmath.functions.DoubleTernaryOperator;
+import net.finmath.montecarlo.RandomVariableFromDoubleArray;
 import net.finmath.stochastic.ConditionalExpectationEstimator;
 import net.finmath.stochastic.RandomVariable;
 

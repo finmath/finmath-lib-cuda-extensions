@@ -24,7 +24,7 @@ import jcuda.runtime.JCuda;
 import net.finmath.montecarlo.BrownianMotion;
 import net.finmath.montecarlo.RandomVariableFactory;
 import net.finmath.montecarlo.RandomVariableFromArrayFactory;
-import net.finmath.montecarlo.RandomVariableFromFloatArray;
+import net.finmath.montecarlo.cpu.RandomVariableFromFloatArray;
 import net.finmath.stochastic.RandomVariable;
 import net.finmath.time.TimeDiscretization;
 
