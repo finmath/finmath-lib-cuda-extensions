@@ -1,5 +1,5 @@
 net.finmath.jcuda
-net.finmath.montecarlo
+net.finmath.montecarlo.cpu
 net.finmath.montecarlo.cuda
 net.finmath.montecarlo.cuda.alternative
 net.finmath.montecarlo.opencl
