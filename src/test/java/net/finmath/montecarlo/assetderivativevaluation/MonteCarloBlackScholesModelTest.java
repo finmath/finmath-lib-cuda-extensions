@@ -29,6 +29,7 @@ import net.finmath.montecarlo.cuda.RandomVariableCudaFactory;
 import net.finmath.montecarlo.cuda.alternative.BrownianMotionCudaWithRandomVariableCuda;
 import net.finmath.montecarlo.cuda.alternative.BrownianMotionJavaRandom;
 import net.finmath.montecarlo.model.AbstractProcessModel;
+import net.finmath.montecarlo.model.ProcessModel;
 import net.finmath.montecarlo.opencl.RandomVariableOpenCL;
 import net.finmath.montecarlo.opencl.RandomVariableOpenCLFactory;
 import net.finmath.montecarlo.process.EulerSchemeFromProcessModel;
@@ -69,8 +70,8 @@ public class MonteCarloBlackScholesModelTest {
 	private final double	volatility     = 0.30;
 
 	// Process discretization properties
-	private static final int		numberOfPaths		= 1000000;
-	private static final int		numberOfTimeSteps	= 100;
+	private static final int	numberOfPaths		= 1000000;
+	private static final int	numberOfTimeSteps	= 100;
 	private static final double	deltaT				= 1.0;
 
 	private static final int		seed				= 31415;
@@ -156,14 +157,10 @@ public class MonteCarloBlackScholesModelTest {
 		final long millisStart = System.currentTimeMillis();
 
 		// Create a model
-		final AbstractProcessModel model = new BlackScholesModel(initialValue, riskFreeRate, volatility);
+		final ProcessModel model = new BlackScholesModel(initialValue, riskFreeRate, volatility);
 
 		// Create a corresponding MC process
-		final MonteCarloProcessFromProcessModel process = new EulerSchemeFromProcessModel(brownian);
-
-		// Link model and process for delegation
-		process.setModel(model);
-		model.setProcess(process);
+		final MonteCarloProcessFromProcessModel process = new EulerSchemeFromProcessModel(model, brownian);
 
 		/*
 		 * Value a call option - directly
@@ -171,8 +168,8 @@ public class MonteCarloBlackScholesModelTest {
 		final TimeDiscretization timeDiscretization = brownian.getTimeDiscretization();
 
 		final RandomVariable asset = process.getProcessValue(timeDiscretization.getTimeIndex(optionMaturity), assetIndex);
-		final RandomVariable numeraireAtPayment = model.getNumeraire(optionMaturity);
-		final RandomVariable numeraireAtEval = model.getNumeraire(0.0);
+		final RandomVariable numeraireAtPayment = model.getNumeraire(process, optionMaturity);
+		final RandomVariable numeraireAtEval = model.getNumeraire(process, 0.0);
 
 		final RandomVariable payoff = asset.sub(optionStrike).floor(0.0);
 		final double value = payoff.div(numeraireAtPayment).mult(numeraireAtEval).getAverage();

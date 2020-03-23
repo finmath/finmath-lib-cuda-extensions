@@ -279,7 +279,7 @@ public class LIBORMarketModelCalibrationTest {
 			System.out.println(formatterParam.format(p));
 		}
 
-		final EulerSchemeFromProcessModel process = new EulerSchemeFromProcessModel(brownianMotionView1);
+		final EulerSchemeFromProcessModel process = new EulerSchemeFromProcessModel(liborMarketModelCalibrated, brownianMotionView1);
 		final net.finmath.montecarlo.interestrate.LIBORMonteCarloSimulationFromLIBORModel simulationCalibrated = new net.finmath.montecarlo.interestrate.LIBORMonteCarloSimulationFromLIBORModel(
 				liborMarketModelCalibrated, process);
 

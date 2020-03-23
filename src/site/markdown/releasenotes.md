@@ -6,6 +6,13 @@ finmath lib cuda extensions Release Notes
 # Release Notes
 
 
+## 4.1.7 (22.03.2020)
+
+### General
+
+- Compatibility with finmath-lib 4.1.7.
+
+
 ## 4.1.1 (15.02.2020)
 
 ### General
