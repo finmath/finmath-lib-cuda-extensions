@@ -3,4 +3,4 @@
  *
  * @author Christian Fries
  */
-package net.finmath.montecarlo.cpu;
+package net.finmath.cpu.montecarlo;

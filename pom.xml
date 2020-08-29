@@ -7,6 +7,7 @@
 		<groupId>org.sonatype.oss</groupId>
 		<artifactId>oss-parent</artifactId>
 		<version>7</version>
+		<relativePath />
 	</parent>
 
 	<groupId>net.finmath</groupId>
@@ -24,18 +25,23 @@
 		<project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
 		<src.main.java.dir>src/main/java</src.main.java.dir>
 		<src.test.java.dir>src/test/java</src.test.java.dir>
-		<src.main.kotlin.dir>src/main/kotlin</src.main.kotlin.dir>
-		<src.test.kotlin.dir>src/test/kotlin</src.test.kotlin.dir>
-		<kotlin.version>1.2.0</kotlin.version>
 		<!-- libs -->
-		<finmath-lib.version>4.1.7</finmath-lib.version>
+		<finmath-lib.version>5.0.5</finmath-lib.version>
 		<commons-io.version>2.6</commons-io.version>
-		<junit.version>4.12</junit.version>
+		<junit.version>5.6.2</junit.version>
 		<!-- maven plugins -->
-		<surefire.version>2.21.0</surefire.version>
-		<javadoc.version>3.1.1</javadoc.version>
-		<checkstyle.version>3.1.1</checkstyle.version>
-		<clover.version>4.4.1</clover.version>
+		<maven.compiler-plugin.version>3.8.1</maven.compiler-plugin.version>
+		<maven.surefire-plugin.version>3.0.0-M5</maven.surefire-plugin.version>
+		<maven.surefire-report-plugin.version>3.0.0-M5</maven.surefire-report-plugin.version>
+		<maven.javadoc-plugin.version>3.2.0</maven.javadoc-plugin.version>
+		<maven.jar-plugin.version>3.2.0</maven.jar-plugin.version>
+		<maven.source-plugin.version>3.2.1</maven.source-plugin.version>
+		<maven.site-plugin.version>3.9.0</maven.site-plugin.version>
+		<checkstyle-plugin.version>3.1.1</checkstyle-plugin.version>
+		<clover-plugin.version>4.4.1</clover-plugin.version>
+		<maven-project-info-reports-plugin.version>3.1.0</maven-project-info-reports-plugin.version>
+		<maven-scm-publish-plugin.version>3.0.0</maven-scm-publish-plugin.version>
+		<maven-release-plugin.version>2.5.3</maven-release-plugin.version>
 	</properties>
 
 	<licenses>
@@ -81,12 +87,23 @@
 		</dependency>
 
 		<dependency>
-			<groupId>junit</groupId>
-			<artifactId>junit</artifactId>
+			<groupId>org.junit.jupiter</groupId>
+			<artifactId>junit-jupiter-api</artifactId>
 			<version>${junit.version}</version>
 			<scope>test</scope>
 		</dependency>
-
+		<dependency>
+			<groupId>org.junit.jupiter</groupId>
+			<artifactId>junit-jupiter-engine</artifactId>
+			<version>${junit.version}</version>
+			<scope>test</scope>
+		</dependency>
+		<dependency>
+			<groupId>org.junit.vintage</groupId>
+			<artifactId>junit-vintage-engine</artifactId>
+			<version>${junit.version}</version>
+			<scope>test</scope>
+		</dependency>
 	</dependencies>
 
 	<build>
@@ -94,21 +111,22 @@
 		<finalName>${project.artifactId}-${project.version}</finalName>
 		<sourceDirectory>${src.main.java.dir}</sourceDirectory>
 		<testSourceDirectory>${src.test.java.dir}</testSourceDirectory>
+		
 		<plugins>
 			<plugin>
 				<groupId>org.apache.maven.plugins</groupId>
 				<artifactId>maven-compiler-plugin</artifactId>
-				<version>3.8.1</version>
+				<version>${maven.compiler-plugin.version}</version>
 				<configuration>
-					<source>1.8</source>
-					<target>1.8</target>
+					<source>11</source>
+					<target>11</target>
 				</configuration>
 			</plugin>
 
 			<plugin>
 				<groupId>org.apache.maven.plugins</groupId>
 				<artifactId>maven-source-plugin</artifactId>
-				<version>3.0.1</version>
+				<version>${maven.source-plugin.version}</version>
 				<executions>
 					<execution>
 						<id>attach-sources</id>
@@ -122,9 +140,189 @@
 			<plugin>
 				<groupId>org.apache.maven.plugins</groupId>
 				<artifactId>maven-javadoc-plugin</artifactId>
-				<version>${javadoc.version}</version>
+				<version>${maven.javadoc-plugin.version}</version>
+			</plugin>
+			<plugin>
+				<groupId>org.apache.maven.plugins</groupId>
+				<artifactId>maven-surefire-plugin</artifactId>
+				<version>${maven.surefire-plugin.version}</version>
 				<configuration>
-					<source>8</source>
+					<forkCount>1</forkCount>
+					<reuseForks>false</reuseForks>
+					<argLine>-mx6G</argLine>
+				</configuration>
+			</plugin>
+
+			<plugin>
+				<groupId>org.apache.maven.plugins</groupId>
+				<artifactId>maven-checkstyle-plugin</artifactId>
+				<version>${checkstyle-plugin.version}</version>
+				<configuration>
+					<configLocation>finmath-checkstyle.xml</configLocation>
+					<excludes>**/module-info.java</excludes>
+				</configuration>
+			</plugin>
+
+			<plugin>
+				<groupId>org.apache.maven.plugins</groupId>
+				<artifactId>maven-release-plugin</artifactId>
+				<version>${maven-release-plugin.version}</version>
+				<configuration>
+					<releaseProfiles>cuda-10.1</releaseProfiles>
+				</configuration>
+				<executions>
+					<execution>
+						<id>cuda-10.1</id>
+						<configuration>
+							<releaseProfiles>cuda-10.1</releaseProfiles>
+						</configuration>
+					</execution>
+					<execution>
+						<id>cuda-9.2</id>
+						<configuration>
+							<releaseProfiles>cuda-9.2</releaseProfiles>
+						</configuration>
+					</execution>
+				</executions>
+			</plugin>
+
+			<!-- Publish the site to GitHub gh-pages: use mvn site site:deploy site-deploy -->
+			<plugin>
+				<groupId>org.apache.maven.plugins</groupId>
+				<artifactId>maven-site-plugin</artifactId>
+				<version>${maven.site-plugin.version}</version>
+				<configuration>
+					<skipDeploy>true</skipDeploy>
+				</configuration>
+				<executions>
+					<execution>
+						<id>stage-for-scm-publish</id>
+						<phase>post-site</phase>
+						<goals>
+							<goal>stage</goal>
+						</goals>
+						<configuration>
+							<skipDeploy>false</skipDeploy><!-- MSITE-652: configuration won't be necessary with m-site-p 3.2 -->
+						</configuration>
+					</execution>
+				</executions>
+				<dependencies>
+					<dependency>
+						<!-- add support for ssh/scp -->
+						<groupId>org.apache.maven.wagon</groupId>
+						<artifactId>wagon-ssh</artifactId>
+						<version>3.3.4</version>
+					</dependency>
+					<dependency>
+						<groupId>org.apache.maven.doxia</groupId>
+						<artifactId>doxia-module-markdown</artifactId>
+						<version>1.9</version>
+					</dependency>
+				</dependencies>
+			</plugin>
+			<plugin>
+				<groupId>org.apache.maven.plugins</groupId>
+				<artifactId>maven-scm-publish-plugin</artifactId>
+				<version>${maven-scm-publish-plugin.version}</version>
+				<configuration>
+					<scmBranch>gh-pages</scmBranch>
+				</configuration>
+				<executions>
+					<execution>
+						<id>scm-publish</id>
+						<phase>site-deploy</phase>
+						<goals>
+							<goal>publish-scm</goal>
+						</goals>
+					</execution>
+				</executions>
+			</plugin>
+
+			<plugin>
+				<groupId>org.codehaus.mojo</groupId>
+				<artifactId>buildnumber-maven-plugin</artifactId>
+				<version>1.4</version>
+				<executions>
+					<execution>
+						<phase>validate</phase>
+						<goals>
+							<goal>create</goal>
+						</goals>
+					</execution>
+				</executions>
+				<!-- We allow local modifications. The build number is reliable only 
+					in releases obtained via Maven central. -->
+				<configuration>
+					<doCheck>false</doCheck>
+					<doUpdate>false</doUpdate>
+				</configuration>
+			</plugin>
+			<plugin>
+				<groupId>org.openclover</groupId>
+				<artifactId>clover-maven-plugin</artifactId>
+				<version>${clover-plugin.version}</version>
+				<configuration>
+				</configuration>
+				<executions>
+					<execution>
+						<goals>
+							<goal>instrument</goal>
+						</goals>
+					</execution>
+				</executions>
+			</plugin>
+			<plugin>
+				<groupId>biz.aQute.bnd</groupId>
+				<artifactId>bnd-maven-plugin</artifactId>
+				<version>4.0.0</version>
+				<executions>
+					<execution>
+						<goals>
+							<goal>bnd-process</goal>
+						</goals>
+					</execution>
+				</executions>
+			</plugin>
+
+			<plugin>
+				<groupId>org.apache.maven.plugins</groupId>
+				<artifactId>maven-jar-plugin</artifactId>
+				<version>${maven.jar-plugin.version}</version>
+				<configuration>
+					<archive>
+						<manifestEntries>
+							<Automatic-Module-Name>net.finmath.gpu</Automatic-Module-Name>
+						</manifestEntries>
+						<manifest>
+							<addClasspath>true</addClasspath>
+							<mainClass>${main.class}</mainClass>
+						</manifest>
+						<!-- Use the manifest file generated by the bnd-maven-plugin -->
+						<manifestFile>${project.build.outputDirectory}/META-INF/MANIFEST.MF</manifestFile>
+					</archive>
+					<classifier>${envClassifier}</classifier>
+				</configuration>
+			</plugin>
+		</plugins>
+
+		<resources>
+			<resource>
+				<directory>src/main/cuda</directory>
+				<filtering>false</filtering>
+			</resource>
+			<resource>
+				<directory>src/main/opencl</directory>
+				<filtering>false</filtering>
+			</resource>
+		</resources>
+
+		<pluginManagement>
+			<plugins>
+				<plugin>
+					<groupId>org.apache.maven.plugins</groupId>
+					<artifactId>maven-javadoc-plugin</artifactId>
+					<version>${maven.javadoc-plugin.version}</version>
+				<configuration>
 					<doctitle>${project.name} (${project.version}) documentation</doctitle>
 					<stylesheetfile>stylesheet.css</stylesheetfile>
 					<docfilessubdirs>true</docfilessubdirs>
@@ -169,161 +367,8 @@
 						</goals>
 					</execution>
 				</executions>
-			</plugin>
-			<plugin>
-				<groupId>org.apache.maven.plugins</groupId>
-				<artifactId>maven-surefire-plugin</artifactId>
-				<version>${surefire.version}</version>
-				<configuration>
-					<forkCount>1</forkCount>
-					<reuseForks>false</reuseForks>
-					<argLine>-mx6G</argLine>
-				</configuration>
-			</plugin>
+				</plugin>
 
-			<plugin>
-				<groupId>org.apache.maven.plugins</groupId>
-				<artifactId>maven-checkstyle-plugin</artifactId>
-				<version>${checkstyle.version}</version>
-				<configuration>
-					<configLocation>finmath-checkstyle.xml</configLocation>
-				</configuration>
-			</plugin>
-
-			<!-- Publish the site to GitHub gh-pages: use mvn site site:deploy site-deploy -->
-			<plugin>
-				<groupId>org.apache.maven.plugins</groupId>
-				<artifactId>maven-site-plugin</artifactId>
-				<version>3.8.2</version>
-				<configuration>
-					<skipDeploy>true</skipDeploy>
-				</configuration>
-				<dependencies>
-					<dependency>
-						<!-- add support for ssh/scp -->
-						<groupId>org.apache.maven.wagon</groupId>
-						<artifactId>wagon-ssh</artifactId>
-						<version>3.3.4</version>
-					</dependency>
-					<dependency>
-						<groupId>org.apache.maven.doxia</groupId>
-						<artifactId>doxia-module-markdown</artifactId>
-						<version>1.9</version>
-					</dependency>
-				</dependencies>
-			</plugin>
-			<plugin>
-				<groupId>org.apache.maven.plugins</groupId>
-				<artifactId>maven-site-plugin</artifactId>
-				<executions>
-					<execution>
-						<id>stage-for-scm-publish</id>
-						<phase>post-site</phase>
-						<goals>
-							<goal>stage</goal>
-						</goals>
-						<configuration>
-							<skipDeploy>false</skipDeploy><!-- MSITE-652: configuration won't 
-								be necessary with m-site-p 3.2 -->
-						</configuration>
-					</execution>
-				</executions>
-			</plugin>
-			<plugin>
-				<groupId>org.apache.maven.plugins</groupId>
-				<artifactId>maven-scm-publish-plugin</artifactId>
-				<version>3.0.0</version>
-				<configuration>
-					<scmBranch>gh-pages</scmBranch>
-				</configuration>
-				<executions>
-					<execution>
-						<id>scm-publish</id>
-						<phase>site-deploy</phase>
-						<goals>
-							<goal>publish-scm</goal>
-						</goals>
-					</execution>
-				</executions>
-			</plugin>
-
-			<plugin>
-				<groupId>org.codehaus.mojo</groupId>
-				<artifactId>buildnumber-maven-plugin</artifactId>
-				<version>1.4</version>
-				<executions>
-					<execution>
-						<phase>validate</phase>
-						<goals>
-							<goal>create</goal>
-						</goals>
-					</execution>
-				</executions>
-				<!-- We allow local modifications. The build number is reliable only 
-					in releases obtained via Maven central. -->
-				<configuration>
-					<doCheck>false</doCheck>
-					<doUpdate>false</doUpdate>
-				</configuration>
-			</plugin>
-			<plugin>
-				<groupId>org.openclover</groupId>
-				<artifactId>clover-maven-plugin</artifactId>
-				<version>${clover.version}</version>
-				<configuration>
-				</configuration>
-				<executions>
-					<execution>
-						<goals>
-							<goal>instrument</goal>
-						</goals>
-					</execution>
-				</executions>
-			</plugin>
-			<plugin>
-				<groupId>biz.aQute.bnd</groupId>
-				<artifactId>bnd-maven-plugin</artifactId>
-				<version>4.0.0</version>
-				<executions>
-					<execution>
-						<goals>
-							<goal>bnd-process</goal>
-						</goals>
-					</execution>
-				</executions>
-			</plugin>
-
-			<plugin>
-				<groupId>org.apache.maven.plugins</groupId>
-				<artifactId>maven-jar-plugin</artifactId>
-				<version>3.1.0</version>
-				<configuration>
-					<archive>
-						<manifest>
-							<addClasspath>true</addClasspath>
-							<mainClass>${main.class}</mainClass>
-						</manifest>
-						<!-- Use the manifest file generated by the bnd-maven-plugin -->
-						<manifestFile>${project.build.outputDirectory}/META-INF/MANIFEST.MF</manifestFile>
-					</archive>
-					<classifier>${envClassifier}</classifier>
-				</configuration>
-			</plugin>
-		</plugins>
-
-		<resources>
-			<resource>
-				<directory>src/main/cuda</directory>
-				<filtering>false</filtering>
-			</resource>
-			<resource>
-				<directory>src/main/opencl</directory>
-				<filtering>false</filtering>
-			</resource>
-		</resources>
-
-		<pluginManagement>
-			<plugins>
 				<!--This plugin's configuration is used to store Eclipse m2e settings 
 					only. It has no influence on the Maven build itself. -->
 				<plugin>
@@ -512,48 +557,19 @@
 			<plugin>
 				<groupId>org.apache.maven.plugins</groupId>
 				<artifactId>maven-javadoc-plugin</artifactId>
-				<version>${javadoc.version}</version>
-				<configuration>
-					<source>8</source>
-					<doctitle>${project.name} (${project.version}) documentation</doctitle>
-					<stylesheetfile>stylesheet.css</stylesheetfile>
-					<docfilessubdirs>true</docfilessubdirs>
-					<excludePackageNames>net.finmath.montecarlo.automaticdifferentiation.backward.alternative:net.finmath.rootfinder</excludePackageNames>
-					<header>
-			   			<![CDATA[
-						<span class="logo-white">finMath</span><span class="logo-red"> lib</span> cuda-extensions documentation
-						<script type="text/javascript" src='https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.2/MathJax.js?config=TeX-AMS-MML_HTMLorMML'></script>
-			   			]]>
-					</header>
-					<footer>
-			   			<![CDATA[
-						<i>Copyright &copy; 2020 Christian&nbsp;P.&nbsp;Fries.</i>
-			   			]]>
-					</footer>
-					<tags>
-						<tag>
-							<name>TODO</name>
-							<placement>a</placement>
-							<head>To dos:</head>
-						</tag>
-						<tag>
-							<name>date</name>
-							<placement>a</placement>
-							<head>Date:</head>
-						</tag>
-					</tags>
-					<links>
-						<link>http://commons.apache.org/proper/commons-math/javadocs/api-3.2/</link>
-					</links>
-					<detectLinks>true</detectLinks>
-					<additionalOptions>
-						<additionalOption>--allow-script-in-comments</additionalOption>
-					</additionalOptions>
-				</configuration>
+				<version>${maven.javadoc-plugin.version}</version>
+				<reportSets>
+					<reportSet><!-- by default, id = "default" -->
+						<reports><!-- select non-aggregate reports -->
+							<report>javadoc</report>
+							<!-- <report>test-javadoc</report> -->
+						</reports>
+					</reportSet>
+				</reportSets>
 			</plugin>
 			<plugin>
 				<artifactId>maven-project-info-reports-plugin</artifactId>
-				<version>3.0.0</version>
+				<version>${maven-project-info-reports-plugin.version}</version>
 				<reportSets>
 					<reportSet>
 						<reports>
@@ -574,21 +590,22 @@
 			<plugin>
 				<groupId>org.apache.maven.plugins</groupId>
 				<artifactId>maven-surefire-report-plugin</artifactId>
-				<version>${surefire.version}</version>
+				<version>${maven.surefire-report-plugin.version}</version>
 			</plugin>
 			<plugin>
 				<groupId>org.openclover</groupId>
 				<artifactId>clover-maven-plugin</artifactId>
-				<version>${clover.version}</version>
+				<version>${clover-plugin.version}</version>
 				<configuration>
 				</configuration>
 			</plugin>
 			<plugin>
 				<groupId>org.apache.maven.plugins</groupId>
 				<artifactId>maven-checkstyle-plugin</artifactId>
-				<version>${checkstyle.version}</version>
+				<version>${checkstyle-plugin.version}</version>
 				<configuration>
 					<configLocation>finmath-checkstyle.xml</configLocation>
+					<excludes>**/module-info.java</excludes>
 				</configuration>
 				<reportSets>
 					<reportSet>

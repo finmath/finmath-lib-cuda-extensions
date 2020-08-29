@@ -41,7 +41,8 @@ mvn release:perform
 cd target/checkout/
 mvn verify javadoc:jar source:jar gpg:sign deploy:deploy -Dcuda.version=6.0 -DskipTests=true
 mvn verify javadoc:jar source:jar gpg:sign deploy:deploy -Dcuda.version=8.0 -DskipTests=true
-mvn verify javadoc:jar source:jar gpg:sign deploy:deploy -Dcuda.version=10.0 -DskipTests=true
+mvn verify javadoc:jar source:jar gpg:sign deploy:deploy -Dcuda.version=9.2 -DskipTests=true
+mvn verify javadoc:jar source:jar gpg:sign deploy:deploy -Dcuda.version=10.1 -DskipTests=true
 
 # deploy site (clover:instrument takes a long time)
-mvn clover:instrument site site:deploy site-deploy
+mvn clover:instrument site site:stage site-deploy

@@ -1,4 +1,4 @@
-package net.finmath.montecarlo;
+package net.finmath.cuda.montecarlo;
 /*
  * (c) Copyright Christian P. Fries, Germany. All rights reserved. Contact: email@christian-fries.de.
  *
@@ -17,11 +17,13 @@ import org.junit.runner.RunWith;
 import org.junit.runners.Parameterized;
 import org.junit.runners.Parameterized.Parameters;
 
-import net.finmath.montecarlo.cuda.RandomVariableCuda;
-import net.finmath.montecarlo.cuda.alternative.BrownianMotionCudaWithHostRandomVariable;
-import net.finmath.montecarlo.cuda.alternative.BrownianMotionCudaWithRandomVariableCuda;
-import net.finmath.montecarlo.cuda.alternative.BrownianMotionJavaRandom;
-import net.finmath.montecarlo.opencl.RandomVariableOpenCL;
+import net.finmath.cuda.montecarlo.alternative.BrownianMotionCudaWithHostRandomVariable;
+import net.finmath.cuda.montecarlo.alternative.BrownianMotionCudaWithRandomVariableCuda;
+import net.finmath.cuda.montecarlo.alternative.BrownianMotionJavaRandom;
+import net.finmath.montecarlo.BrownianMotion;
+import net.finmath.montecarlo.BrownianMotionLazyInit;
+import net.finmath.montecarlo.RandomVariableFromArrayFactory;
+import net.finmath.opencl.montecarlo.RandomVariableOpenCL;
 import net.finmath.stochastic.RandomVariable;
 import net.finmath.time.TimeDiscretization;
 import net.finmath.time.TimeDiscretizationFromArray;

@@ -5,4 +5,4 @@
  *
  * @author Christian Fries
  */
-package net.finmath.montecarlo.cuda.alternative;
+package net.finmath.cuda.montecarlo.alternative;

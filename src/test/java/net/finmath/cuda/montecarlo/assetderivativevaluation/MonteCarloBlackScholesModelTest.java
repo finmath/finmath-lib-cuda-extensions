@@ -4,7 +4,7 @@
  * Created on 15.06.2016
  */
 
-package net.finmath.montecarlo.assetderivativevaluation;
+package net.finmath.cuda.montecarlo.assetderivativevaluation;
 
 import java.text.DecimalFormat;
 import java.util.Arrays;
@@ -18,22 +18,21 @@ import org.junit.runner.RunWith;
 import org.junit.runners.Parameterized;
 import org.junit.runners.Parameterized.Parameters;
 
+import net.finmath.cuda.montecarlo.RandomVariableCuda;
+import net.finmath.cuda.montecarlo.RandomVariableCudaFactory;
+import net.finmath.cuda.montecarlo.alternative.BrownianMotionCudaWithRandomVariableCuda;
+import net.finmath.cuda.montecarlo.alternative.BrownianMotionJavaRandom;
 import net.finmath.exception.CalculationException;
 import net.finmath.functions.AnalyticFormulas;
 import net.finmath.montecarlo.BrownianMotion;
 import net.finmath.montecarlo.BrownianMotionLazyInit;
 import net.finmath.montecarlo.RandomVariableFromArrayFactory;
 import net.finmath.montecarlo.assetderivativevaluation.models.BlackScholesModel;
-import net.finmath.montecarlo.cuda.RandomVariableCuda;
-import net.finmath.montecarlo.cuda.RandomVariableCudaFactory;
-import net.finmath.montecarlo.cuda.alternative.BrownianMotionCudaWithRandomVariableCuda;
-import net.finmath.montecarlo.cuda.alternative.BrownianMotionJavaRandom;
-import net.finmath.montecarlo.model.AbstractProcessModel;
 import net.finmath.montecarlo.model.ProcessModel;
-import net.finmath.montecarlo.opencl.RandomVariableOpenCL;
-import net.finmath.montecarlo.opencl.RandomVariableOpenCLFactory;
 import net.finmath.montecarlo.process.EulerSchemeFromProcessModel;
 import net.finmath.montecarlo.process.MonteCarloProcessFromProcessModel;
+import net.finmath.opencl.montecarlo.RandomVariableOpenCL;
+import net.finmath.opencl.montecarlo.RandomVariableOpenCLFactory;
 import net.finmath.stochastic.RandomVariable;
 import net.finmath.time.TimeDiscretization;
 import net.finmath.time.TimeDiscretizationFromArray;

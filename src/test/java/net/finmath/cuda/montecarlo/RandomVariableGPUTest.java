@@ -3,7 +3,7 @@
  *
  * Created on 10.02.2004
  */
-package net.finmath.montecarlo;
+package net.finmath.cuda.montecarlo;
 
 import java.util.Arrays;
 import java.util.Collection;
@@ -18,20 +18,19 @@ import org.junit.runner.RunWith;
 import org.junit.runners.Parameterized;
 import org.junit.runners.Parameterized.Parameters;
 
-import net.finmath.montecarlo.cpu.RandomVariableFloatFactory;
-import net.finmath.montecarlo.cpu.RandomVariableFromFloatArray;
-import net.finmath.montecarlo.cuda.RandomVariableCuda;
-import net.finmath.montecarlo.cuda.RandomVariableCudaFactory;
-import net.finmath.montecarlo.opencl.RandomVariableOpenCL;
-import net.finmath.montecarlo.opencl.RandomVariableOpenCLFactory;
+import net.finmath.cpu.montecarlo.RandomVariableFloatFactory;
+import net.finmath.cpu.montecarlo.RandomVariableFromFloatArray;
+import net.finmath.montecarlo.RandomVariableFactory;
+import net.finmath.opencl.montecarlo.RandomVariableOpenCL;
+import net.finmath.opencl.montecarlo.RandomVariableOpenCLFactory;
 import net.finmath.stochastic.RandomVariable;
 
 /**
  * Test cases for the class net.finmath.montecarlo.opencl.RandomVariableOpenCL and net.finmath.montecarlo.cuda.RandomVariableCuda
  *
  * @author Christian Fries
- * @see net.finmath.montecarlo.opencl.RandomVariableOpenCL
- * @see net.finmath.montecarlo.cuda.RandomVariableCuda
+ * @see net.finmath.opencl.montecarlo.RandomVariableOpenCL
+ * @see net.finmath.cuda.montecarlo.RandomVariableCuda
  */
 @RunWith(Parameterized.class)
 public class RandomVariableGPUTest {

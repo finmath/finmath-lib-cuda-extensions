@@ -1,4 +1,4 @@
-package net.finmath.montecarlo.interestrates;
+package net.finmath.cuda.montecarlo.interestrates;
 /*
  * (c) Copyright Christian P. Fries, Germany. All rights reserved. Contact: email@christian-fries.de.
  *
@@ -22,6 +22,9 @@ import org.junit.runner.RunWith;
 import org.junit.runners.Parameterized;
 import org.junit.runners.Parameterized.Parameters;
 
+import net.finmath.cpu.montecarlo.RandomVariableFloatFactory;
+import net.finmath.cuda.montecarlo.RandomVariableCuda;
+import net.finmath.cuda.montecarlo.RandomVariableCudaFactory;
 import net.finmath.exception.CalculationException;
 import net.finmath.marketdata.model.curves.DiscountCurve;
 import net.finmath.marketdata.model.curves.DiscountCurveFromForwardCurve;
@@ -30,9 +33,6 @@ import net.finmath.marketdata.model.curves.ForwardCurveInterpolation;
 import net.finmath.montecarlo.BrownianMotion;
 import net.finmath.montecarlo.BrownianMotionView;
 import net.finmath.montecarlo.RandomVariableFactory;
-import net.finmath.montecarlo.cpu.RandomVariableFloatFactory;
-import net.finmath.montecarlo.cuda.RandomVariableCuda;
-import net.finmath.montecarlo.cuda.RandomVariableCudaFactory;
 import net.finmath.montecarlo.interestrate.CalibrationProduct;
 import net.finmath.montecarlo.interestrate.models.LIBORMarketModelFromCovarianceModel;
 import net.finmath.montecarlo.interestrate.models.covariance.AbstractLIBORCovarianceModelParametric;
@@ -41,9 +41,9 @@ import net.finmath.montecarlo.interestrate.models.covariance.LIBORCovarianceMode
 import net.finmath.montecarlo.interestrate.models.covariance.LIBORCovarianceModelStochasticVolatility;
 import net.finmath.montecarlo.interestrate.products.AbstractLIBORMonteCarloProduct;
 import net.finmath.montecarlo.interestrate.products.SwaptionSimple;
-import net.finmath.montecarlo.opencl.RandomVariableOpenCL;
-import net.finmath.montecarlo.opencl.RandomVariableOpenCLFactory;
 import net.finmath.montecarlo.process.EulerSchemeFromProcessModel;
+import net.finmath.opencl.montecarlo.RandomVariableOpenCL;
+import net.finmath.opencl.montecarlo.RandomVariableOpenCLFactory;
 import net.finmath.time.TimeDiscretizationFromArray;
 
 /**
@@ -222,7 +222,7 @@ public class LIBORMarketModelCalibrationTest {
 			break;
 		case GPU_CUDA:
 			randomVariableFactory = new RandomVariableCudaFactory();
-			brownianMotion = new net.finmath.montecarlo.cuda.alternative.BrownianMotionCudaWithRandomVariableCuda(timeDiscretizationFromArray, numberOfFactors + 1, numberOfPaths, 314151 /* seed */);
+			brownianMotion = new net.finmath.cuda.montecarlo.alternative.BrownianMotionCudaWithRandomVariableCuda(timeDiscretizationFromArray, numberOfFactors + 1, numberOfPaths, 314151 /* seed */);
 			break;
 		case GPU_OPENCL_WITH_CPU_RANDOM:
 			randomVariableFactory = new RandomVariableOpenCLFactory();

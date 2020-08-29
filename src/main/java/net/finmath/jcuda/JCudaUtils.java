@@ -73,14 +73,23 @@ public class JCudaUtils
 				cuFile.getPath(),
 				"-o",
 				ptxFileName };
-
-		//		String command = "nvcc " + modelString + " -ptx " + "" + cuFile.getPath() + " -o " + ptxFileName;
-
 		logger.fine("Executing\n"+Arrays.toString(command));
-		final Process process = Runtime.getRuntime().exec(command);
 
-		final String errorMessage = IOUtils.toString(process.getErrorStream(), Charset.defaultCharset());
-		final String outputMessage = IOUtils.toString(process.getInputStream(), Charset.defaultCharset());
+		final Process process;
+		final String errorMessage;
+		final String outputMessage;
+		try {
+			process = Runtime.getRuntime().exec(command);
+
+			errorMessage = IOUtils.toString(process.getErrorStream(), Charset.defaultCharset());
+			outputMessage = IOUtils.toString(process.getInputStream(), Charset.defaultCharset());
+		}
+		catch (final IOException e)
+		{
+			logger.severe("Unable to run nvcc compiler. Command: "+Arrays.toString(command));
+			throw new IOException("Unable to run nvcc compiler.", e);
+		}
+
 		int exitValue = 0;
 		try
 		{

@@ -6,6 +6,16 @@ finmath lib cuda extensions Release Notes
 # Release Notes
 
 
+## 5.0.5 (29.08.2020)
+
+### General
+
+ - Requiring Java 11.
+ - Providing a Java module defines. Module name is net.finmath.gpu
+ - Referencing finmath-lib 5.0.5
+ - Refactoring package names to net.finmath.cuda and net.finmath.opencl to comply with Java module system.
+ 
+
 ## 4.1.7 (22.03.2020)
 
 ### General
