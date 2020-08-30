@@ -172,6 +172,12 @@
 				</configuration>
 				<executions>
 					<execution>
+						<id>cuda-10.2</id>
+						<configuration>
+							<releaseProfiles>cuda-10.2</releaseProfiles>
+						</configuration>
+					</execution>
+					<execution>
 						<id>cuda-10.1</id>
 						<configuration>
 							<releaseProfiles>cuda-10.1</releaseProfiles>
@@ -322,51 +328,51 @@
 					<groupId>org.apache.maven.plugins</groupId>
 					<artifactId>maven-javadoc-plugin</artifactId>
 					<version>${maven.javadoc-plugin.version}</version>
-				<configuration>
-					<doctitle>${project.name} (${project.version}) documentation</doctitle>
-					<stylesheetfile>stylesheet.css</stylesheetfile>
-					<docfilessubdirs>true</docfilessubdirs>
-					<excludePackageNames>net.finmath.montecarlo.automaticdifferentiation.backward.alternative:net.finmath.rootfinder</excludePackageNames>
-					<header>
-			   			<![CDATA[
-						<span class="logo-white">finMath</span><span class="logo-red"> lib</span> cuda-extensions documentation
-						<script type="text/javascript" src='https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.2/MathJax.js?config=TeX-AMS-MML_HTMLorMML'></script>
-			   			]]>
-					</header>
-					<footer>
-			   			<![CDATA[
-						<i>Copyright &copy; 2020 Christian&nbsp;P.&nbsp;Fries.</i>
-			   			]]>
-					</footer>
-					<tags>
-						<tag>
-							<name>TODO</name>
-							<placement>a</placement>
-							<head>To dos:</head>
-						</tag>
-						<tag>
-							<name>date</name>
-							<placement>a</placement>
-							<head>Date:</head>
-						</tag>
-					</tags>
-					<links>
-						<link>http://commons.apache.org/proper/commons-lang/javadocs/api-release</link>
-						<link>http://commons.apache.org/proper/commons-math/javadocs/api-3.3</link>
-					</links>
-					<detectLinks>true</detectLinks>
-					<additionalOptions>
-						<additionalOption>--allow-script-in-comments</additionalOption>
-					</additionalOptions>
-				</configuration>
-				<executions>
-					<execution>
-						<id>attach-javadocs</id>
-						<goals>
-							<goal>jar</goal>
-						</goals>
-					</execution>
-				</executions>
+					<configuration>
+						<doctitle>${project.name} (${project.version}) documentation</doctitle>
+						<stylesheetfile>stylesheet.css</stylesheetfile>
+						<docfilessubdirs>true</docfilessubdirs>
+						<excludePackageNames>net.finmath.montecarlo.automaticdifferentiation.backward.alternative:net.finmath.rootfinder</excludePackageNames>
+						<header>
+				   			<![CDATA[
+							<span class="logo-white">finMath</span><span class="logo-red"> lib</span> cuda-extensions documentation
+							<script type="text/javascript" src='https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.2/MathJax.js?config=TeX-AMS-MML_HTMLorMML'></script>
+				   			]]>
+						</header>
+						<footer>
+				   			<![CDATA[
+							<i>Copyright &copy; 2020 Christian&nbsp;P.&nbsp;Fries.</i>
+				   			]]>
+						</footer>
+						<tags>
+							<tag>
+								<name>TODO</name>
+								<placement>a</placement>
+								<head>To dos:</head>
+							</tag>
+							<tag>
+								<name>date</name>
+								<placement>a</placement>
+								<head>Date:</head>
+							</tag>
+						</tags>
+						<links>
+							<link>http://commons.apache.org/proper/commons-lang/javadocs/api-release</link>
+							<link>http://commons.apache.org/proper/commons-math/javadocs/api-3.3</link>
+						</links>
+						<detectLinks>true</detectLinks>
+						<additionalOptions>
+							<additionalOption>--allow-script-in-comments</additionalOption>
+						</additionalOptions>
+					</configuration>
+					<executions>
+						<execution>
+							<id>attach-javadocs</id>
+							<goals>
+								<goal>jar</goal>
+							</goals>
+						</execution>
+					</executions>
 				</plugin>
 
 				<!--This plugin's configuration is used to store Eclipse m2e settings 
@@ -422,6 +428,30 @@
 					<groupId>org.jcuda</groupId>
 					<artifactId>jcurand</artifactId>
 					<version>10.1.0</version>
+				</dependency>
+			</dependencies>
+		</profile>
+		<profile>
+			<id>cuda-10.2</id>
+			<activation>
+				<property>
+					<name>cuda.version</name>
+					<value>10.2</value>
+				</property>
+			</activation>
+			<properties>
+				<envClassifier>cuda-10.2</envClassifier>
+			</properties>
+			<dependencies>
+				<dependency>
+					<groupId>org.jcuda</groupId>
+					<artifactId>jcuda</artifactId>
+					<version>10.2.0</version>
+				</dependency>
+				<dependency>
+					<groupId>org.jcuda</groupId>
+					<artifactId>jcurand</artifactId>
+					<version>10.2.0</version>
 				</dependency>
 			</dependencies>
 		</profile>

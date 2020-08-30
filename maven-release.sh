@@ -43,6 +43,8 @@ mvn verify javadoc:jar source:jar gpg:sign deploy:deploy -Dcuda.version=6.0 -Dsk
 mvn verify javadoc:jar source:jar gpg:sign deploy:deploy -Dcuda.version=8.0 -DskipTests=true
 mvn verify javadoc:jar source:jar gpg:sign deploy:deploy -Dcuda.version=9.2 -DskipTests=true
 mvn verify javadoc:jar source:jar gpg:sign deploy:deploy -Dcuda.version=10.1 -DskipTests=true
+mvn verify javadoc:jar source:jar gpg:sign deploy:deploy -Dcuda.version=10.2 -DskipTests=true
+mvn verify javadoc:jar source:jar gpg:sign deploy:deploy -DskipTests=true
 
 # deploy site (clover:instrument takes a long time)
 mvn clover:instrument site site:stage site-deploy
