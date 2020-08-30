@@ -1,1 +1,0 @@
-packageSearchIndex = [{"l":"All Packages","url":"allpackages-index.html"},{"l":"net.finmath.montecarlo"},{"l":"net.finmath.montecarlo.assetderivativevaluation"},{"l":"net.finmath.montecarlo.interestrates"}]
