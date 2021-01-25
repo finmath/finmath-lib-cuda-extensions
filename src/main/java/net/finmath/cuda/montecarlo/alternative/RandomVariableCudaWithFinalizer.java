@@ -19,6 +19,8 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.lang.ref.ReferenceQueue;
 import java.lang.ref.WeakReference;
+import java.nio.charset.Charset;
+import java.util.Arrays;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.function.DoubleBinaryOperator;
@@ -26,6 +28,8 @@ import java.util.function.DoubleUnaryOperator;
 import java.util.function.IntToDoubleFunction;
 import java.util.logging.Logger;
 import java.util.stream.DoubleStream;
+
+import org.apache.commons.io.IOUtils;
 
 import jcuda.LogLevel;
 import jcuda.Pointer;
@@ -1351,22 +1355,33 @@ public class RandomVariableCudaWithFinalizer implements RandomVariable {
 						cuFile.getPath()+" -o "+ptxFileName;
 
 		System.out.println("Executing\n"+command);
-		final Process process = Runtime.getRuntime().exec(command);
 
-		final String errorMessage =
-				new String(toByteArray(process.getErrorStream()));
-		final String outputMessage =
-				new String(toByteArray(process.getInputStream()));
-		int exitValue = 0;
-		try
-		{
-			exitValue = process.waitFor();
+		final Process process;
+		String errorMessage = "N/A";
+		String outputMessage = "N/A";
+		int exitValue = -1;
+		try {
+			process = Runtime.getRuntime().exec(command);
+
+			try(InputStream errorStream = process.getErrorStream(); InputStream inputStream = process.getInputStream()) {
+				errorMessage = IOUtils.toString(errorStream, Charset.defaultCharset());
+				outputMessage = IOUtils.toString(inputStream, Charset.defaultCharset());
+				try
+				{
+					exitValue = process.waitFor();
+				}
+				catch (final InterruptedException e)
+				{
+					Thread.currentThread().interrupt();
+					throw new IOException(
+							"Interrupted while waiting for nvcc output", e);
+				}
+			}
 		}
-		catch (final InterruptedException e)
+		catch (final IOException e)
 		{
-			Thread.currentThread().interrupt();
-			throw new IOException(
-					"Interrupted while waiting for nvcc output", e);
+			logger.severe("Unable to run nvcc compiler. Command: "+ command);
+			throw new IOException("Unable to run nvcc compiler.", e);
 		}
 
 		if (exitValue != 0)

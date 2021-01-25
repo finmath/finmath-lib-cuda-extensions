@@ -81,8 +81,10 @@ public class JCudaUtils
 		try {
 			process = Runtime.getRuntime().exec(command);
 
-			errorMessage = IOUtils.toString(process.getErrorStream(), Charset.defaultCharset());
-			outputMessage = IOUtils.toString(process.getInputStream(), Charset.defaultCharset());
+			try(InputStream errorStream = process.getErrorStream(); InputStream inputStream = process.getInputStream()) {
+				errorMessage = IOUtils.toString(errorStream, Charset.defaultCharset());
+				outputMessage = IOUtils.toString(inputStream, Charset.defaultCharset());
+			}
 		}
 		catch (final IOException e)
 		{
@@ -114,7 +116,6 @@ public class JCudaUtils
 
 			throw new IOException("Could not create .ptx file: "+errorMessage);
 		}
-
 		logger.fine("Finished creating PTX file");
 
 		return ptxFileName;
