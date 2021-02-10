@@ -32,6 +32,7 @@ import org.junit.runner.RunWith;
 import org.junit.runners.Parameterized;
 import org.junit.runners.Parameterized.Parameters;
 
+import net.finmath.cuda.montecarlo.RandomVariableCudaFactory;
 import net.finmath.exception.CalculationException;
 import net.finmath.functions.AnalyticFormulas;
 import net.finmath.marketdata.calibration.ParameterObject;
@@ -118,7 +119,8 @@ public class LIBORMarketModelCalibrationATMTest {
 	private static DecimalFormat formatterDeviation	= new DecimalFormat(" 0.00000E00;-0.00000E00", new DecimalFormatSymbols(Locale.ENGLISH));
 
 //	private final RandomVariableFactory randomVariableFactory = new RandomVariableFromArrayFactory();
-	private final RandomVariableFactory randomVariableFactory = new RandomVariableOpenCLFactory();
+//	private final RandomVariableFactory randomVariableFactory = new RandomVariableOpenCLFactory();
+	private final RandomVariableFactory randomVariableFactory = new RandomVariableCudaFactory();
 
 	private final LIBORMarketModelType modelType;
 	private final CalibrationProductType calibrationProductType;
