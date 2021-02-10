@@ -46,6 +46,8 @@ import net.finmath.montecarlo.interestrate.products.SwaptionSimple;
 import net.finmath.montecarlo.process.EulerSchemeFromProcessModel;
 import net.finmath.opencl.montecarlo.RandomVariableOpenCL;
 import net.finmath.opencl.montecarlo.RandomVariableOpenCLFactory;
+import net.finmath.optimizer.LevenbergMarquardt;
+import net.finmath.optimizer.OptimizerFactory;
 import net.finmath.optimizer.OptimizerFactoryLevenbergMarquardt;
 import net.finmath.time.TimeDiscretizationFromArray;
 
@@ -262,7 +264,10 @@ public class LIBORMarketModelCalibrationTest {
 		calibrationParameters.put("accuracyParameter", new Double(1E-12));
 		calibrationParameters.put("brownianMotion", brownianMotionView1);
 		calibrationParameters.put("maxIterations", maxIterations);
-		calibrationParameters.put("optimizerFactory", new OptimizerFactoryLevenbergMarquardt(maxIterations, new Double(1E-12), 4));
+		OptimizerFactory optimizerFactory = new OptimizerFactoryLevenbergMarquardt(LevenbergMarquardt.RegularizationMethod.LEVENBERG_MARQUARDT,
+				2.0 /* lambda */,
+				maxIterations, 1E-12, 6);
+		calibrationParameters.put("optimizerFactory", optimizerFactory);
 		properties.put("calibrationParameters", calibrationParameters);
 		
 		final LIBORMarketModelFromCovarianceModel liborMarketModelCalibrated = LIBORMarketModelFromCovarianceModel.of(
