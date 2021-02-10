@@ -265,8 +265,9 @@ public class LIBORMarketModelCalibrationTest {
 		calibrationParameters.put("brownianMotion", brownianMotionView1);
 		calibrationParameters.put("maxIterations", maxIterations);
 		OptimizerFactory optimizerFactory = new OptimizerFactoryLevenbergMarquardt(LevenbergMarquardt.RegularizationMethod.LEVENBERG_MARQUARDT,
-				2.0 /* lambda */,
-				maxIterations, 1E-12, 6);
+//				0.001 /* lambda */,
+				0.0001 /* lambda */,
+				maxIterations, 1E-12, 2);
 		calibrationParameters.put("optimizerFactory", optimizerFactory);
 		properties.put("calibrationParameters", calibrationParameters);
 		
