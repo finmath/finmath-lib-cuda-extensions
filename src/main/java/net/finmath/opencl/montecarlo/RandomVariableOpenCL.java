@@ -79,7 +79,7 @@ import net.finmath.stochastic.RandomVariable;
  *
  * <b>Configuration</b>
  *
- * The class can be configured with system property to use a chosen OpenCL device. The poperties are:
+ * The class can be configured with system property to use a chosen OpenCL device. The properties are:
  * <dl>
  * 	<dt>
  * 		"net.finmath.montecarlo.opencl.RandomVariableOpenCL.deviceType"
