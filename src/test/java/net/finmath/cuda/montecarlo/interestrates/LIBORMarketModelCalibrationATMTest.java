@@ -118,9 +118,9 @@ public class LIBORMarketModelCalibrationATMTest {
 	private static DecimalFormat formatterParam		= new DecimalFormat(" #0.000;-#0.000", new DecimalFormatSymbols(Locale.ENGLISH));
 	private static DecimalFormat formatterDeviation	= new DecimalFormat(" 0.00000E00;-0.00000E00", new DecimalFormatSymbols(Locale.ENGLISH));
 
-//	private final RandomVariableFactory randomVariableFactory = new RandomVariableFromArrayFactory();
+	private final RandomVariableFactory randomVariableFactory = new RandomVariableFromArrayFactory();
 //	private final RandomVariableFactory randomVariableFactory = new RandomVariableOpenCLFactory();
-	private final RandomVariableFactory randomVariableFactory = new RandomVariableCudaFactory();
+//	private final RandomVariableFactory randomVariableFactory = new RandomVariableCudaFactory();
 
 	private final LIBORMarketModelType modelType;
 	private final CalibrationProductType calibrationProductType;
@@ -145,7 +145,7 @@ public class LIBORMarketModelCalibrationATMTest {
 	public void testATMSwaptionCalibration() throws CalculationException, SolverException {
 
 		// Small number of path, to reduce runtime of the unit test. Calibration should use 10 to 100 times more.
-		final int numberOfPaths		= 10000;
+		final int numberOfPaths		= 1000;
 		final int numberOfFactors	= 1;
 
 		final long millisCurvesStart = System.currentTimeMillis();
