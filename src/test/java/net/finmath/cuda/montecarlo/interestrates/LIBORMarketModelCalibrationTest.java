@@ -31,9 +31,11 @@ import net.finmath.marketdata.model.curves.DiscountCurveFromForwardCurve;
 import net.finmath.marketdata.model.curves.ForwardCurve;
 import net.finmath.marketdata.model.curves.ForwardCurveInterpolation;
 import net.finmath.montecarlo.BrownianMotion;
+import net.finmath.montecarlo.BrownianMotionFromMersenneRandomNumbers;
 import net.finmath.montecarlo.BrownianMotionView;
 import net.finmath.montecarlo.RandomVariableFactory;
 import net.finmath.montecarlo.interestrate.CalibrationProduct;
+import net.finmath.montecarlo.interestrate.LIBORMonteCarloSimulationFromLIBORModel;
 import net.finmath.montecarlo.interestrate.models.LIBORMarketModelFromCovarianceModel;
 import net.finmath.montecarlo.interestrate.models.covariance.AbstractLIBORCovarianceModelParametric;
 import net.finmath.montecarlo.interestrate.models.covariance.BlendedLocalVolatilityModel;
@@ -44,10 +46,11 @@ import net.finmath.montecarlo.interestrate.products.SwaptionSimple;
 import net.finmath.montecarlo.process.EulerSchemeFromProcessModel;
 import net.finmath.opencl.montecarlo.RandomVariableOpenCL;
 import net.finmath.opencl.montecarlo.RandomVariableOpenCLFactory;
+import net.finmath.optimizer.OptimizerFactoryLevenbergMarquardt;
 import net.finmath.time.TimeDiscretizationFromArray;
 
 /**
- * This class tests the LIBOR market model and products.
+ * This class performs a brute force Monte-Carlo calibration of the LIBOR market model.
  *
  * @author Christian Fries
  */
@@ -218,7 +221,7 @@ public class LIBORMarketModelCalibrationTest {
 		switch(processingUnit) {
 		case CPU:
 			randomVariableFactory = new RandomVariableFloatFactory();
-			brownianMotion = new net.finmath.montecarlo.BrownianMotionLazyInit(timeDiscretizationFromArray, numberOfFactors + 1, numberOfPaths, 314151 /* seed */, randomVariableFactory);
+			brownianMotion = new BrownianMotionFromMersenneRandomNumbers(timeDiscretizationFromArray, numberOfFactors + 1, numberOfPaths, 314151 /* seed */, randomVariableFactory);
 			break;
 		case GPU_CUDA:
 			randomVariableFactory = new RandomVariableCudaFactory();
@@ -226,12 +229,12 @@ public class LIBORMarketModelCalibrationTest {
 			break;
 		case GPU_OPENCL_WITH_CPU_RANDOM:
 			randomVariableFactory = new RandomVariableOpenCLFactory();
-			brownianMotion = new net.finmath.montecarlo.BrownianMotionLazyInit(timeDiscretizationFromArray, numberOfFactors + 1, numberOfPaths, 314151 /* seed */, randomVariableFactory);
+			brownianMotion = new BrownianMotionFromMersenneRandomNumbers(timeDiscretizationFromArray, numberOfFactors + 1, numberOfPaths, 314151 /* seed */, randomVariableFactory);
 			break;
 		case GPU_CUDA_WITH_CPU_RANDOM:
 		default:
 			randomVariableFactory = new RandomVariableCudaFactory();
-			brownianMotion = new net.finmath.montecarlo.BrownianMotionLazyInit(timeDiscretizationFromArray, numberOfFactors + 1, numberOfPaths, 314151 /* seed */, randomVariableFactory);
+			brownianMotion = new BrownianMotionFromMersenneRandomNumbers(timeDiscretizationFromArray, numberOfFactors + 1, numberOfPaths, 314151 /* seed */, randomVariableFactory);
 			break;
 		}
 
@@ -259,8 +262,9 @@ public class LIBORMarketModelCalibrationTest {
 		calibrationParameters.put("accuracyParameter", new Double(1E-12));
 		calibrationParameters.put("brownianMotion", brownianMotionView1);
 		calibrationParameters.put("maxIterations", maxIterations);
+		calibrationParameters.put("optimizerFactory", new OptimizerFactoryLevenbergMarquardt(maxIterations, new Double(1E-12), 4));
 		properties.put("calibrationParameters", calibrationParameters);
-
+		
 		final LIBORMarketModelFromCovarianceModel liborMarketModelCalibrated = LIBORMarketModelFromCovarianceModel.of(
 				liborPeriodDiscretization,
 				null,
@@ -280,8 +284,7 @@ public class LIBORMarketModelCalibrationTest {
 		}
 
 		final EulerSchemeFromProcessModel process = new EulerSchemeFromProcessModel(liborMarketModelCalibrated, brownianMotionView1);
-		final net.finmath.montecarlo.interestrate.LIBORMonteCarloSimulationFromLIBORModel simulationCalibrated = new net.finmath.montecarlo.interestrate.LIBORMonteCarloSimulationFromLIBORModel(
-				liborMarketModelCalibrated, process);
+		final LIBORMonteCarloSimulationFromLIBORModel simulationCalibrated = new LIBORMonteCarloSimulationFromLIBORModel(process);
 
 		System.out.println("\nValuation on calibrated model:");
 		double deviationSum			= 0.0;
