@@ -276,21 +276,21 @@ public class LIBORMarketModelCalibrationATMTest {
 		// If simulation time is below libor time, exceptions will be hard to track.
 		final double lastTime	= 40.0;
 		final double dt		= 0.25;
-		final TimeDiscretizationFromArray timeDiscretizationFromArray = new TimeDiscretizationFromArray(0.0, (int) (lastTime / dt), dt);
-		final TimeDiscretization liborPeriodDiscretization = timeDiscretizationFromArray;
+		final TimeDiscretizationFromArray timeDiscretization = new TimeDiscretizationFromArray(0.0, (int) (lastTime / dt), dt);
+		final TimeDiscretization liborPeriodDiscretization = timeDiscretization;
 
 		/*
 		 * Create Brownian motions
 		 */
-		final BrownianMotion brownianMotion = new net.finmath.montecarlo.BrownianMotionFromMersenneRandomNumbers(timeDiscretizationFromArray, numberOfFactors, numberOfPaths, 31415 /* seed */);
+		final BrownianMotion brownianMotion = new net.finmath.montecarlo.BrownianMotionFromMersenneRandomNumbers(timeDiscretization, numberOfFactors, numberOfPaths, 31415 /* seed */, randomVariableFactory);
 		//final BrownianMotion brownianMotion = new net.finmath.montecarlo.BrownianMotionCudaWithHostRandomVariable(timeDiscretizationFromArray, numberOfFactors, numberOfPaths, 31415 /* seed */);
-		//final BrownianMotion brownianMotion = new net.finmath.montecarlo.BrownianMotionCudaWithRandomVariableCuda(timeDiscretizationFromArray, numberOfFactors, numberOfPaths, 31415 /* seed */);
+		//final BrownianMotion brownianMotion = new net.finmath.cuda.montecarlo.alternative.BrownianMotionCudaWithRandomVariableCuda(timeDiscretizationFromArray, numberOfFactors, numberOfPaths, 31415 /* seed */);
 
-		final LIBORVolatilityModel volatilityModel = new LIBORVolatilityModelPiecewiseConstant(timeDiscretizationFromArray, liborPeriodDiscretization, new TimeDiscretizationFromArray(0.00, 1.0, 2.0, 5.0, 10.0, 20.0, 30.0, 40.0), new TimeDiscretizationFromArray(0.00, 1.0, 2.0, 5.0, 10.0, 20.0, 30.0, 40.0), 0.50 / 100);
-		final LIBORCorrelationModel correlationModel = new LIBORCorrelationModelExponentialDecay(timeDiscretizationFromArray, liborPeriodDiscretization, numberOfFactors, 0.05, false);
+		final LIBORVolatilityModel volatilityModel = new LIBORVolatilityModelPiecewiseConstant(timeDiscretization, liborPeriodDiscretization, new TimeDiscretizationFromArray(0.00, 1.0, 2.0, 5.0, 10.0, 20.0, 30.0, 40.0), new TimeDiscretizationFromArray(0.00, 1.0, 2.0, 5.0, 10.0, 20.0, 30.0, 40.0), 0.50 / 100);
+		final LIBORCorrelationModel correlationModel = new LIBORCorrelationModelExponentialDecay(timeDiscretization, liborPeriodDiscretization, numberOfFactors, 0.05, false);
 		// Create a covariance model
 		//AbstractLIBORCovarianceModelParametric covarianceModelParametric = new LIBORCovarianceModelExponentialForm5Param(timeDiscretizationFromArray, liborPeriodDiscretization, numberOfFactors, new double[] { 0.20/100.0, 0.05/100.0, 0.10, 0.05/100.0, 0.10} );
-		final AbstractLIBORCovarianceModelParametric covarianceModelParametric = new LIBORCovarianceModelFromVolatilityAndCorrelation(timeDiscretizationFromArray, liborPeriodDiscretization, volatilityModel, correlationModel);
+		final AbstractLIBORCovarianceModelParametric covarianceModelParametric = new LIBORCovarianceModelFromVolatilityAndCorrelation(timeDiscretization, liborPeriodDiscretization, volatilityModel, correlationModel);
 
 		// Create blended local volatility model with fixed parameter (0=lognormal, > 1 = almost a normal model).
 		final AbstractLIBORCovarianceModelParametric covarianceModelDisplaced = new DisplacedLocalVolatilityModel(covarianceModelParametric, 1.0/0.25, false /* isCalibrateable */);
