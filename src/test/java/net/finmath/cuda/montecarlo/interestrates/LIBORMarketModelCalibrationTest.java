@@ -71,7 +71,7 @@ public class LIBORMarketModelCalibrationTest {
 
 	private final int numberOfPaths		= 81920;
 	private final int numberOfFactors	= 5;
-	private static final int maxIterations = 10; //30
+	private static final int maxIterations = 40;
 
 	private static final DecimalFormat formatterReal2		= new DecimalFormat(" 0.00");
 	private static final DecimalFormat formatterValue		= new DecimalFormat(" ##0.000%;-##0.000%", new DecimalFormatSymbols(Locale.ENGLISH));
@@ -261,14 +261,12 @@ public class LIBORMarketModelCalibrationTest {
 
 		// Set calibration properties (should use our brownianMotion for calibration - needed to have to right correlation).
 		final Map<String, Object> calibrationParameters = new HashMap<String, Object>();
-		calibrationParameters.put("accuracyParameter", new Double(1E-12));
-		calibrationParameters.put("brownianMotion", brownianMotionView1);
-		calibrationParameters.put("maxIterations", maxIterations);
 		OptimizerFactory optimizerFactory = new OptimizerFactoryLevenbergMarquardt(LevenbergMarquardt.RegularizationMethod.LEVENBERG_MARQUARDT,
-//				0.001 /* lambda */,
 				0.0001 /* lambda */,
-				maxIterations, 1E-12, 2);
+				maxIterations, 1E-6,
+				4 /* numberOfThreads */);
 		calibrationParameters.put("optimizerFactory", optimizerFactory);
+		calibrationParameters.put("brownianMotion", brownianMotionView1);
 		properties.put("calibrationParameters", calibrationParameters);
 		
 		final LIBORMarketModelFromCovarianceModel liborMarketModelCalibrated = LIBORMarketModelFromCovarianceModel.of(
