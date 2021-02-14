@@ -559,7 +559,7 @@ public class RandomVariableOpenCL implements RandomVariable {
 			final int deviceIndex;		// will be a property.
 
 
-			// Enable exceptions and subsequently omit error checks in this sample
+			// Enable exceptions
 			CL.setExceptionsEnabled(true);
 
 			// Obtain the number of platforms
@@ -657,6 +657,8 @@ public class RandomVariableOpenCL implements RandomVariable {
 			addProductVectorScalar = clCreateKernel(cpProgram, "addProduct_vs", null);
 			//				reducePartial = clCreateKernel(cpProgram, "reducePartial", null);
 			//				reduceFloatVectorToDoubleScalar = clCreateKernel(cpProgram, "reduceFloatVectorToDoubleScalar", null);
+
+			logger.info("Created all OpenCL kernels");
 
 			final long[] deviceMaxMemoryBytesResult = new long[1];
 			try {
