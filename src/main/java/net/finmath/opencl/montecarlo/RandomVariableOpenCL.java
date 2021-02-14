@@ -661,6 +661,7 @@ public class RandomVariableOpenCL implements RandomVariable {
 			final long[] deviceMaxMemoryBytesResult = new long[1];
 			CL.clGetDeviceInfo(device, CL.CL_DEVICE_GLOBAL_MEM_SIZE, Sizeof.cl_long, Pointer.to(deviceMaxMemoryBytesResult), null);
 			DeviceMemoryPool.deviceMaxMemoryBytes = deviceMaxMemoryBytesResult[0];
+			logger.info("OpenCL reported " + DeviceMemoryPool.deviceMaxMemoryBytes + " bytes.");
 
 			Runtime.getRuntime().addShutdownHook(new Thread(new Runnable() {
 				@Override
