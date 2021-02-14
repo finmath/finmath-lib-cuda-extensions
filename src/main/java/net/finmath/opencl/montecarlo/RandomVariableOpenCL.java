@@ -631,6 +631,7 @@ public class RandomVariableOpenCL implements RandomVariable {
 			logger.info("Compiled OpenCL program");
 
 			// Obtain a function pointers
+			try {
 			capByScalar = clCreateKernel(cpProgram, "capByScalar", null);
 			floorByScalar = clCreateKernel(cpProgram, "floorByScalar", null);
 			addScalar = clCreateKernel(cpProgram, "addScalar", null);
@@ -657,7 +658,11 @@ public class RandomVariableOpenCL implements RandomVariable {
 			addProductVectorScalar = clCreateKernel(cpProgram, "addProduct_vs", null);
 			//				reducePartial = clCreateKernel(cpProgram, "reducePartial", null);
 			//				reduceFloatVectorToDoubleScalar = clCreateKernel(cpProgram, "reduceFloatVectorToDoubleScalar", null);
-
+			}
+			catch(Exception e) {
+				logger.severe("Unable to create OpenCL kernels.\n" + e.getStackTrace());
+				throw e;
+			}
 			logger.info("Created all OpenCL kernels");
 
 			final long[] deviceMaxMemoryBytesResult = new long[1];
