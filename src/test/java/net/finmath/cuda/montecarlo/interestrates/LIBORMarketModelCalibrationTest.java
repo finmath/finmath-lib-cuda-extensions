@@ -64,8 +64,8 @@ public class LIBORMarketModelCalibrationTest {
 	@Parameters
 	public static Collection<Object[]> data() {
 		return Arrays.asList(new Object[][] {
-//			{ ProcessingUnit.GPU_CUDA, new Integer(81920) },
-//			{ ProcessingUnit.GPU_CUDA_WITH_CPU_RANDOM, new Integer(81920) },
+			{ ProcessingUnit.GPU_CUDA, 8192 },
+			{ ProcessingUnit.GPU_CUDA_WITH_CPU_RANDOM, 81920 },
 			{ ProcessingUnit.GPU_OPENCL_WITH_CPU_RANDOM, 8192 },
 			{ ProcessingUnit.CPU, 8192 },
 			{ ProcessingUnit.GPU_OPENCL_WITH_CPU_RANDOM, 81920 },
@@ -78,7 +78,7 @@ public class LIBORMarketModelCalibrationTest {
 	private final int numberOfPaths;
 	private final int numberOfFactors	= 5;
 	private final int numberOfThreads 	= 4;
-	private static final int maxIterations = 3;//30;
+	private static final int maxIterations = 30;
 
 	private static final DecimalFormat formatterReal2		= new DecimalFormat(" 0.00");
 	private static final DecimalFormat formatterValue		= new DecimalFormat(" ##0.000%;-##0.000%", new DecimalFormatSymbols(Locale.ENGLISH));
