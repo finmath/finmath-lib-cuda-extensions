@@ -77,7 +77,7 @@
 		<dependency>
 			<groupId>org.jocl</groupId>
 			<artifactId>jocl</artifactId>
-			<version>2.0.0</version>
+			<version>2.0.4</version>
 		</dependency>
 
 		<dependency>
@@ -573,6 +573,20 @@
 					<artifactId>jcurand</artifactId>
 					<version>0.6.0</version>
 				</dependency>
+			</dependencies>
+		</profile>
+		<profile>
+			<id>nocuda</id>
+			<activation>
+				<property>
+					<name>cuda.version</name>
+					<value></value>
+				</property>
+			</activation>
+			<properties>
+				<envClassifier>nocuda</envClassifier>
+			</properties>
+			<dependencies>
 			</dependencies>
 		</profile>
 	</profiles>
