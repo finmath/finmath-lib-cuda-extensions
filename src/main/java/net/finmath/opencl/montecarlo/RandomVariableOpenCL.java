@@ -37,6 +37,7 @@ import java.util.concurrent.Executors;
 import java.util.concurrent.TimeUnit;
 import java.util.function.DoubleBinaryOperator;
 import java.util.function.DoubleUnaryOperator;
+import java.util.function.Function;
 import java.util.function.IntToDoubleFunction;
 import java.util.logging.Level;
 import java.util.logging.Logger;
@@ -356,7 +357,7 @@ public class RandomVariableOpenCL implements RandomVariable {
 			} catch (InterruptedException | ExecutionException e) {
 				logger.severe("Unable to a create device pointer for vector of size " + values.length);
 				throw new RuntimeException(e.getCause());
-				}
+			}
 
 			return devicePointerReference;
 		}
@@ -608,7 +609,7 @@ public class RandomVariableOpenCL implements RandomVariable {
 				commandQueue = clCreateCommandQueue(context, device, 0, returnCode);
 				logger.info("Using OpenCL 1.x");
 			}
-			
+
 			if(returnCode[0] != 0 || commandQueue == null) throw new RuntimeException("Unable to create OpenCL command queue: " + returnCode[0]);
 			logger.info("Created OpenCL command queue");
 
@@ -630,40 +631,44 @@ public class RandomVariableOpenCL implements RandomVariable {
 			clBuildProgram(cpProgram, 0, null, "-cl-mad-enable", null, null);
 			logger.info("Compiled OpenCL program");
 
+			Function<String, cl_kernel> createKernel = kernelName -> {
+				try {
+					return clCreateKernel(cpProgram, kernelName, null);
+				}
+				catch(Exception e) {
+					logger.severe("Unable to create OpenCL kernel " + kernelName + ".\n" + e.getMessage());
+					e.printStackTrace();
+					throw e;
+				}
+			};
+
 			// Obtain a function pointers
-			try {
-			capByScalar = clCreateKernel(cpProgram, "capByScalar", null);
-			floorByScalar = clCreateKernel(cpProgram, "floorByScalar", null);
-			addScalar = clCreateKernel(cpProgram, "addScalar", null);
-			subScalar = clCreateKernel(cpProgram, "subScalar", null);
-			busScalar = clCreateKernel(cpProgram, "busScalar", null);
-			multScalar = clCreateKernel(cpProgram, "multScalar", null);
-			divScalar = clCreateKernel(cpProgram, "divScalar", null);
-			vidScalar = clCreateKernel(cpProgram, "vidScalar", null);
-			cuPow = clCreateKernel(cpProgram, "cuPow", null);
-			cuSqrt = clCreateKernel(cpProgram, "cuSqrt", null);
-			cuExp = clCreateKernel(cpProgram, "cuExp", null);
-			cuLog = clCreateKernel(cpProgram, "cuLog", null);
-			invert = clCreateKernel(cpProgram, "invert", null);
-			cuAbs = clCreateKernel(cpProgram, "cuAbs", null);
-			cap = clCreateKernel(cpProgram, "cap", null);
-			cuFloor = clCreateKernel(cpProgram, "cuFloor", null);
-			add = clCreateKernel(cpProgram, "add", null);
-			sub = clCreateKernel(cpProgram, "sub", null);
-			mult = clCreateKernel(cpProgram, "mult", null);
-			cuDiv = clCreateKernel(cpProgram, "cuDiv", null);
-			accrue = clCreateKernel(cpProgram, "accrue", null);
-			discount = clCreateKernel(cpProgram, "discount", null);
-			addProduct = clCreateKernel(cpProgram, "addProduct", null);
-			addProductVectorScalar = clCreateKernel(cpProgram, "addProduct_vs", null);
-			//				reducePartial = clCreateKernel(cpProgram, "reducePartial", null);
-			//				reduceFloatVectorToDoubleScalar = clCreateKernel(cpProgram, "reduceFloatVectorToDoubleScalar", null);
-			}
-			catch(Exception e) {
-				logger.severe("Unable to create OpenCL kernels.\n" + e.getMessage());
-				e.printStackTrace();
-				throw e;
-			}
+			capByScalar = createKernel.apply("capByScalar");
+			floorByScalar = createKernel.apply("floorByScalar");
+			addScalar = createKernel.apply("addScalar");
+			subScalar = createKernel.apply("subScalar");
+			busScalar = createKernel.apply("busScalar");
+			multScalar = createKernel.apply("multScalar");
+			divScalar = createKernel.apply("divScalar");
+			vidScalar = createKernel.apply("vidScalar");
+			cuPow = createKernel.apply("cuPow");
+			cuSqrt = createKernel.apply("cuSqrt");
+			cuExp = createKernel.apply("cuExp");
+			cuLog = createKernel.apply("cuLog");
+			invert = createKernel.apply("invert");
+			cuAbs = createKernel.apply("cuAbs");
+			cap = createKernel.apply("cap");
+			cuFloor = createKernel.apply("cuFloor");
+			add = createKernel.apply("add");
+			sub = createKernel.apply("sub");
+			mult = createKernel.apply("mult");
+			cuDiv = createKernel.apply("cuDiv");
+			accrue = createKernel.apply("accrue");
+			discount = createKernel.apply("discount");
+			addProduct = createKernel.apply("addProduct");
+			addProductVectorScalar = createKernel.apply("addProduct_vs");
+			//				reducePartial = createKernel.apply("reducePartial");
+			//				reduceFloatVectorToDoubleScalar = createKernel.apply("reduceFloatVectorToDoubleScalar");
 			logger.info("Created all OpenCL kernels");
 
 			final long[] deviceMaxMemoryBytesResult = new long[1];
@@ -689,7 +694,7 @@ public class RandomVariableOpenCL implements RandomVariable {
 					}
 				}}
 					));
-			
+
 			logger.info("OpenCL initialized");
 		}
 	}
