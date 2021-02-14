@@ -659,9 +659,14 @@ public class RandomVariableOpenCL implements RandomVariable {
 			//				reduceFloatVectorToDoubleScalar = clCreateKernel(cpProgram, "reduceFloatVectorToDoubleScalar", null);
 
 			final long[] deviceMaxMemoryBytesResult = new long[1];
-			CL.clGetDeviceInfo(device, CL.CL_DEVICE_GLOBAL_MEM_SIZE, Sizeof.cl_long, Pointer.to(deviceMaxMemoryBytesResult), null);
-			DeviceMemoryPool.deviceMaxMemoryBytes = deviceMaxMemoryBytesResult[0];
-			logger.info("OpenCL reported " + DeviceMemoryPool.deviceMaxMemoryBytes + " bytes.");
+			try {
+				CL.clGetDeviceInfo(device, CL.CL_DEVICE_GLOBAL_MEM_SIZE, Sizeof.cl_long, Pointer.to(deviceMaxMemoryBytesResult), null);
+				DeviceMemoryPool.deviceMaxMemoryBytes = deviceMaxMemoryBytesResult[0];
+				logger.info("OpenCL reported " + DeviceMemoryPool.deviceMaxMemoryBytes + " bytes.");
+			}
+			catch(Exception e) {
+				logger.info("Failed to get available memory for OpenCL.\n" + e.getStackTrace());
+			}
 
 			Runtime.getRuntime().addShutdownHook(new Thread(new Runnable() {
 				@Override
