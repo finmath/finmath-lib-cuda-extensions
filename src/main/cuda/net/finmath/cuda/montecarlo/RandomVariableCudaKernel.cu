@@ -121,7 +121,7 @@ __global__ void cuExp(int n, float *a, float *result)
     int i = blockIdx.x * blockDim.x + threadIdx.x;
     if (i<n)
     {
-        result[i] = (float)exp((double)a[i]);
+        result[i] = exp(a[i]);
     }
 }
 
@@ -131,7 +131,7 @@ __global__ void cuLog(int n, float *a, float *result)
     int i = blockIdx.x * blockDim.x + threadIdx.x;
     if (i<n)
     {
-        result[i] = (float)log((double)a[i]);
+        result[i] = log(a[i]);
     }
 }
 
