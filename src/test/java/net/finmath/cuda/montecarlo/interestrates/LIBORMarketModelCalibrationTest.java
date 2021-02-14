@@ -70,8 +70,8 @@ public class LIBORMarketModelCalibrationTest {
 			{ ProcessingUnit.CPU, 8192 },
 			{ ProcessingUnit.GPU_OPENCL_WITH_CPU_RANDOM, 81920 },
 			{ ProcessingUnit.CPU, 81920 },
-			{ ProcessingUnit.GPU_OPENCL_WITH_CPU_RANDOM, 163840 },
-			{ ProcessingUnit.CPU, 163840 },
+			{ ProcessingUnit.GPU_OPENCL_WITH_CPU_RANDOM, 40960 },
+			{ ProcessingUnit.CPU, 40960 },
 		});
 	}
 
