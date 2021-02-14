@@ -34,6 +34,7 @@ import net.finmath.montecarlo.BrownianMotion;
 import net.finmath.montecarlo.BrownianMotionFromMersenneRandomNumbers;
 import net.finmath.montecarlo.BrownianMotionView;
 import net.finmath.montecarlo.RandomVariableFactory;
+import net.finmath.montecarlo.RandomVariableFromArrayFactory;
 import net.finmath.montecarlo.interestrate.CalibrationProduct;
 import net.finmath.montecarlo.interestrate.LIBORMonteCarloSimulationFromLIBORModel;
 import net.finmath.montecarlo.interestrate.models.LIBORMarketModelFromCovarianceModel;
@@ -43,6 +44,7 @@ import net.finmath.montecarlo.interestrate.models.covariance.LIBORCovarianceMode
 import net.finmath.montecarlo.interestrate.models.covariance.LIBORCovarianceModelStochasticVolatility;
 import net.finmath.montecarlo.interestrate.products.AbstractLIBORMonteCarloProduct;
 import net.finmath.montecarlo.interestrate.products.SwaptionSimple;
+import net.finmath.montecarlo.interestrate.products.TermStructureMonteCarloProduct;
 import net.finmath.montecarlo.process.EulerSchemeFromProcessModel;
 import net.finmath.opencl.montecarlo.RandomVariableOpenCL;
 import net.finmath.opencl.montecarlo.RandomVariableOpenCLFactory;
@@ -62,16 +64,21 @@ public class LIBORMarketModelCalibrationTest {
 	@Parameters
 	public static Collection<Object[]> data() {
 		return Arrays.asList(new Object[][] {
-			{ ProcessingUnit.GPU_CUDA },
-			{ ProcessingUnit.GPU_CUDA_WITH_CPU_RANDOM },
-			{ ProcessingUnit.GPU_OPENCL_WITH_CPU_RANDOM },
-			{ ProcessingUnit.CPU },
+//			{ ProcessingUnit.GPU_CUDA, new Integer(81920) },
+//			{ ProcessingUnit.GPU_CUDA_WITH_CPU_RANDOM, new Integer(81920) },
+			{ ProcessingUnit.GPU_OPENCL_WITH_CPU_RANDOM, 8192 },
+			{ ProcessingUnit.CPU, 8192 },
+			{ ProcessingUnit.GPU_OPENCL_WITH_CPU_RANDOM, 81920 },
+			{ ProcessingUnit.CPU, 81920 },
+			{ ProcessingUnit.GPU_OPENCL_WITH_CPU_RANDOM, 163840 },
+			{ ProcessingUnit.CPU, 163840 },
 		});
 	}
 
-	private final int numberOfPaths		= 81920;
+	private final int numberOfPaths;
 	private final int numberOfFactors	= 5;
-	private static final int maxIterations = 40;
+	private final int numberOfThreads 	= 4;
+	private static final int maxIterations = 3;//30;
 
 	private static final DecimalFormat formatterReal2		= new DecimalFormat(" 0.00");
 	private static final DecimalFormat formatterValue		= new DecimalFormat(" ##0.000%;-##0.000%", new DecimalFormatSymbols(Locale.ENGLISH));
@@ -87,8 +94,9 @@ public class LIBORMarketModelCalibrationTest {
 
 	private final ProcessingUnit processingUnit;
 
-	public LIBORMarketModelCalibrationTest(final ProcessingUnit processingUnit) throws CalculationException {
+	public LIBORMarketModelCalibrationTest(final ProcessingUnit processingUnit, final int numberOfPaths) throws CalculationException {
 		this.processingUnit = processingUnit;
+		this.numberOfPaths = numberOfPaths;
 	}
 
 	private CalibrationProduct createCalibrationItem(final double exerciseDate, final double swapPeriodLength, final int numberOfPeriods, final double moneyness, final double targetVolatility, final ForwardCurve forwardCurve, final DiscountCurve discountCurve) throws CalculationException {
@@ -140,7 +148,7 @@ public class LIBORMarketModelCalibrationTest {
 		/*
 		 * Calibration test
 		 */
-		System.out.println("Calibration to Swaptions using " + processingUnit.name());
+		System.out.println("Calibration to Swaptions using " + processingUnit.name() + " and " + numberOfPaths);
 
 		final double[] fixingTimes = new double[] {
 				0.0, 0.5, 1.0, 1.5, 2.0, 2.5, 3.0, 3.5, 4.0, 4.5, 5.0, 5.5, 6.0, 6.5, 7.0, 7.5, 8.0, 8.5, 9.0, 9.5, 10.0,
@@ -223,6 +231,7 @@ public class LIBORMarketModelCalibrationTest {
 		switch(processingUnit) {
 		case CPU:
 			randomVariableFactory = new RandomVariableFloatFactory();
+//			randomVariableFactory = new RandomVariableFromArrayFactory(false);
 			brownianMotion = new BrownianMotionFromMersenneRandomNumbers(timeDiscretizationFromArray, numberOfFactors + 1, numberOfPaths, 314151 /* seed */, randomVariableFactory);
 			break;
 		case GPU_CUDA:
@@ -261,10 +270,11 @@ public class LIBORMarketModelCalibrationTest {
 
 		// Set calibration properties (should use our brownianMotion for calibration - needed to have to right correlation).
 		final Map<String, Object> calibrationParameters = new HashMap<String, Object>();
-		OptimizerFactory optimizerFactory = new OptimizerFactoryLevenbergMarquardt(LevenbergMarquardt.RegularizationMethod.LEVENBERG_MARQUARDT,
-				0.0001 /* lambda */,
+		OptimizerFactory optimizerFactory = new OptimizerFactoryLevenbergMarquardt(
+				LevenbergMarquardt.RegularizationMethod.LEVENBERG,
+				0.1 /* lambda */,
 				maxIterations, 1E-6,
-				4 /* numberOfThreads */);
+				numberOfThreads);
 		calibrationParameters.put("optimizerFactory", optimizerFactory);
 		calibrationParameters.put("brownianMotion", brownianMotionView1);
 		properties.put("calibrationParameters", calibrationParameters);
@@ -294,7 +304,7 @@ public class LIBORMarketModelCalibrationTest {
 		double deviationSum			= 0.0;
 		double deviationSquaredSum	= 0.0;
 		for (int i = 0; i < calibrationProducts.size(); i++) {
-			final AbstractLIBORMonteCarloProduct calibrationProduct = calibrationProducts.get(i).getProduct();
+			final TermStructureMonteCarloProduct calibrationProduct = calibrationProducts.get(i).getProduct();
 			try {
 				final double valueModel = calibrationProduct.getValue(simulationCalibrated);
 				final double valueTarget = calibrationProducts.get(i).getTargetValue().getAverage();
