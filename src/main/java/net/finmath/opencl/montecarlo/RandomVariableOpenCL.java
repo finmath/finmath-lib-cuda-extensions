@@ -609,7 +609,7 @@ public class RandomVariableOpenCL implements RandomVariable {
 				logger.info("Using OpenCL 1.x");
 			}
 			
-			if(returnCode[0] != 0) throw new RuntimeException("Unable to create OpenCL command queue: " + returnCode[0]);
+			if(returnCode[0] != 0 || commandQueue == null) throw new RuntimeException("Unable to create OpenCL command queue: " + returnCode[0]);
 
 			// Read our OpenCL kernel from file
 			final String resourceName = "/net/finmath/opencl/montecarlo/RandomVariableCudaKernel.cl";
@@ -672,6 +672,8 @@ public class RandomVariableOpenCL implements RandomVariable {
 					}
 				}}
 					));
+			
+			logger.info("OpenCL initialized");
 		}
 	}
 
