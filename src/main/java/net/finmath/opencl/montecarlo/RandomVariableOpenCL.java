@@ -610,6 +610,7 @@ public class RandomVariableOpenCL implements RandomVariable {
 			}
 			
 			if(returnCode[0] != 0 || commandQueue == null) throw new RuntimeException("Unable to create OpenCL command queue: " + returnCode[0]);
+			logger.info("Created OpenCL command queue");
 
 			// Read our OpenCL kernel from file
 			final String resourceName = "/net/finmath/opencl/montecarlo/RandomVariableCudaKernel.cl";
@@ -620,12 +621,14 @@ public class RandomVariableOpenCL implements RandomVariable {
 			} catch (final IOException e) {
 				throw new RuntimeException(e);
 			}
+			logger.info("Read OpenCL program");
 
 			// Create the program
 			final cl_program cpProgram = clCreateProgramWithSource(context, 1, new String[]{ source }, null, null);
 
 			// Build the program
 			clBuildProgram(cpProgram, 0, null, "-cl-mad-enable", null, null);
+			logger.info("Compiled OpenCL program");
 
 			// Obtain a function pointers
 			capByScalar = clCreateKernel(cpProgram, "capByScalar", null);
