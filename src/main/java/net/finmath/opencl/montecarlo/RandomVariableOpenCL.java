@@ -660,7 +660,8 @@ public class RandomVariableOpenCL implements RandomVariable {
 			//				reduceFloatVectorToDoubleScalar = clCreateKernel(cpProgram, "reduceFloatVectorToDoubleScalar", null);
 			}
 			catch(Exception e) {
-				logger.severe("Unable to create OpenCL kernels.\n" + e.getStackTrace());
+				logger.severe("Unable to create OpenCL kernels.\n" + e.getMessage());
+				e.printStackTrace();
 				throw e;
 			}
 			logger.info("Created all OpenCL kernels");
