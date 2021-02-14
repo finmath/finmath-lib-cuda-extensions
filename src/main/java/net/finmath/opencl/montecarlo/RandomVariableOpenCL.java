@@ -133,7 +133,7 @@ public class RandomVariableOpenCL implements RandomVariable {
 	 *
 	 * @author Christian Fries
 	 */
-	public static class DeviceMemoryPool {
+	private static class DeviceMemoryPool {
 
 		private final Object lock = new Object();
 
@@ -147,7 +147,7 @@ public class RandomVariableOpenCL implements RandomVariable {
 		/**
 		 * This map allow to recover the device pointer for a given <code>WeakReference&lt;DevicePointerReference&gt;</code>.
 		 */
-		public static final Map<WeakReference<DevicePointerReference>, cl_mem>	vectorsInUseReferenceMap			= new ConcurrentHashMap<WeakReference<DevicePointerReference>, cl_mem>();
+		private static final Map<WeakReference<DevicePointerReference>, cl_mem>	vectorsInUseReferenceMap			= new ConcurrentHashMap<WeakReference<DevicePointerReference>, cl_mem>();
 
 		/**
 		 * Percentage of device memory at which we will trigger System.gc() to aggressively reduce references.
@@ -162,7 +162,7 @@ public class RandomVariableOpenCL implements RandomVariable {
 		/**
 		 * Maximum time to wait for object recycled objects. (Higher value slows down the code, but prevents out-of-memory).
 		 */
-		private static final long	vectorsRecyclerMaxTimeOutMillis			= 1000;
+		private static final long	vectorsRecyclerMaxTimeOutMillis			= 10;//1000;
 
 		private static long	deviceAllocMemoryBytes = 0;
 		private static long	deviceMaxMemoryBytes;
@@ -332,7 +332,7 @@ public class RandomVariableOpenCL implements RandomVariable {
 		 */
 		private static float getDeviceFreeMemPercentage() {
 			final float freeRate = 1.0f - 1.1f * deviceAllocMemoryBytes / deviceMaxMemoryBytes;
-			//			System.out.println("OpCL: " + deviceMemoryPool.vectorsInUseReferenceMap.size() + "\t" + freeRate);
+			//System.out.println("OpCL: " + deviceMemoryPool.vectorsInUseReferenceMap.size() + "\t" + freeRate);
 			return freeRate;
 		}
 
@@ -344,13 +344,19 @@ public class RandomVariableOpenCL implements RandomVariable {
 		 */
 		public DevicePointerReference getDevicePointer(final float[] values) {
 			final DevicePointerReference devicePointerReference = getDevicePointer(values.length);
+			if(devicePointerReference.get() == null) {
+				throw new NullPointerException("Unable to get device pointer.");
+			}
 			try {
 				deviceExecutor.submit(new Runnable() { @Override
 					public void run() {
 					clEnqueueWriteBuffer(commandQueue, devicePointerReference.get(), CL_TRUE, 0L,
 							(long)values.length  * Sizeof.cl_float, Pointer.to(values), 0, null, null);
 				}}).get();
-			} catch (InterruptedException | ExecutionException e) { throw new RuntimeException(e.getCause()); }
+			} catch (InterruptedException | ExecutionException e) {
+				logger.severe("Unable to a create device pointer for vector of size " + values.length);
+				throw new RuntimeException(e.getCause());
+				}
 
 			return devicePointerReference;
 		}
@@ -364,6 +370,7 @@ public class RandomVariableOpenCL implements RandomVariable {
 							size * Sizeof.cl_float, Pointer.to(result), 0, null, null);
 				}}).get();
 			} catch (InterruptedException | ExecutionException e) {
+				logger.severe("Unable to a create device pointer for vector of size " + size);
 				throw new RuntimeException(e.getCause());
 			}
 			return result;
@@ -460,8 +467,13 @@ public class RandomVariableOpenCL implements RandomVariable {
 				final long[] localWorkSize = null;
 				//cuCtxSynchronize();
 				// Launching on the same stream (default stream)
-				clEnqueueNDRangeKernel(commandQueue, function, 1, null,
-						globalWorkSize, localWorkSize, 0, null, null);
+				try {
+					clEnqueueNDRangeKernel(commandQueue, function, 1, null,
+							globalWorkSize, localWorkSize, 0, null, null);
+				}
+				catch(Exception e) {
+					logger.severe("Command " + function + " failed.");
+				}
 			}});
 
 		}
@@ -584,10 +596,20 @@ public class RandomVariableOpenCL implements RandomVariable {
 			// Create a context for the selected device
 			context = clCreateContext(contextProperties, 1, new cl_device_id[]{ device }, null, null, null);
 
+			int[] returnCode = new int[1];
 			// Create a command-queue for the selected device
-			commandQueue = clCreateCommandQueue(context, device, 0, null);
-			//	        org.jocl.cl_queue_properties properties = new org.jocl.cl_queue_properties();
-			//	        commandQueue = CL.clCreateCommandQueueWithProperties(context, device, properties, null);
+			try {
+				org.jocl.cl_queue_properties properties = new org.jocl.cl_queue_properties();
+				commandQueue = CL.clCreateCommandQueueWithProperties(context, device, properties, null);
+				logger.info("Using OpenCL 2.x");
+			}
+			catch(Exception e) {
+				// Fall back to OpenCL 1.x
+				commandQueue = clCreateCommandQueue(context, device, 0, returnCode);
+				logger.info("Using OpenCL 1.x");
+			}
+			
+			if(returnCode[0] != 0) throw new RuntimeException("Unable to create OpenCL command queue: " + returnCode[0]);
 
 			// Read our OpenCL kernel from file
 			final String resourceName = "/net/finmath/opencl/montecarlo/RandomVariableCudaKernel.cl";
@@ -1740,9 +1762,6 @@ public class RandomVariableOpenCL implements RandomVariable {
 		return this.sub(numerator.div(denominator));
 	}
 
-	/* (non-Javadoc)
-	 * @see net.finmath.stochastic.RandomVariable#isNaN()
-	 */
 	@Override
 	public RandomVariable isNaN() {
 		// TODO Auto-generated method stub
@@ -1775,6 +1794,7 @@ public class RandomVariableOpenCL implements RandomVariable {
 				//				cuMemcpyDtoH(Pointer.to(result), reduceVector.get(), gridSizeX * Sizeof.cl_double);
 			}}).get();
 		} catch (InterruptedException | ExecutionException e) {
+			logger.severe("Unable to execute function reduceFloatVectorToDoubleScalar.");
 			throw new RuntimeException(e.getCause());
 		}
 
