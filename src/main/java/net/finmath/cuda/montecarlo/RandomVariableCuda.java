@@ -507,7 +507,7 @@ public class RandomVariableCuda implements RandomVariable {
 		synchronized (deviceMemoryPool) {
 			// Enable exceptions and omit all subsequent error checks
 			JCudaDriver.setExceptionsEnabled(true);
-			JCudaDriver.setLogLevel(LogLevel.LOG_DEBUG);
+			JCudaDriver.setLogLevel(LogLevel.LOG_ERROR);
 
 			// Initialize the driver and create a context for the first device.
 			cuInit(0);
