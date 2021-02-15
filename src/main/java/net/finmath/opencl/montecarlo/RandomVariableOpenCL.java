@@ -483,6 +483,7 @@ public class RandomVariableOpenCL implements RandomVariable {
 					}
 					catch(Exception e) {
 						logger.severe("Command " + function + " failed.");
+						throw new RuntimeException(e.getCause());
 					}
 				}});
 		}
