@@ -111,7 +111,7 @@ public class RandomVariableOpenCL implements RandomVariable {
 	 * This wrapper is mainly used to track, when references to device pointers are de-referenced, which then triggers
 	 * a recycling of the device vector.
 	 */
-	public static class DevicePointerReference {
+	private static class DevicePointerReference {
 		private final cl_mem devicePointer;
 
 		public DevicePointerReference(final cl_mem devicePointer) {
@@ -153,7 +153,7 @@ public class RandomVariableOpenCL implements RandomVariable {
 		/**
 		 * Percentage of device memory at which we will trigger System.gc() to aggressively reduce references.
 		 */
-		private static final float	vectorsRecyclerPercentageFreeToStartGC		= 0.15f;		// should be set by monitoring GPU mem
+		private static final float	vectorsRecyclerPercentageFreeToStartGC		= 0.10f;		// should be set by monitoring GPU mem
 
 		/**
 		 * Percentage of device memory at which we will try to wait a few milliseconds for recycled objects.
@@ -292,7 +292,10 @@ public class RandomVariableOpenCL implements RandomVariable {
 		 * Free all unused device memory.
 		 */
 		public void clean() {
-			synchronized (lock) {
+			synchronized (lock)
+			{
+				logger.fine("Cleaning device pointers");
+
 				// Clean up all remaining pointers
 				for(final Entry<Integer, ReferenceQueue<DevicePointerReference>> entry : vectorsToRecycleReferenceQueueMap.entrySet()) {
 					final int size = entry.getKey();
@@ -378,7 +381,8 @@ public class RandomVariableOpenCL implements RandomVariable {
 		}
 
 		public DevicePointerReference callFunctionv1s0(final cl_kernel function, final long resultSize, final DevicePointerReference argument1) {
-			synchronized (lock) {
+//			synchronized (lock) 
+			{
 				final DevicePointerReference result = getDevicePointer(resultSize);
 				callFunction(function, resultSize, new Pointer[] {
 						Pointer.to(new int[] { (int)resultSize }),
@@ -391,7 +395,8 @@ public class RandomVariableOpenCL implements RandomVariable {
 		}
 
 		public DevicePointerReference callFunctionv2s0(final cl_kernel function, final long resultSize, final DevicePointerReference argument1, final DevicePointerReference argument2) {
-			synchronized (lock) {
+//			synchronized (lock)
+			{
 				final DevicePointerReference result = getDevicePointer(resultSize);
 				callFunction(function, resultSize, new Pointer[] {
 						Pointer.to(new int[] { (int)resultSize }),
@@ -405,7 +410,8 @@ public class RandomVariableOpenCL implements RandomVariable {
 		}
 
 		public DevicePointerReference callFunctionv3s0(final cl_kernel function, final long resultSize, final DevicePointerReference argument1, final DevicePointerReference argument2, final DevicePointerReference argument3) {
-			synchronized (lock) {
+//			synchronized (lock)
+			{
 				final DevicePointerReference result = getDevicePointer(resultSize);
 				callFunction(function, resultSize, new Pointer[] {
 						Pointer.to(new int[] { (int)resultSize }),
@@ -420,7 +426,8 @@ public class RandomVariableOpenCL implements RandomVariable {
 		}
 
 		public DevicePointerReference callFunctionv1s1(final cl_kernel function, final long resultSize, final DevicePointerReference argument1, final double value) {
-			synchronized (lock) {
+//			synchronized (lock)
+			{
 				final DevicePointerReference result = getDevicePointer(resultSize);
 				callFunction(function, resultSize, new Pointer[] {
 						Pointer.to(new int[] { (int)resultSize }),
@@ -434,7 +441,8 @@ public class RandomVariableOpenCL implements RandomVariable {
 		}
 
 		public DevicePointerReference callFunctionv2s1(final cl_kernel function, final long resultSize, final DevicePointerReference argument1, final DevicePointerReference argument2, final double value) {
-			synchronized (lock) {
+//			synchronized (lock)
+			{
 				final DevicePointerReference result = getDevicePointer(resultSize);
 				callFunction(function, resultSize, new Pointer[] {
 						Pointer.to(new int[] { (int)resultSize }),
@@ -458,25 +466,25 @@ public class RandomVariableOpenCL implements RandomVariable {
 			// Set up the kernel parameters: A pointer to an array
 			// of pointers which point to the actual values.
 
-			deviceExecutor.submit(new Runnable() { @Override
+			deviceExecutor.submit(new Runnable() {
+				@Override
 				public void run() {
-				for(int i=0; i<arguments.length; i++) {
-					clSetKernelArg(function, i, argumentSizes[i], arguments[i]);
-				}
-				// Set the work-item dimensions
-				final long[] globalWorkSize = new long[]{ gridSizeX*blockSizeX };
-				final long[] localWorkSize = null;
-				//cuCtxSynchronize();
-				// Launching on the same stream (default stream)
-				try {
-					clEnqueueNDRangeKernel(commandQueue, function, 1, null,
-							globalWorkSize, localWorkSize, 0, null, null);
-				}
-				catch(Exception e) {
-					logger.severe("Command " + function + " failed.");
-				}
-			}});
-
+					for(int i=0; i<arguments.length; i++) {
+						clSetKernelArg(function, i, argumentSizes[i], arguments[i]);
+					}
+					// Set the work-item dimensions
+					final long[] globalWorkSize = new long[]{ gridSizeX*blockSizeX };
+					final long[] localWorkSize = null;
+					//cuCtxSynchronize();
+					// Launching on the same stream (default stream)
+					try {
+						clEnqueueNDRangeKernel(commandQueue, function, 1, null,
+								globalWorkSize, localWorkSize, 0, null, null);
+					}
+					catch(Exception e) {
+						logger.severe("Command " + function + " failed.");
+					}
+				}});
 		}
 
 	}
