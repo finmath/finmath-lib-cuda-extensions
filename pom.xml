@@ -172,6 +172,18 @@
 				</configuration>
 				<executions>
 					<execution>
+						<id>cuda-11.1</id>
+						<configuration>
+							<releaseProfiles>cuda-11.1</releaseProfiles>
+						</configuration>
+					</execution>
+					<execution>
+						<id>cuda-11.0</id>
+						<configuration>
+							<releaseProfiles>cuda-11.0</releaseProfiles>
+						</configuration>
+					</execution>
+					<execution>
 						<id>cuda-10.2</id>
 						<configuration>
 							<releaseProfiles>cuda-10.2</releaseProfiles>
@@ -341,7 +353,7 @@
 						</header>
 						<footer>
 				   			<![CDATA[
-							<i>Copyright &copy; 2020 Christian&nbsp;P.&nbsp;Fries.</i>
+							<i>Copyright &copy; 2021 Christian&nbsp;P.&nbsp;Fries.</i>
 				   			]]>
 						</footer>
 						<tags>
@@ -428,6 +440,54 @@
 					<groupId>org.jcuda</groupId>
 					<artifactId>jcurand</artifactId>
 					<version>10.2.0</version>
+				</dependency>
+			</dependencies>
+		</profile>
+		<profile>
+			<id>cuda-11.1</id>
+			<activation>
+				<property>
+					<name>cuda.version</name>
+					<value>11.1</value>
+				</property>
+			</activation>
+			<properties>
+				<envClassifier>cuda-11.1</envClassifier>
+			</properties>
+			<dependencies>
+				<dependency>
+					<groupId>org.jcuda</groupId>
+					<artifactId>jcuda</artifactId>
+					<version>11.1.1</version>
+				</dependency>
+				<dependency>
+					<groupId>org.jcuda</groupId>
+					<artifactId>jcurand</artifactId>
+					<version>11.1.1</version>
+				</dependency>
+			</dependencies>
+		</profile>
+		<profile>
+			<id>cuda-11.0</id>
+			<activation>
+				<property>
+					<name>cuda.version</name>
+					<value>11.0</value>
+				</property>
+			</activation>
+			<properties>
+				<envClassifier>cuda-11.0</envClassifier>
+			</properties>
+			<dependencies>
+				<dependency>
+					<groupId>org.jcuda</groupId>
+					<artifactId>jcuda</artifactId>
+					<version>11.0.0</version>
+				</dependency>
+				<dependency>
+					<groupId>org.jcuda</groupId>
+					<artifactId>jcurand</artifactId>
+					<version>11.0.0</version>
 				</dependency>
 			</dependencies>
 		</profile>
