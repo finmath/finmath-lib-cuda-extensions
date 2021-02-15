@@ -316,7 +316,7 @@ public class LIBORMarketModelCalibrationTest {
 		final EulerSchemeFromProcessModel process = new EulerSchemeFromProcessModel(liborMarketModelCalibrated, brownianMotionView1);
 		final LIBORMonteCarloSimulationFromLIBORModel simulationCalibrated = new LIBORMonteCarloSimulationFromLIBORModel(process);
 
-		System.out.println("\nValuation on calibrated model:");
+		if(isPrintDetails) System.out.println("\nValuation on calibrated model:");
 		double deviationSum			= 0.0;
 		double deviationSquaredSum	= 0.0;
 		for (int i = 0; i < calibrationProducts.size(); i++) {
