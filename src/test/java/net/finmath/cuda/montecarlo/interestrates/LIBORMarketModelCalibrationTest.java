@@ -34,7 +34,6 @@ import net.finmath.montecarlo.BrownianMotion;
 import net.finmath.montecarlo.BrownianMotionFromMersenneRandomNumbers;
 import net.finmath.montecarlo.BrownianMotionView;
 import net.finmath.montecarlo.RandomVariableFactory;
-import net.finmath.montecarlo.RandomVariableFromArrayFactory;
 import net.finmath.montecarlo.interestrate.CalibrationProduct;
 import net.finmath.montecarlo.interestrate.LIBORMonteCarloSimulationFromLIBORModel;
 import net.finmath.montecarlo.interestrate.models.LIBORMarketModelFromCovarianceModel;
@@ -42,7 +41,6 @@ import net.finmath.montecarlo.interestrate.models.covariance.AbstractLIBORCovari
 import net.finmath.montecarlo.interestrate.models.covariance.BlendedLocalVolatilityModel;
 import net.finmath.montecarlo.interestrate.models.covariance.LIBORCovarianceModelExponentialForm5Param;
 import net.finmath.montecarlo.interestrate.models.covariance.LIBORCovarianceModelStochasticVolatility;
-import net.finmath.montecarlo.interestrate.products.AbstractLIBORMonteCarloProduct;
 import net.finmath.montecarlo.interestrate.products.SwaptionSimple;
 import net.finmath.montecarlo.interestrate.products.TermStructureMonteCarloProduct;
 import net.finmath.montecarlo.process.EulerSchemeFromProcessModel;
@@ -51,6 +49,7 @@ import net.finmath.opencl.montecarlo.RandomVariableOpenCLFactory;
 import net.finmath.optimizer.LevenbergMarquardt;
 import net.finmath.optimizer.OptimizerFactory;
 import net.finmath.optimizer.OptimizerFactoryLevenbergMarquardt;
+import net.finmath.time.TimeDiscretization;
 import net.finmath.time.TimeDiscretizationFromArray;
 
 /**
@@ -65,23 +64,19 @@ public class LIBORMarketModelCalibrationTest {
 	public static Collection<Object[]> data() {
 		return Arrays.asList(new Object[][] {
 			{ ProcessingUnit.GPU_CUDA, 8192 },
-			{ ProcessingUnit.GPU_CUDA_WITH_CPU_RANDOM, 8192 },
-			{ ProcessingUnit.GPU_OPENCL_WITH_CPU_RANDOM, 8192 },
+			{ ProcessingUnit.GPU_OPENCL, 8192 },
 			{ ProcessingUnit.CPU, 8192 },
 			//
 			{ ProcessingUnit.GPU_CUDA, 16384 },
-			{ ProcessingUnit.GPU_CUDA_WITH_CPU_RANDOM, 16384 },
-			{ ProcessingUnit.GPU_OPENCL_WITH_CPU_RANDOM, 16384 },
+			{ ProcessingUnit.GPU_OPENCL, 16384 },
 			{ ProcessingUnit.CPU, 16384 },
 			//
 			{ ProcessingUnit.GPU_CUDA, 40960 },
-			{ ProcessingUnit.GPU_CUDA_WITH_CPU_RANDOM, 40960 },
-			{ ProcessingUnit.GPU_OPENCL_WITH_CPU_RANDOM, 40960 },
+			{ ProcessingUnit.GPU_OPENCL, 40960 },
 			{ ProcessingUnit.CPU, 40960 },
 			//
 			{ ProcessingUnit.GPU_CUDA, 81920 },
-			{ ProcessingUnit.GPU_CUDA_WITH_CPU_RANDOM, 81920 },
-			{ ProcessingUnit.GPU_OPENCL_WITH_CPU_RANDOM, 81920 },
+			{ ProcessingUnit.GPU_OPENCL, 81920 },
 			{ ProcessingUnit.CPU, 81920 },
 		});
 	}
@@ -101,8 +96,7 @@ public class LIBORMarketModelCalibrationTest {
 	private enum ProcessingUnit {
 		CPU,
 		GPU_CUDA,
-		GPU_OPENCL_WITH_CPU_RANDOM,
-		GPU_CUDA_WITH_CPU_RANDOM,
+		GPU_OPENCL,
 	}
 
 	private final ProcessingUnit processingUnit;
@@ -165,6 +159,26 @@ public class LIBORMarketModelCalibrationTest {
 		if(isPrintDetails) System.out.println();
 		else System.out.print("\t");
 
+		/*
+		 * Create random variable factory injected
+		 */
+		RandomVariableFactory randomVariableFactory;
+		switch(processingUnit) {
+		case GPU_CUDA:
+			randomVariableFactory = new RandomVariableCudaFactory();
+			break;
+		case GPU_OPENCL:
+			randomVariableFactory = new RandomVariableOpenCLFactory();
+			break;
+		case CPU:
+		default:
+			randomVariableFactory = new RandomVariableFloatFactory();
+			break;
+		}
+
+		/*
+		 * Create forward rate curve
+		 */
 		final double[] fixingTimes = new double[] {
 				0.0, 0.5, 1.0, 1.5, 2.0, 2.5, 3.0, 3.5, 4.0, 4.5, 5.0, 5.5, 6.0, 6.5, 7.0, 7.5, 8.0, 8.5, 9.0, 9.5, 10.0,
 				10.5, 11.0, 11.5, 12.0, 12.5, 13.0, 13.5, 14.0, 14.5, 15.0, 15.5, 16.0, 16.5, 17.0, 17.5, 18.0, 18.5, 19.0,
@@ -198,9 +212,8 @@ public class LIBORMarketModelCalibrationTest {
 		final double	swapPeriodLength	= 0.5;
 		final int		numberOfPeriods		= 20;
 
-		final double[] smileMoneynesses	= { -0.02,	-0.01, -0.005, -0.0025,	0.0,	0.0025,	0.0050,	0.01,	0.02 };
+		final double[] smileMoneynesses		= { -0.02,	-0.01, -0.005, -0.0025,	0.0,	0.0025,	0.0050,	0.01,	0.02 };
 		final double[] smileVolatilities	= { 0.559,	0.377,	0.335,	 0.320,	0.308, 0.298, 0.290, 0.280, 0.270 };
-
 		for(int i=0; i<smileMoneynesses.length; i++ ) {
 			final double	exerciseDate		= 5.0;
 			final double	moneyness			= smileMoneynesses[i];
@@ -209,11 +222,9 @@ public class LIBORMarketModelCalibrationTest {
 			calibrationProducts.add(createCalibrationItem(exerciseDate, swapPeriodLength, numberOfPeriods, moneyness, targetVolatility, forwardCurve, discountCurve));
 		}
 
-		final double[] atmOptionMaturities	= { 2.00, 3.00, 4.00, 5.00, 7.00, 10.00, 15.00, 20.00, 25.00, 30.00 };
+		final double[] atmOptionMaturities		= { 2.00, 3.00, 4.00, 5.00, 7.00, 10.00, 15.00, 20.00, 25.00, 30.00 };
 		final double[] atmOptionVolatilities	= { 0.385, 0.351, 0.325, 0.308, 0.288, 0.279, 0.290, 0.272, 0.235, 0.192 };
-
 		for(int i=0; i<atmOptionMaturities.length; i++ ) {
-
 			final double	exerciseDate		= atmOptionMaturities[i];
 			final double	moneyness			= 0.0;
 			final double	targetVolatility	= atmOptionVolatilities[i];
@@ -229,52 +240,32 @@ public class LIBORMarketModelCalibrationTest {
 		 * Create the libor tenor structure and the initial values
 		 */
 		final double liborRateTimeHorzion	= 20.0;
-		final TimeDiscretizationFromArray liborPeriodDiscretization = new TimeDiscretizationFromArray(0.0, (int) (liborRateTimeHorzion / liborPeriodLength), liborPeriodLength);
+		final TimeDiscretization liborPeriodDiscretization = new TimeDiscretizationFromArray(0.0, (int) (liborRateTimeHorzion / liborPeriodLength), liborPeriodLength);
 
 		/*
 		 * Create a simulation time discretization
 		 */
 		final double lastTime	= 20.0;
 		final double dt		= 0.5;
-		final TimeDiscretizationFromArray timeDiscretizationFromArray = new TimeDiscretizationFromArray(0.0, (int) (lastTime / dt), dt);
+		final TimeDiscretization timeDiscretization = new TimeDiscretizationFromArray(0.0, (int) (lastTime / dt), dt);
 
 		/*
 		 * Create Brownian motions
 		 */
-		RandomVariableFactory randomVariableFactory;
-		BrownianMotion brownianMotion;
-		switch(processingUnit) {
-		case CPU:
-			randomVariableFactory = new RandomVariableFloatFactory();
-			//			randomVariableFactory = new RandomVariableFromArrayFactory(false);
-			brownianMotion = new BrownianMotionFromMersenneRandomNumbers(timeDiscretizationFromArray, numberOfFactors + 1, numberOfPaths, 314151 /* seed */, randomVariableFactory);
-			break;
-		case GPU_CUDA:
-			randomVariableFactory = new RandomVariableCudaFactory();
-			brownianMotion = new net.finmath.cuda.montecarlo.alternative.BrownianMotionCudaWithRandomVariableCuda(timeDiscretizationFromArray, numberOfFactors + 1, numberOfPaths, 314151 /* seed */);
-			break;
-		case GPU_OPENCL_WITH_CPU_RANDOM:
-			randomVariableFactory = new RandomVariableOpenCLFactory();
-			brownianMotion = new BrownianMotionFromMersenneRandomNumbers(timeDiscretizationFromArray, numberOfFactors + 1, numberOfPaths, 314151 /* seed */, randomVariableFactory);
-			break;
-		case GPU_CUDA_WITH_CPU_RANDOM:
-		default:
-			randomVariableFactory = new RandomVariableCudaFactory();
-			brownianMotion = new BrownianMotionFromMersenneRandomNumbers(timeDiscretizationFromArray, numberOfFactors + 1, numberOfPaths, 314151 /* seed */, randomVariableFactory);
-			break;
-		}
-
+		BrownianMotion brownianMotion = new BrownianMotionFromMersenneRandomNumbers(timeDiscretization, numberOfFactors + 1, numberOfPaths, 314151 /* seed */, randomVariableFactory);
 		final BrownianMotion brownianMotionView1 = new BrownianMotionView(brownianMotion, new Integer[] { 0, 1, 2, 3, 4 });
 		final BrownianMotion brownianMotionView2 = new BrownianMotionView(brownianMotion, new Integer[] { 0, 5 });
 
 		// Create a covariance model
-		final AbstractLIBORCovarianceModelParametric covarianceModelParametric = new LIBORCovarianceModelExponentialForm5Param(timeDiscretizationFromArray, liborPeriodDiscretization, numberOfFactors, new double[] { 0.20, 0.05, 0.10, 0.05, 0.10} );
+		final AbstractLIBORCovarianceModelParametric covarianceModelParametric = new LIBORCovarianceModelExponentialForm5Param(timeDiscretization, liborPeriodDiscretization, numberOfFactors, new double[] { 0.20, 0.05, 0.10, 0.05, 0.10} );
 		// Create blended local volatility model with fixed parameter 0.0 (that is "lognormal").
 		final AbstractLIBORCovarianceModelParametric covarianceModelBlended = new BlendedLocalVolatilityModel(covarianceModelParametric, forwardCurve, 0.2, true);
 		// Create stochastic scaling (pass brownianMotionView2 to it)
 		final AbstractLIBORCovarianceModelParametric covarianceModelStochasticParametric = new LIBORCovarianceModelStochasticVolatility(covarianceModelBlended, brownianMotionView2, 0.15, 0.20, true);
 
-		// Set model properties
+		/*
+		 * Set model properties
+		 */
 		final Map<String, Object> properties = new HashMap<String, Object>();
 
 		// Choose the simulation measure
@@ -294,6 +285,9 @@ public class LIBORMarketModelCalibrationTest {
 		calibrationParameters.put("brownianMotion", brownianMotionView1);
 		properties.put("calibrationParameters", calibrationParameters);
 
+		/*
+		 * Create model
+		 */
 		final LIBORMarketModelFromCovarianceModel liborMarketModelCalibrated = LIBORMarketModelFromCovarianceModel.of(
 				liborPeriodDiscretization,
 				null,
