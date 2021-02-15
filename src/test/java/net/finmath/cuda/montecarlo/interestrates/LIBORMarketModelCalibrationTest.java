@@ -155,7 +155,7 @@ public class LIBORMarketModelCalibrationTest {
 		/*
 		 * Calibration test
 		 */
-		System.out.print("Calibration to Swaptions using " + String.format("%30s", processingUnit.name()) + " and " + numberOfPaths);
+		System.out.print("Calibration to Swaptions using " + String.format("%-10s", processingUnit.name()) + " and " + numberOfPaths);
 		if(isPrintDetails) System.out.println();
 		else System.out.print("\t");
 
