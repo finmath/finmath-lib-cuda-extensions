@@ -65,15 +65,28 @@ public class LIBORMarketModelCalibrationTest {
 	public static Collection<Object[]> data() {
 		return Arrays.asList(new Object[][] {
 			{ ProcessingUnit.GPU_CUDA, 8192 },
-			{ ProcessingUnit.GPU_CUDA_WITH_CPU_RANDOM, 81920 },
+			{ ProcessingUnit.GPU_CUDA_WITH_CPU_RANDOM, 8192 },
 			{ ProcessingUnit.GPU_OPENCL_WITH_CPU_RANDOM, 8192 },
 			{ ProcessingUnit.CPU, 8192 },
-			{ ProcessingUnit.GPU_OPENCL_WITH_CPU_RANDOM, 81920 },
-			{ ProcessingUnit.CPU, 81920 },
+			//
+			{ ProcessingUnit.GPU_CUDA, 16384 },
+			{ ProcessingUnit.GPU_CUDA_WITH_CPU_RANDOM, 16384 },
+			{ ProcessingUnit.GPU_OPENCL_WITH_CPU_RANDOM, 16384 },
+			{ ProcessingUnit.CPU, 16384 },
+			//
+			{ ProcessingUnit.GPU_CUDA, 40960 },
+			{ ProcessingUnit.GPU_CUDA_WITH_CPU_RANDOM, 40960 },
 			{ ProcessingUnit.GPU_OPENCL_WITH_CPU_RANDOM, 40960 },
 			{ ProcessingUnit.CPU, 40960 },
+			//
+			{ ProcessingUnit.GPU_CUDA, 81920 },
+			{ ProcessingUnit.GPU_CUDA_WITH_CPU_RANDOM, 81920 },
+			{ ProcessingUnit.GPU_OPENCL_WITH_CPU_RANDOM, 81920 },
+			{ ProcessingUnit.CPU, 81920 },
 		});
 	}
+
+	private final boolean isPrintDetails = false;
 
 	private final int numberOfPaths;
 	private final int numberOfFactors	= 5;
@@ -148,7 +161,9 @@ public class LIBORMarketModelCalibrationTest {
 		/*
 		 * Calibration test
 		 */
-		System.out.println("Calibration to Swaptions using " + processingUnit.name() + " and " + numberOfPaths);
+		System.out.print("Calibration to Swaptions using " + processingUnit.name() + " and " + numberOfPaths);
+		if(isPrintDetails) System.out.println();
+		else System.out.print("\t");
 
 		final double[] fixingTimes = new double[] {
 				0.0, 0.5, 1.0, 1.5, 2.0, 2.5, 3.0, 3.5, 4.0, 4.5, 5.0, 5.5, 6.0, 6.5, 7.0, 7.5, 8.0, 8.5, 9.0, 9.5, 10.0,
@@ -231,7 +246,7 @@ public class LIBORMarketModelCalibrationTest {
 		switch(processingUnit) {
 		case CPU:
 			randomVariableFactory = new RandomVariableFloatFactory();
-//			randomVariableFactory = new RandomVariableFromArrayFactory(false);
+			//			randomVariableFactory = new RandomVariableFromArrayFactory(false);
 			brownianMotion = new BrownianMotionFromMersenneRandomNumbers(timeDiscretizationFromArray, numberOfFactors + 1, numberOfPaths, 314151 /* seed */, randomVariableFactory);
 			break;
 		case GPU_CUDA:
@@ -278,7 +293,7 @@ public class LIBORMarketModelCalibrationTest {
 		calibrationParameters.put("optimizerFactory", optimizerFactory);
 		calibrationParameters.put("brownianMotion", brownianMotionView1);
 		properties.put("calibrationParameters", calibrationParameters);
-		
+
 		final LIBORMarketModelFromCovarianceModel liborMarketModelCalibrated = LIBORMarketModelFromCovarianceModel.of(
 				liborPeriodDiscretization,
 				null,
@@ -290,11 +305,12 @@ public class LIBORMarketModelCalibrationTest {
 		/*
 		 * Test our calibration
 		 */
-		System.out.println("\nCalibrated parameters are:");
-		final double[] param = ((AbstractLIBORCovarianceModelParametric) liborMarketModelCalibrated.getCovarianceModel()).getParameterAsDouble();
-		//		((AbstractLIBORCovarianceModelParametric) liborMarketModelCalibrated.getCovarianceModel()).setParameter(param);
-		for (final double p : param) {
-			System.out.println(formatterParam.format(p));
+		if(isPrintDetails) {
+			System.out.println("\nCalibrated parameters are:");
+			final double[] param = ((AbstractLIBORCovarianceModelParametric) liborMarketModelCalibrated.getCovarianceModel()).getParameterAsDouble();
+			for (final double p : param) {
+				System.out.println(formatterParam.format(p));
+			}
 		}
 
 		final EulerSchemeFromProcessModel process = new EulerSchemeFromProcessModel(liborMarketModelCalibrated, brownianMotionView1);
@@ -311,20 +327,27 @@ public class LIBORMarketModelCalibrationTest {
 				final double error = valueModel-valueTarget;
 				deviationSum += error;
 				deviationSquaredSum += error*error;
-				System.out.println("Model: " + formatterValue.format(valueModel) + "\t Target: " + formatterValue.format(valueTarget) + "\t Deviation: " + formatterDeviation.format(valueModel-valueTarget) + "\t" + calibrationProduct.toString());
+				if(isPrintDetails) {
+					System.out.println("Model: " + formatterValue.format(valueModel) + "\t Target: " + formatterValue.format(valueTarget) + "\t Deviation: " + formatterDeviation.format(valueModel-valueTarget) + "\t" + calibrationProduct.toString());
+				}
 			}
 			catch(final Exception e) {
 				//
 			}
 		}
-		final double averageDeviation = deviationSum/calibrationProducts.size();
-		System.out.println("Mean Deviation:" + formatterValue.format(averageDeviation));
-		System.out.println("RMS Error.....:" + formatterValue.format(Math.sqrt(deviationSquaredSum/calibrationProducts.size())));
-		System.out.println("__________________________________________________________________________________________\n");
-
 		final long millisEnd = System.currentTimeMillis();
 
-		System.out.println("\t calculation time = " + formatterReal2.format((millisEnd - millisStart)/1000.0) + " sec.");
+		final double averageDeviation = deviationSum/calibrationProducts.size();
+
+		if(isPrintDetails) {
+			System.out.println("Mean Deviation:" + formatterValue.format(averageDeviation));
+			System.out.println("RMS Error.....:" + formatterValue.format(Math.sqrt(deviationSquaredSum/calibrationProducts.size())));
+			System.out.println("\t calculation time = " + formatterReal2.format((millisEnd - millisStart)/1000.0) + " sec.");
+			System.out.println("__________________________________________________________________________________________\n");
+		}
+		else {
+			System.out.println("mean="+formatterValue.format(averageDeviation) + "\t" + "rms=" + formatterValue.format(Math.sqrt(deviationSquaredSum/calibrationProducts.size())) + "\t" + "time=" + formatterReal2.format((millisEnd - millisStart)/1000.0) + " sec.");
+		}
 
 		Assert.assertTrue(Math.abs(averageDeviation) < 1E-2);
 	}
