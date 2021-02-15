@@ -53,7 +53,6 @@ import net.finmath.marketdata.products.Swap;
 import net.finmath.marketdata.products.SwapAnnuity;
 import net.finmath.montecarlo.BrownianMotion;
 import net.finmath.montecarlo.RandomVariableFactory;
-import net.finmath.montecarlo.RandomVariableFromArrayFactory;
 import net.finmath.montecarlo.interestrate.CalibrationProduct;
 import net.finmath.montecarlo.interestrate.LIBORMarketModel;
 import net.finmath.montecarlo.interestrate.LIBORModelMonteCarloSimulationModel;
@@ -70,7 +69,6 @@ import net.finmath.montecarlo.interestrate.products.AbstractLIBORMonteCarloProdu
 import net.finmath.montecarlo.interestrate.products.SwaptionGeneralizedAnalyticApproximation;
 import net.finmath.montecarlo.interestrate.products.SwaptionSimple;
 import net.finmath.montecarlo.process.EulerSchemeFromProcessModel;
-import net.finmath.opencl.montecarlo.RandomVariableOpenCLFactory;
 import net.finmath.optimizer.LevenbergMarquardt.RegularizationMethod;
 import net.finmath.optimizer.OptimizerFactory;
 import net.finmath.optimizer.OptimizerFactoryLevenbergMarquardt;

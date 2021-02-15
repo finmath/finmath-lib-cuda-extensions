@@ -20,7 +20,6 @@ import java.io.InputStream;
 import java.lang.ref.ReferenceQueue;
 import java.lang.ref.WeakReference;
 import java.nio.charset.Charset;
-import java.util.Arrays;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.function.DoubleBinaryOperator;
