@@ -194,6 +194,38 @@ Profiles for Other Cuda Versions
 The default profile will build the version using Cuda 10.2.
 
 #[[
+#### Cuda 11.1
+]]#
+
+For Cuda 11.1 use
+
+```
+mvn -Pcuda-11.1 clean package
+```
+
+or
+
+```
+mvn -Dcuda.version=11.1 clean package
+```
+
+#[[
+#### Cuda 11.0
+]]#
+
+For Cuda 11.0 use
+
+```
+mvn -Pcuda-11.0 clean package
+```
+
+or
+
+```
+mvn -Dcuda.version=11.0 clean package
+```
+
+#[[
 #### Cuda 10.1
 ]]#
 
