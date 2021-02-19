@@ -27,6 +27,7 @@ import java.lang.ref.Reference;
 import java.lang.ref.ReferenceQueue;
 import java.lang.ref.WeakReference;
 import java.nio.charset.Charset;
+import java.util.HashMap;
 import java.util.Map;
 import java.util.Map.Entry;
 import java.util.concurrent.Callable;
@@ -143,416 +144,38 @@ public class RandomVariableOpenCL implements RandomVariable {
 		 * will put <code>WeakReference&lt;DevicePointerReference&gt;</code> into this queue once the
 		 * <code>DevicePointerReference</code>-object has become de-referenced.
 		 */
-		private static final Map<Integer, ReferenceQueue<DevicePointerReference>>		vectorsToRecycleReferenceQueueMap	= new ConcurrentHashMap<Integer, ReferenceQueue<DevicePointerReference>>();
+		private final Map<Integer, ReferenceQueue<DevicePointerReference>>		vectorsToRecycleReferenceQueueMap	= new ConcurrentHashMap<Integer, ReferenceQueue<DevicePointerReference>>();
 
 		/**
 		 * This map allow to recover the device pointer for a given <code>WeakReference&lt;DevicePointerReference&gt;</code>.
 		 */
-		private static final Map<WeakReference<DevicePointerReference>, cl_mem>	vectorsInUseReferenceMap			= new ConcurrentHashMap<WeakReference<DevicePointerReference>, cl_mem>();
+		private final Map<WeakReference<DevicePointerReference>, cl_mem>	vectorsInUseReferenceMap			= new ConcurrentHashMap<WeakReference<DevicePointerReference>, cl_mem>();
 
 		/**
 		 * Percentage of device memory at which we will trigger System.gc() to aggressively reduce references.
 		 */
-		private static final float	vectorsRecyclerPercentageFreeToStartGC		= 0.10f;		// should be set by monitoring GPU mem
+		private final float	vectorsRecyclerPercentageFreeToStartGC		= 0.10f;		// should be set by monitoring GPU mem
 
 		/**
 		 * Percentage of device memory at which we will try to wait a few milliseconds for recycled objects.
 		 */
-		private static final float	vectorsRecyclerPercentageFreeToWaitForGC	= 0.05f;		// should be set by monitoring GPU mem
+		private final float	vectorsRecyclerPercentageFreeToWaitForGC	= 0.05f;		// should be set by monitoring GPU mem
 
 		/**
 		 * Maximum time to wait for object recycled objects. (Higher value slows down the code, but prevents out-of-memory).
 		 */
-		private static final long	vectorsRecyclerMaxTimeOutMillis			= 10;//1000;
+		private final long	vectorsRecyclerMaxTimeOutMillis			= 10;//1000;
 
-		private static long	deviceAllocMemoryBytes = 0;
-		private static long	deviceMaxMemoryBytes;
+		private long	deviceAllocMemoryBytes = 0;
+		private long	deviceMaxMemoryBytes;
 
-		/**
-		 * Get a Java object ({@link DevicePointerReference}) representing a vector allocated on the GPU memory (device memory).
-		 *
-		 * If this object is the wrapped into a {@link RandomVariableOpenCL} via {@link RandomVariableOpenCL#of(double, DevicePointerReference, long)}
-		 * you may perform arithmetic operations on it.
-		 *
-		 * Note: You will likely not use this method directly. Instead use {@link #getDevicePointer(float[])} which will
-		 * call this method and initialize the vector to the given values.
-		 *
-		 * The object is "managed" in the sense the once the object is dereferenced the GPU memory will be marked for re-use (or freed at a later time).
-		 *
-		 * @param size The size of the vector as multiples of sizeof(float). (To allocated a double vector use twice the size).
-		 * @return An object representing a vector allocated on the GPU memory.
-		 */
-		public DevicePointerReference getDevicePointer(final long size) {
-			if(logger.isLoggable(Level.FINEST)) {
-				final StringBuilder stringBuilder = new StringBuilder();
-				stringBuilder.append("Memory pool stats: ");
-				stringBuilder.append("  vector sizes: ");
-				for(final Map.Entry<Integer, ReferenceQueue<DevicePointerReference>> entry : vectorsToRecycleReferenceQueueMap.entrySet()) {
-					stringBuilder.append("    " + entry.getKey());
-				}
-				stringBuilder.append("  total number of vectors: " + vectorsInUseReferenceMap.size());
-				logger.finest(stringBuilder.toString());
-			}
+		public DeviceMemoryPool() {
 
-			cl_mem cuDevicePtr = null;
-
-			// Check for object to recycle
-			final ReferenceQueue<DevicePointerReference> vectorsToRecycleReferenceQueue = vectorsToRecycleReferenceQueueMap.computeIfAbsent(new Integer((int)size), key ->  {
-				logger.fine("Creating reference queue for vector size " + size);
-				return new ReferenceQueue<DevicePointerReference>();
-			});
-
-			Reference<? extends DevicePointerReference> reference = vectorsToRecycleReferenceQueue.poll();
-			if(reference != null) {
-				cuDevicePtr = vectorsInUseReferenceMap.remove(reference);
-				if(logger.isLoggable(Level.FINEST)) {
-					logger.finest("Recycling (1) device pointer " + cuDevicePtr + " from " + reference);
-				}
-			}
-			else {
-				final float deviceFreeMemPercentage = getDeviceFreeMemPercentage();
-
-				// No pointer found, try GC if we are above a critical level
-				if(deviceFreeMemPercentage < vectorsRecyclerPercentageFreeToStartGC && deviceFreeMemPercentage >= vectorsRecyclerPercentageFreeToWaitForGC) {
-					System.gc();
-					System.runFinalization();
-
-					if(logger.isLoggable(Level.FINEST)) {
-						logger.fine("Device free memory " + deviceFreeMemPercentage*100 + "%");
-					}
-
-					reference = vectorsToRecycleReferenceQueue.poll();
-				}
-
-				// Wait for GC
-				if(reference == null && deviceFreeMemPercentage < vectorsRecyclerPercentageFreeToWaitForGC) {
-					/*
-					 * Try to obtain a reference after GC, retry with waits for 1 ms, 10 ms, 100 ms, ...
-					 */
-					System.gc();
-
-					long timeOut = 1;
-					while(reference == null && timeOut < vectorsRecyclerMaxTimeOutMillis) {
-						try {
-							reference = vectorsToRecycleReferenceQueue.remove(timeOut);
-							timeOut *= 4;
-						} catch (IllegalArgumentException | InterruptedException e) {}
-					}
-
-					if(reference == null) {
-						// Still no pointer found for requested size, consider cleaning all (also other sizes)
-						logger.fine("Last resort: Cleaning all unused vectors on device. Device free memory " + deviceFreeMemPercentage*100 + "%");
-						clean();
-					}
-				}
-
-				if(reference != null) {
-					if(logger.isLoggable(Level.FINEST)) {
-						logger.finest("Recycling (2) device pointer " + cuDevicePtr + " from " + reference);
-					}
-					cuDevicePtr = vectorsInUseReferenceMap.remove(reference);
-				}
-			}
-
-			if(cuDevicePtr == null)  {
-				// Still no pointer found, create new one
-				try {
-					final int[] errorCode = new int[1];
-					cuDevicePtr =
-							deviceExecutor.submit(new Callable<cl_mem>() { @Override
-								public cl_mem call() {
-								final cl_mem cuDevicePtr = CL.clCreateBuffer(context,
-										CL_MEM_READ_WRITE,
-										size * Sizeof.cl_float, null, errorCode);
-
-								return cuDevicePtr;
-							}}).get();
-				} catch (InterruptedException | ExecutionException e) {
-					logger.severe("Failed to allocate device vector with size=" + size + ". Cause: " + e.getCause());
-				}
-
-				if(cuDevicePtr == null) {
-					logger.severe("Failed to allocate device vector with size=" + size);
-					throw new OutOfMemoryError("Failed to allocate device vector with size=" + size);
-				}
-
-				deviceAllocMemoryBytes += size * Sizeof.cl_float;
-			}
-
-			/*
-			 * Manage the pointer
-			 */
-			final DevicePointerReference devicePointerReference = new DevicePointerReference(cuDevicePtr);
-			vectorsInUseReferenceMap.put(new WeakReference<DevicePointerReference>(devicePointerReference, vectorsToRecycleReferenceQueue), cuDevicePtr);
-
-			return devicePointerReference;
-		}
-
-		/**
-		 * Free all unused device memory.
-		 */
-		public void clean() {
-			synchronized (lock)
-			{
-				logger.fine("Cleaning device pointers");
-
-				// Clean up all remaining pointers
-				for(final Entry<Integer, ReferenceQueue<DevicePointerReference>> entry : vectorsToRecycleReferenceQueueMap.entrySet()) {
-					final int size = entry.getKey();
-					final ReferenceQueue<DevicePointerReference> vectorsToRecycleReferenceQueue = entry.getValue();
-
-					Reference<? extends DevicePointerReference> reference;
-					while((reference = vectorsToRecycleReferenceQueue.poll()) != null) {
-						final cl_mem cuDevicePtr = vectorsInUseReferenceMap.remove(reference);
-						if(logger.isLoggable(Level.FINEST)) {
-							logger.finest("Freeing device pointer " + cuDevicePtr + " from " + reference);
-						}
-						try {
-							deviceExecutor.submit(new Runnable() {
-								@Override
-								public void run() {
-									clReleaseMemObject(cuDevicePtr);
-								}}).get();
-						} catch (InterruptedException | ExecutionException e) {
-							logger.severe("Unable to free pointer " + cuDevicePtr + " from " + reference);
-							throw new RuntimeException(e.getCause());
-						}
-						deviceAllocMemoryBytes -= size * Sizeof.cl_float;
-					}
-				}
-			}
-		}
-
-		public void purge() {
-			System.gc();
-			System.runFinalization();
-			clean();
-			logger.fine("OpenCL vectors in use: " + vectorsInUseReferenceMap.size() + ". Available device memory: " + getDeviceFreeMemPercentage()*100 + "%");
-		}
-
-		/**
-		 *
-		 * @return Returns the (estimated) percentage amount of free memory on the device.
-		 */
-		private static float getDeviceFreeMemPercentage() {
-			final float freeRate = 1.0f - 1.1f * deviceAllocMemoryBytes / deviceMaxMemoryBytes;
-			//System.out.println("OpCL: " + deviceMemoryPool.vectorsInUseReferenceMap.size() + "\t" + freeRate);
-			return freeRate;
-		}
-
-		/**
-		 * Create a vector on device and copy host vector to it.
-		 *
-		 * @param values Host vector.
-		 * @return Pointer to device vector.
-		 */
-		public DevicePointerReference getDevicePointer(final float[] values) {
-			final DevicePointerReference devicePointerReference = getDevicePointer(values.length);
-			if(devicePointerReference.get() == null) {
-				throw new NullPointerException("Unable to get device pointer.");
-			}
-			try {
-				deviceExecutor.submit(new Runnable() { @Override
-					public void run() {
-					clEnqueueWriteBuffer(commandQueue, devicePointerReference.get(), CL_TRUE, 0L,
-							(long)values.length  * Sizeof.cl_float, Pointer.to(values), 0, null, null);
-				}}).get();
-			} catch (InterruptedException | ExecutionException e) {
-				logger.severe("Unable to a create device pointer for vector of size " + values.length);
-				throw new RuntimeException(e.getCause());
-			}
-
-			return devicePointerReference;
-		}
-
-		public float[] getValuesAsFloat(final DevicePointerReference devicePtr, final int size) {
-			final float[] result = new float[size];
-			try {
-				deviceExecutor.submit(new Runnable() { @Override
-					public void run() {
-					clEnqueueReadBuffer(commandQueue, devicePtr.get(), true, 0,
-							size * Sizeof.cl_float, Pointer.to(result), 0, null, null);
-				}}).get();
-			} catch (InterruptedException | ExecutionException e) {
-				logger.severe("Unable to a create device pointer for vector of size " + size);
-				throw new RuntimeException(e.getCause());
-			}
-			return result;
-		}
-
-		public DevicePointerReference callFunctionv1s0(final cl_kernel function, final long resultSize, final DevicePointerReference argument1) {
-//			synchronized (lock) 
-			{
-				final DevicePointerReference result = getDevicePointer(resultSize);
-				callFunction(function, resultSize, new Pointer[] {
-						Pointer.to(new int[] { (int)resultSize }),
-						Pointer.to(argument1.get()),
-						Pointer.to(result.get()) },
-						new int[] { Sizeof.cl_int, Sizeof.cl_mem, Sizeof.cl_mem }
-						);
-				return result;
-			}
-		}
-
-		public DevicePointerReference callFunctionv2s0(final cl_kernel function, final long resultSize, final DevicePointerReference argument1, final DevicePointerReference argument2) {
-//			synchronized (lock)
-			{
-				final DevicePointerReference result = getDevicePointer(resultSize);
-				callFunction(function, resultSize, new Pointer[] {
-						Pointer.to(new int[] { (int)resultSize }),
-						Pointer.to(argument1.get()),
-						Pointer.to(argument2.get()),
-						Pointer.to(result.get()) },
-						new int[] { Sizeof.cl_int, Sizeof.cl_mem, Sizeof.cl_mem, Sizeof.cl_mem }
-						);
-				return result;
-			}
-		}
-
-		public DevicePointerReference callFunctionv3s0(final cl_kernel function, final long resultSize, final DevicePointerReference argument1, final DevicePointerReference argument2, final DevicePointerReference argument3) {
-//			synchronized (lock)
-			{
-				final DevicePointerReference result = getDevicePointer(resultSize);
-				callFunction(function, resultSize, new Pointer[] {
-						Pointer.to(new int[] { (int)resultSize }),
-						Pointer.to(argument1.get()),
-						Pointer.to(argument2.get()),
-						Pointer.to(argument3.get()),
-						Pointer.to(result.get()) },
-						new int[] { Sizeof.cl_int, Sizeof.cl_mem, Sizeof.cl_mem, Sizeof.cl_mem, Sizeof.cl_mem }
-						);
-				return result;
-			}
-		}
-
-		public DevicePointerReference callFunctionv1s1(final cl_kernel function, final long resultSize, final DevicePointerReference argument1, final double value) {
-//			synchronized (lock)
-			{
-				final DevicePointerReference result = getDevicePointer(resultSize);
-				callFunction(function, resultSize, new Pointer[] {
-						Pointer.to(new int[] { (int)resultSize }),
-						Pointer.to(argument1.get()),
-						Pointer.to(new float[] { (float)value }),
-						Pointer.to(result.get()) },
-						new int[] { Sizeof.cl_int, Sizeof.cl_mem, Sizeof.cl_float, Sizeof.cl_mem }
-						);
-				return result;
-			}
-		}
-
-		public DevicePointerReference callFunctionv2s1(final cl_kernel function, final long resultSize, final DevicePointerReference argument1, final DevicePointerReference argument2, final double value) {
-//			synchronized (lock)
-			{
-				final DevicePointerReference result = getDevicePointer(resultSize);
-				callFunction(function, resultSize, new Pointer[] {
-						Pointer.to(new int[] { (int)resultSize }),
-						Pointer.to(argument1.get()),
-						Pointer.to(argument2.get()),
-						Pointer.to(new float[] { (float)value }),
-						Pointer.to(result.get()) },
-						new int[] { Sizeof.cl_int, Sizeof.cl_mem, Sizeof.cl_mem, Sizeof.cl_float, Sizeof.cl_mem }
-						);
-				return result;
-			}
-		}
-
-		public void callFunction(final cl_kernel function, final long resultSize, final Pointer[] arguments, final int[] argumentSizes) {
-			final int blockSizeX = 1024;
-			final int gridSizeX = (int)Math.ceil((double)resultSize / blockSizeX);
-			callFunction(function, arguments, argumentSizes, gridSizeX, blockSizeX, 0);
-		}
-
-		public void callFunction(final cl_kernel function, final Pointer[] arguments, final int[] argumentSizes, final int gridSizeX, final int blockSizeX, final int sharedMemorySize) {
-			// Set up the kernel parameters: A pointer to an array
-			// of pointers which point to the actual values.
-
-			deviceExecutor.submit(new Runnable() {
-				@Override
-				public void run() {
-					for(int i=0; i<arguments.length; i++) {
-						clSetKernelArg(function, i, argumentSizes[i], arguments[i]);
-					}
-					// Set the work-item dimensions
-					final long[] globalWorkSize = new long[]{ gridSizeX*blockSizeX };
-					final long[] localWorkSize = null;
-					//cuCtxSynchronize();
-					// Launching on the same stream (default stream)
-					try {
-						clEnqueueNDRangeKernel(commandQueue, function, 1, null,
-								globalWorkSize, localWorkSize, 0, null, null);
-					}
-					catch(Exception e) {
-						logger.severe("Command " + function + " failed.");
-						throw new RuntimeException(e.getCause());
-					}
-				}});
-		}
-
-	}
-
-	private static DeviceMemoryPool deviceMemoryPool = new DeviceMemoryPool();
-
-	private static final long serialVersionUID = 7620120320663270600L;
-
-	private final double      time;	                // Time (filtration)
-
-	private static final int typePriorityDefault = 20;
-
-	private final int typePriority;
-
-	// Data model for the stochastic case (otherwise null)
-	private final DevicePointerReference	realizations;           // Realizations
-	private final long			size;
-
-	// Data model for the non-stochastic case (if realizations==null)
-	private final double      valueIfNonStochastic;
-
-	private static final Logger logger = Logger.getLogger("net.finmath");
-
-	private static final ExecutorService deviceExecutor = Executors.newSingleThreadExecutor();
-
-	private static cl_device_id device;
-	private static cl_context context;
-	private static cl_command_queue commandQueue;
-
-	private static cl_kernel capByScalar;
-	private static cl_kernel floorByScalar;
-	private static cl_kernel addScalar;
-	private static cl_kernel subScalar;
-	private static cl_kernel busScalar;
-	private static cl_kernel multScalar;
-	private static cl_kernel divScalar;
-	private static cl_kernel vidScalar;
-	private static cl_kernel cuPow;
-	private static cl_kernel cuSqrt;
-	private static cl_kernel cuExp;
-	private static cl_kernel cuLog;
-	private static cl_kernel invert;
-	private static cl_kernel cuAbs;
-	private static cl_kernel cap;
-	private static cl_kernel cuFloor;
-	private static cl_kernel add;
-	private static cl_kernel sub;
-	private static cl_kernel mult;
-	private static cl_kernel cuDiv;
-	private static cl_kernel accrue;
-	private static cl_kernel discount;
-	private static cl_kernel addProduct;
-	private static cl_kernel addProductVectorScalar;		// add the product of a vector and a scalar
-	private static cl_kernel reducePartial;
-	private static cl_kernel reduceFloatVectorToDoubleScalar;
-
-	private static final int reduceGridSize = 1024;
-
-	// Initalize OpenCL
-	static {
-		synchronized (deviceMemoryPool) {
-
-			final String	openCLDeviceTypeSTring = System.getProperty("net.finmath.montecarlo.opencl.RandomVariableOpenCL.deviceType", "GPU");
+			final String	openCLDeviceTypeString = System.getProperty("net.finmath.montecarlo.opencl.RandomVariableOpenCL.deviceType", "GPU");
 			final int		openCLDeviceIndex = Integer.parseInt(System.getProperty("net.finmath.montecarlo.opencl.RandomVariableOpenCL.deviceType", "-1"));
 
 			final long deviceType;
-			switch(openCLDeviceTypeSTring) {
+			switch(openCLDeviceTypeString) {
 			case "GPU":
 			default:
 				deviceType = CL.CL_DEVICE_TYPE_GPU;
@@ -683,8 +306,8 @@ public class RandomVariableOpenCL implements RandomVariable {
 			final long[] deviceMaxMemoryBytesResult = new long[1];
 			try {
 				CL.clGetDeviceInfo(device, CL.CL_DEVICE_GLOBAL_MEM_SIZE, Sizeof.cl_long, Pointer.to(deviceMaxMemoryBytesResult), null);
-				DeviceMemoryPool.deviceMaxMemoryBytes = deviceMaxMemoryBytesResult[0];
-				logger.info("OpenCL reported " + DeviceMemoryPool.deviceMaxMemoryBytes + " bytes.");
+				deviceMaxMemoryBytes = deviceMaxMemoryBytesResult[0];
+				logger.info("OpenCL reported " + deviceMaxMemoryBytes + " bytes.");
 			}
 			catch(Exception e) {
 				logger.info("Failed to get available memory for OpenCL.\n" + e.getStackTrace());
@@ -693,20 +316,368 @@ public class RandomVariableOpenCL implements RandomVariable {
 			Runtime.getRuntime().addShutdownHook(new Thread(new Runnable() {
 				@Override
 				public void run() {
-					deviceMemoryPool.purge();
-					deviceExecutor.shutdown();
-					try {
-						deviceExecutor.awaitTermination(1, TimeUnit.SECONDS);
-					} catch (final InterruptedException e) {
-						// TODO Auto-generated catch block
-						e.printStackTrace();
-					}
+					DeviceMemoryPool.this.purge();
 				}}
 					));
 
 			logger.info("OpenCL initialized");
 		}
+
+		/**
+		 * Get a Java object ({@link DevicePointerReference}) representing a vector allocated on the GPU memory (device memory).
+		 *
+		 * If this object is the wrapped into a {@link RandomVariableOpenCL} via {@link RandomVariableOpenCL#of(double, DevicePointerReference, long)}
+		 * you may perform arithmetic operations on it.
+		 *
+		 * Note: You will likely not use this method directly. Instead use {@link #getDevicePointer(float[])} which will
+		 * call this method and initialize the vector to the given values.
+		 *
+		 * The object is "managed" in the sense the once the object is dereferenced the GPU memory will be marked for re-use (or freed at a later time).
+		 *
+		 * @param size The size of the vector as multiples of sizeof(float). (To allocated a double vector use twice the size).
+		 * @return An object representing a vector allocated on the GPU memory.
+		 */
+		public DevicePointerReference getDevicePointer(final long size) {
+			if(logger.isLoggable(Level.FINEST)) {
+				final StringBuilder stringBuilder = new StringBuilder();
+				stringBuilder.append("Memory pool stats: ");
+				stringBuilder.append("  vector sizes: ");
+				for(final Map.Entry<Integer, ReferenceQueue<DevicePointerReference>> entry : vectorsToRecycleReferenceQueueMap.entrySet()) {
+					stringBuilder.append("    " + entry.getKey());
+				}
+				stringBuilder.append("  total number of vectors: " + vectorsInUseReferenceMap.size());
+				logger.finest(stringBuilder.toString());
+			}
+
+			cl_mem cuDevicePtr = null;
+
+			// Check for object to recycle
+			final ReferenceQueue<DevicePointerReference> vectorsToRecycleReferenceQueue = vectorsToRecycleReferenceQueueMap.computeIfAbsent(new Integer((int)size), key ->  {
+				logger.fine("Creating reference queue for vector size " + size);
+				return new ReferenceQueue<DevicePointerReference>();
+			});
+
+			Reference<? extends DevicePointerReference> reference = vectorsToRecycleReferenceQueue.poll();
+			if(reference != null) {
+				cuDevicePtr = vectorsInUseReferenceMap.remove(reference);
+				if(logger.isLoggable(Level.FINEST)) {
+					logger.finest("Recycling (1) device pointer " + cuDevicePtr + " from " + reference);
+				}
+			}
+			else {
+				final float deviceFreeMemPercentage = getDeviceFreeMemPercentage();
+
+				// No pointer found, try GC if we are above a critical level
+				if(deviceFreeMemPercentage < vectorsRecyclerPercentageFreeToStartGC && deviceFreeMemPercentage >= vectorsRecyclerPercentageFreeToWaitForGC) {
+					System.gc();
+					System.runFinalization();
+
+					if(logger.isLoggable(Level.FINEST)) {
+						logger.fine("Device free memory " + deviceFreeMemPercentage*100 + "%");
+					}
+
+					reference = vectorsToRecycleReferenceQueue.poll();
+				}
+
+				// Wait for GC
+				if(reference == null && deviceFreeMemPercentage < vectorsRecyclerPercentageFreeToWaitForGC) {
+					/*
+					 * Try to obtain a reference after GC, retry with waits for 1 ms, 10 ms, 100 ms, ...
+					 */
+					System.gc();
+
+					long timeOut = 1;
+					while(reference == null && timeOut < vectorsRecyclerMaxTimeOutMillis) {
+						try {
+							reference = vectorsToRecycleReferenceQueue.remove(timeOut);
+							timeOut *= 4;
+						} catch (IllegalArgumentException | InterruptedException e) {}
+					}
+
+					if(reference == null) {
+						// Still no pointer found for requested size, consider cleaning all (also other sizes)
+						logger.fine("Last resort: Cleaning all unused vectors on device. Device free memory " + deviceFreeMemPercentage*100 + "%");
+						clean();
+					}
+				}
+
+				if(reference != null) {
+					if(logger.isLoggable(Level.FINEST)) {
+						logger.finest("Recycling (2) device pointer " + cuDevicePtr + " from " + reference);
+					}
+					cuDevicePtr = vectorsInUseReferenceMap.remove(reference);
+				}
+			}
+
+			if(cuDevicePtr == null)  {
+				// Still no pointer found, create new one
+				try {
+					final int[] errorCode = new int[1];
+					cuDevicePtr = CL.clCreateBuffer(context,
+										CL_MEM_READ_WRITE,
+										size * Sizeof.cl_float, null, errorCode);
+				} catch (Exception e) {
+					logger.severe("Failed to allocate device vector with size=" + size + ". Cause: " + e.getCause());
+				}
+
+				if(cuDevicePtr == null) {
+					logger.severe("Failed to allocate device vector with size=" + size);
+					throw new OutOfMemoryError("Failed to allocate device vector with size=" + size);
+				}
+
+				deviceAllocMemoryBytes += size * Sizeof.cl_float;
+			}
+
+			/*
+			 * Manage the pointer
+			 */
+			final DevicePointerReference devicePointerReference = new DevicePointerReference(cuDevicePtr);
+			vectorsInUseReferenceMap.put(new WeakReference<DevicePointerReference>(devicePointerReference, vectorsToRecycleReferenceQueue), cuDevicePtr);
+
+			return devicePointerReference;
+		}
+
+		/**
+		 * Free all unused device memory.
+		 */
+		public void clean() {
+			synchronized (lock)
+			{
+				logger.fine("Cleaning device pointers");
+
+				// Clean up all remaining pointers
+				for(final Entry<Integer, ReferenceQueue<DevicePointerReference>> entry : vectorsToRecycleReferenceQueueMap.entrySet()) {
+					final int size = entry.getKey();
+					final ReferenceQueue<DevicePointerReference> vectorsToRecycleReferenceQueue = entry.getValue();
+
+					Reference<? extends DevicePointerReference> reference;
+					while((reference = vectorsToRecycleReferenceQueue.poll()) != null) {
+						final cl_mem cuDevicePtr = vectorsInUseReferenceMap.remove(reference);
+						if(logger.isLoggable(Level.FINEST)) {
+							logger.finest("Freeing device pointer " + cuDevicePtr + " from " + reference);
+						}
+						try {
+									clReleaseMemObject(cuDevicePtr);
+						} catch (Exception e) {
+							logger.severe("Unable to free pointer " + cuDevicePtr + " from " + reference);
+							throw new RuntimeException(e);
+						}
+						deviceAllocMemoryBytes -= size * Sizeof.cl_float;
+					}
+				}
+			}
+		}
+
+		public void purge() {
+			System.gc();
+			System.runFinalization();
+			clean();
+			logger.fine("OpenCL vectors in use: " + vectorsInUseReferenceMap.size() + ". Available device memory: " + getDeviceFreeMemPercentage()*100 + "%");
+		}
+
+		/**
+		 *
+		 * @return Returns the (estimated) percentage amount of free memory on the device.
+		 */
+		private float getDeviceFreeMemPercentage() {
+			final float freeRate = 1.0f - 1.1f * deviceAllocMemoryBytes / deviceMaxMemoryBytes;
+			//System.out.println("OpCL: " + deviceMemoryPool.vectorsInUseReferenceMap.size() + "\t" + freeRate);
+			return freeRate;
+		}
+
+		/**
+		 * Create a vector on device and copy host vector to it.
+		 *
+		 * @param values Host vector.
+		 * @return Pointer to device vector.
+		 */
+		public DevicePointerReference getDevicePointer(final float[] values) {
+			final DevicePointerReference devicePointerReference = getDevicePointer(values.length);
+			if(devicePointerReference.get() == null) {
+				throw new NullPointerException("Unable to get device pointer.");
+			}
+			try {
+					clEnqueueWriteBuffer(commandQueue, devicePointerReference.get(), CL_TRUE, 0L,
+							(long)values.length  * Sizeof.cl_float, Pointer.to(values), 0, null, null);
+			} catch (Exception e) {
+				logger.severe("Unable to a create device pointer for vector of size " + values.length);
+				throw new RuntimeException(e);
+			}
+
+			return devicePointerReference;
+		}
+
+		public float[] getValuesAsFloat(final DevicePointerReference devicePtr, final int size) {
+			final float[] result = new float[size];
+			try {
+					clEnqueueReadBuffer(commandQueue, devicePtr.get(), true, 0,
+							size * Sizeof.cl_float, Pointer.to(result), 0, null, null);
+			} catch (Exception e) {
+				logger.severe("Unable to a create device pointer for vector of size " + size);
+				throw new RuntimeException(e);
+			}
+			return result;
+		}
+
+		public DevicePointerReference callFunctionv1s0(final cl_kernel function, final long resultSize, final DevicePointerReference argument1) {
+			//			synchronized (lock) 
+			{
+				final DevicePointerReference result = getDevicePointer(resultSize);
+				callFunction(function, resultSize, new Pointer[] {
+						Pointer.to(new int[] { (int)resultSize }),
+						Pointer.to(argument1.get()),
+						Pointer.to(result.get()) },
+						new int[] { Sizeof.cl_int, Sizeof.cl_mem, Sizeof.cl_mem }
+						);
+				return result;
+			}
+		}
+
+		public DevicePointerReference callFunctionv2s0(final cl_kernel function, final long resultSize, final DevicePointerReference argument1, final DevicePointerReference argument2) {
+			//			synchronized (lock)
+			{
+				final DevicePointerReference result = getDevicePointer(resultSize);
+				callFunction(function, resultSize, new Pointer[] {
+						Pointer.to(new int[] { (int)resultSize }),
+						Pointer.to(argument1.get()),
+						Pointer.to(argument2.get()),
+						Pointer.to(result.get()) },
+						new int[] { Sizeof.cl_int, Sizeof.cl_mem, Sizeof.cl_mem, Sizeof.cl_mem }
+						);
+				return result;
+			}
+		}
+
+		public DevicePointerReference callFunctionv3s0(final cl_kernel function, final long resultSize, final DevicePointerReference argument1, final DevicePointerReference argument2, final DevicePointerReference argument3) {
+			//			synchronized (lock)
+			{
+				final DevicePointerReference result = getDevicePointer(resultSize);
+				callFunction(function, resultSize, new Pointer[] {
+						Pointer.to(new int[] { (int)resultSize }),
+						Pointer.to(argument1.get()),
+						Pointer.to(argument2.get()),
+						Pointer.to(argument3.get()),
+						Pointer.to(result.get()) },
+						new int[] { Sizeof.cl_int, Sizeof.cl_mem, Sizeof.cl_mem, Sizeof.cl_mem, Sizeof.cl_mem }
+						);
+				return result;
+			}
+		}
+
+		public DevicePointerReference callFunctionv1s1(final cl_kernel function, final long resultSize, final DevicePointerReference argument1, final double value) {
+			//			synchronized (lock)
+			{
+				final DevicePointerReference result = getDevicePointer(resultSize);
+				callFunction(function, resultSize, new Pointer[] {
+						Pointer.to(new int[] { (int)resultSize }),
+						Pointer.to(argument1.get()),
+						Pointer.to(new float[] { (float)value }),
+						Pointer.to(result.get()) },
+						new int[] { Sizeof.cl_int, Sizeof.cl_mem, Sizeof.cl_float, Sizeof.cl_mem }
+						);
+				return result;
+			}
+		}
+
+		public DevicePointerReference callFunctionv2s1(final cl_kernel function, final long resultSize, final DevicePointerReference argument1, final DevicePointerReference argument2, final double value) {
+			//			synchronized (lock)
+			{
+				final DevicePointerReference result = getDevicePointer(resultSize);
+				callFunction(function, resultSize, new Pointer[] {
+						Pointer.to(new int[] { (int)resultSize }),
+						Pointer.to(argument1.get()),
+						Pointer.to(argument2.get()),
+						Pointer.to(new float[] { (float)value }),
+						Pointer.to(result.get()) },
+						new int[] { Sizeof.cl_int, Sizeof.cl_mem, Sizeof.cl_mem, Sizeof.cl_float, Sizeof.cl_mem }
+						);
+				return result;
+			}
+		}
+
+		public void callFunction(final cl_kernel function, final long resultSize, final Pointer[] arguments, final int[] argumentSizes) {
+			final int blockSizeX = 1024;
+			final int gridSizeX = (int)Math.ceil((double)resultSize / blockSizeX);
+			callFunction(function, arguments, argumentSizes, gridSizeX, blockSizeX, 0);
+		}
+
+		public void callFunction(final cl_kernel function, final Pointer[] arguments, final int[] argumentSizes, final int gridSizeX, final int blockSizeX, final int sharedMemorySize) {
+			// Set up the kernel parameters: A pointer to an array
+			// of pointers which point to the actual values.
+
+					for(int i=0; i<arguments.length; i++) {
+						clSetKernelArg(function, i, argumentSizes[i], arguments[i]);
+					}
+					// Set the work-item dimensions
+					final long[] globalWorkSize = new long[]{ gridSizeX*blockSizeX };
+					final long[] localWorkSize = null;
+					//cuCtxSynchronize();
+					// Launching on the same stream (default stream)
+					try {
+						clEnqueueNDRangeKernel(commandQueue, function, 1, null,
+								globalWorkSize, localWorkSize, 0, null, null);
+					}
+					catch(Exception e) {
+						logger.severe("Command " + function + " failed.");
+						throw new RuntimeException(e.getCause());
+					}
+		}
+
 	}
+
+	private static final Logger logger = Logger.getLogger("net.finmath");
+
+	private static DeviceMemoryPool deviceMemoryPool = new DeviceMemoryPool();
+
+	private static final long serialVersionUID = 7620120320663270600L;
+
+	private final double      time;	                // Time (filtration)
+
+	private static final int typePriorityDefault = 20;
+
+	private final int typePriority;
+
+	// Data model for the stochastic case (otherwise null)
+	private final DevicePointerReference	realizations;           // Realizations
+	private final long			size;
+
+	// Data model for the non-stochastic case (if realizations==null)
+	private final double      valueIfNonStochastic;
+
+	private static cl_device_id device;
+	private static cl_context context;
+	private static cl_command_queue commandQueue;
+
+	private static cl_kernel capByScalar;
+	private static cl_kernel floorByScalar;
+	private static cl_kernel addScalar;
+	private static cl_kernel subScalar;
+	private static cl_kernel busScalar;
+	private static cl_kernel multScalar;
+	private static cl_kernel divScalar;
+	private static cl_kernel vidScalar;
+	private static cl_kernel cuPow;
+	private static cl_kernel cuSqrt;
+	private static cl_kernel cuExp;
+	private static cl_kernel cuLog;
+	private static cl_kernel invert;
+	private static cl_kernel cuAbs;
+	private static cl_kernel cap;
+	private static cl_kernel cuFloor;
+	private static cl_kernel add;
+	private static cl_kernel sub;
+	private static cl_kernel mult;
+	private static cl_kernel cuDiv;
+	private static cl_kernel accrue;
+	private static cl_kernel discount;
+	private static cl_kernel addProduct;
+	private static cl_kernel addProductVectorScalar;		// add the product of a vector and a scalar
+	private static cl_kernel reducePartial;
+	private static cl_kernel reduceFloatVectorToDoubleScalar;
+
+	private static final int reduceGridSize = 1024;
+
+	// Initalize OpenCL
 
 	/**
 	 * Create a <code>RandomVariableCuda</code>.
@@ -1822,13 +1793,10 @@ public class RandomVariableOpenCL implements RandomVariable {
 
 		final double[] result = new double[gridSizeX];
 		try {
-			deviceExecutor.submit(new Runnable() { @Override
-				public void run() {
 				//				cuMemcpyDtoH(Pointer.to(result), reduceVector.get(), gridSizeX * Sizeof.cl_double);
-			}}).get();
-		} catch (InterruptedException | ExecutionException e) {
+		} catch (Exception e) {
 			logger.severe("Unable to execute function reduceFloatVectorToDoubleScalar.");
-			throw new RuntimeException(e.getCause());
+			throw new RuntimeException(e);
 		}
 
 		return (new RandomVariableFromDoubleArray(time, result));
