@@ -225,22 +225,20 @@ public class RandomVariableCuda implements RandomVariable {
 			if(cuDevicePtr == null)  {
 				// Still no pointer found, create new one
 				try {
-					cuDevicePtr =
-							deviceExecutor.submit(new Callable<CUdeviceptr>() { @Override
-								public CUdeviceptr call() {
-								CUdeviceptr cuDevicePtr = new CUdeviceptr();
-								final int succ = JCudaDriver.cuMemAlloc(cuDevicePtr, size * Sizeof.FLOAT);
-								if(succ != 0) {
-									cuDevicePtr = null;
-									final String[] cudaErrorName = new String[1];
-									JCudaDriver.cuGetErrorName(succ, cudaErrorName);
-									final String[] cudaErrorDescription = new String[1];
-									JCudaDriver.cuGetErrorString(succ, cudaErrorDescription);
+					cuDevicePtr = deviceExecutor.submit(() -> {
+						CUdeviceptr cuDevicePtrNew = new CUdeviceptr();
+						final int succ = JCudaDriver.cuMemAlloc(cuDevicePtrNew, size * Sizeof.FLOAT);
+						if(succ != 0) {
+							cuDevicePtrNew = null;
+							final String[] cudaErrorName = new String[1];
+							JCudaDriver.cuGetErrorName(succ, cudaErrorName);
+							final String[] cudaErrorDescription = new String[1];
+							JCudaDriver.cuGetErrorString(succ, cudaErrorDescription);
 
-									logger.warning("Failed creating device vector "+ cuDevicePtr + " with size=" + size + " with error "+ cudaErrorName + ": " + cudaErrorDescription);
-								}
-								return cuDevicePtr;
-							}}).get();
+							logger.warning("Failed creating device vector with size=" + size + " with error "+ cudaErrorName + ": " + cudaErrorDescription);
+						}
+						return cuDevicePtrNew;
+					}).get();
 				} catch (InterruptedException | ExecutionException e) {
 					logger.severe("Failed to allocate device vector with size=" + size + ". Cause: " + e.getCause());
 				}
@@ -279,12 +277,10 @@ public class RandomVariableCuda implements RandomVariable {
 							logger.finest("Freeing device pointer " + cuDevicePtr + " from " + reference);
 						}
 						try {
-							deviceExecutor.submit(new Runnable() {
-								@Override
-								public void run() {
-									cuCtxSynchronize();
-									JCudaDriver.cuMemFree(cuDevicePtr);
-								}}).get();
+							deviceExecutor.submit(() -> {
+								cuCtxSynchronize();
+								JCudaDriver.cuMemFree(cuDevicePtr);
+							}).get();
 						} catch (InterruptedException | ExecutionException e) {
 							logger.severe("Unable to free pointer " + cuDevicePtr + " from " + reference);
 							throw new RuntimeException(e.getCause());
@@ -309,14 +305,12 @@ public class RandomVariableCuda implements RandomVariable {
 		private static float getDeviceFreeMemPercentage() {
 			float freeRate;// = 1.0f - 1.1f * (float)deviceAllocMemoryBytes / (float)deviceMaxMemoryBytes;
 			try {
-				freeRate = deviceExecutor.submit(new Callable<Float>() { @Override
-					public Float call() {
+				freeRate = deviceExecutor.submit(() -> {
 					final long[] free = new long[1];
 					final long[] total = new long[1];
 					jcuda.runtime.JCuda.cudaMemGetInfo(free, total);
-					final float freeRate = ((float)free[0]/(total[0]));
-					return freeRate;
-				}}).get();
+					return ((float)free[0]/(total[0]));
+				}).get();
 			} catch (InterruptedException | ExecutionException e) {
 				freeRate = 0;
 			}
@@ -333,11 +327,10 @@ public class RandomVariableCuda implements RandomVariable {
 		public DevicePointerReference getDevicePointer(final float[] values) {
 			final DevicePointerReference devicePointerReference = getDevicePointer(values.length);
 			try {
-				deviceExecutor.submit(new Runnable() { @Override
-					public void run() {
+				deviceExecutor.submit(() -> {
 					cuCtxSynchronize();
 					JCudaDriver.cuMemcpyHtoD(devicePointerReference.get(), Pointer.to(values), (long)values.length * Sizeof.FLOAT);
-				}}).get();
+				}).get();
 			} catch (InterruptedException | ExecutionException e) { throw new RuntimeException(e.getCause()); }
 
 			return devicePointerReference;
@@ -346,12 +339,11 @@ public class RandomVariableCuda implements RandomVariable {
 		public float[] getValuesAsFloat(final DevicePointerReference devicePtr, final int size) {
 			final float[] result = new float[size];
 			try {
-				deviceExecutor.submit(new Runnable() { @Override
-					public void run() {
+				deviceExecutor.submit(() -> {
 					cuCtxSynchronize();
 					cuMemcpyDtoH(Pointer.to(result), devicePtr.get(), size * Sizeof.FLOAT);
 					cuCtxSynchronize();
-				}}).get();
+				}).get();
 			} catch (InterruptedException | ExecutionException e) {
 				throw new RuntimeException(e.getCause());
 			}
@@ -359,7 +351,8 @@ public class RandomVariableCuda implements RandomVariable {
 		}
 
 		public DevicePointerReference callFunctionv1s0(final CUfunction function, final long resultSize, final DevicePointerReference argument1) {
-			synchronized (lock) {
+			//			synchronized (lock)
+			{
 				final DevicePointerReference result = getDevicePointer(resultSize);
 				callFunction(function, resultSize, new Pointer[] {
 						Pointer.to(new int[] { (int)resultSize }),
@@ -371,7 +364,8 @@ public class RandomVariableCuda implements RandomVariable {
 		}
 
 		public DevicePointerReference callFunctionv2s0(final CUfunction function, final long resultSize, final DevicePointerReference argument1, final DevicePointerReference argument2) {
-			synchronized (lock) {
+			//			synchronized (lock)
+			{
 				final DevicePointerReference result = getDevicePointer(resultSize);
 				callFunction(function, resultSize, new Pointer[] {
 						Pointer.to(new int[] { (int)resultSize }),
@@ -384,7 +378,8 @@ public class RandomVariableCuda implements RandomVariable {
 		}
 
 		public DevicePointerReference callFunctionv3s0(final CUfunction function, final long resultSize, final DevicePointerReference argument1, final DevicePointerReference argument2, final DevicePointerReference argument3) {
-			synchronized (lock) {
+			//			synchronized (lock)
+			{
 				final DevicePointerReference result = getDevicePointer(resultSize);
 				callFunction(function, resultSize, new Pointer[] {
 						Pointer.to(new int[] { (int)resultSize }),
@@ -398,7 +393,8 @@ public class RandomVariableCuda implements RandomVariable {
 		}
 
 		public DevicePointerReference callFunctionv1s1(final CUfunction function, final long resultSize, final DevicePointerReference argument1, final double value) {
-			synchronized (lock) {
+			//			synchronized (lock)
+			{
 				final DevicePointerReference result = getDevicePointer(resultSize);
 				callFunction(function, resultSize, new Pointer[] {
 						Pointer.to(new int[] { (int)resultSize }),
@@ -411,7 +407,8 @@ public class RandomVariableCuda implements RandomVariable {
 		}
 
 		public DevicePointerReference callFunctionv2s1(final CUfunction function, final long resultSize, final DevicePointerReference argument1, final DevicePointerReference argument2, final double value) {
-			synchronized (lock) {
+			//			synchronized (lock)
+			{
 				final DevicePointerReference result = getDevicePointer(resultSize);
 				callFunction(function, resultSize, new Pointer[] {
 						Pointer.to(new int[] { (int)resultSize }),
@@ -434,17 +431,14 @@ public class RandomVariableCuda implements RandomVariable {
 			// of pointers which point to the actual values.
 			final Pointer kernelParameters = Pointer.to(arguments);
 
-			deviceExecutor.submit(new Runnable() { @Override
-				public void run() {
-				//cuCtxSynchronize();
-				// Launching on the same stream (default stream)
-				cuLaunchKernel(function,
-						gridSizeX,  1, 1,      // Grid dimension
-						blockSizeX, 1, 1,      // Block dimension
-						sharedMemorySize * Sizeof.FLOAT, null,               // Shared memory size and stream
-						kernelParameters, null // Kernel- and extra parameters
-						);
-			}});
+			deviceExecutor.submit(() ->
+			cuLaunchKernel(function,
+					gridSizeX,  1, 1,      // Grid dimension
+					blockSizeX, 1, 1,      // Block dimension
+					sharedMemorySize * Sizeof.FLOAT, null,               // Shared memory size and stream
+					kernelParameters, null // Kernel- and extra parameters
+					)
+					);
 		}
 	}
 
@@ -541,8 +535,7 @@ public class RandomVariableCuda implements RandomVariable {
 			}
 
 			final String ptxFileName2 = ptxFileName;
-			deviceExecutor.submit(new Runnable() { @Override
-				public void run() {
+			deviceExecutor.submit(() -> {
 				//				cuCtxCreate(context, jcuda.driver.CUctx_flags.CU_CTX_SCHED_BLOCKING_SYNC, device);
 				cuCtxCreate(context, jcuda.driver.CUctx_flags.CU_CTX_SCHED_AUTO, device);
 
@@ -584,20 +577,17 @@ public class RandomVariableCuda implements RandomVariable {
 				DeviceMemoryPool.deviceMaxMemoryBytes = total[0];
 				DeviceMemoryPool.deviceAllocMemoryBytes = total[0]-free[0];
 
-				Runtime.getRuntime().addShutdownHook(new Thread(new Runnable() {
-					@Override
-					public void run() {
-						deviceMemoryPool.purge();
-						deviceExecutor.shutdown();
-						try {
-							deviceExecutor.awaitTermination(1, TimeUnit.SECONDS);
-						} catch (final InterruptedException e) {
-							// TODO Auto-generated catch block
-							e.printStackTrace();
-						}
-					}}
-						));
-			}});
+				Runtime.getRuntime().addShutdownHook(new Thread(() -> {
+					deviceMemoryPool.purge();
+					deviceExecutor.shutdown();
+					try {
+						deviceExecutor.awaitTermination(1, TimeUnit.SECONDS);
+					} catch (final InterruptedException e) {
+						// TODO Auto-generated catch block
+						e.printStackTrace();
+					}
+				}));
+			});
 		}
 	}
 
@@ -1716,12 +1706,11 @@ public class RandomVariableCuda implements RandomVariable {
 
 		final double[] result = new double[gridSizeX];
 		try {
-			deviceExecutor.submit(new Runnable() { @Override
-				public void run() {
+			deviceExecutor.submit(() -> {
 				cuCtxSynchronize();
 				cuMemcpyDtoH(Pointer.to(result), reduceVector.get(), gridSizeX * Sizeof.DOUBLE);
 				cuCtxSynchronize();
-			}}).get();
+			}).get();
 		} catch (InterruptedException | ExecutionException e) {
 			throw new RuntimeException(e.getCause());
 		}
