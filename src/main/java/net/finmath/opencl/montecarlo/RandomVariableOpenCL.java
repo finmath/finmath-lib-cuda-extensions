@@ -649,9 +649,9 @@ public class RandomVariableOpenCL implements RandomVariable {
 				deviceExecutor.submit(() -> {
 					clSetKernelArg(function, 0, Sizeof.cl_int, Pointer.to(new int[] { (int)resultSize }));
 					clSetKernelArg(function, 1, Sizeof.cl_mem, Pointer.to(argument1.get()));
-					clSetKernelArg(function, 3, Sizeof.cl_mem, Pointer.to(argument2.get()));
-					clSetKernelArg(function, 4, Sizeof.cl_float, Pointer.to(new float[] { (float)value }));
-					clSetKernelArg(function, 5, Sizeof.cl_mem, Pointer.to(result.get()));
+					clSetKernelArg(function, 2, Sizeof.cl_mem, Pointer.to(argument2.get()));
+					clSetKernelArg(function, 3, Sizeof.cl_float, Pointer.to(new float[] { (float)value }));
+					clSetKernelArg(function, 4, Sizeof.cl_mem, Pointer.to(result.get()));
 
 					// Set the work-item dimensions
 					final long[] globalWorkSize = new long[]{ resultSize };
