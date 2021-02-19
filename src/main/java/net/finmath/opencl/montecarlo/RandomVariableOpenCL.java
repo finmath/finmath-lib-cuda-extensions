@@ -317,6 +317,13 @@ public class RandomVariableOpenCL implements RandomVariable {
 				@Override
 				public void run() {
 					DeviceMemoryPool.this.purge();
+					deviceExecutor.shutdown();
+					try {
+						deviceExecutor.awaitTermination(1, TimeUnit.SECONDS);
+					} catch (final InterruptedException e) {
+						// TODO Auto-generated catch block
+						e.printStackTrace();
+					}
 				}}
 					));
 
@@ -413,10 +420,16 @@ public class RandomVariableOpenCL implements RandomVariable {
 				// Still no pointer found, create new one
 				try {
 					final int[] errorCode = new int[1];
-					cuDevicePtr = CL.clCreateBuffer(context,
+					cuDevicePtr =
+							deviceExecutor.submit(new Callable<cl_mem>() { @Override
+								public cl_mem call() {
+								final cl_mem cuDevicePtr = CL.clCreateBuffer(context,
 										CL_MEM_READ_WRITE,
 										size * Sizeof.cl_float, null, errorCode);
-				} catch (Exception e) {
+
+								return cuDevicePtr;
+							}}).get();
+				} catch (InterruptedException | ExecutionException e) {
 					logger.severe("Failed to allocate device vector with size=" + size + ". Cause: " + e.getCause());
 				}
 
@@ -457,10 +470,14 @@ public class RandomVariableOpenCL implements RandomVariable {
 							logger.finest("Freeing device pointer " + cuDevicePtr + " from " + reference);
 						}
 						try {
+							deviceExecutor.submit(new Runnable() {
+								@Override
+								public void run() {
 									clReleaseMemObject(cuDevicePtr);
-						} catch (Exception e) {
+								}}).get();
+						} catch (InterruptedException | ExecutionException e) {
 							logger.severe("Unable to free pointer " + cuDevicePtr + " from " + reference);
-							throw new RuntimeException(e);
+							throw new RuntimeException(e.getCause());
 						}
 						deviceAllocMemoryBytes -= size * Sizeof.cl_float;
 					}
@@ -497,11 +514,14 @@ public class RandomVariableOpenCL implements RandomVariable {
 				throw new NullPointerException("Unable to get device pointer.");
 			}
 			try {
+				deviceExecutor.submit(new Runnable() { @Override
+					public void run() {
 					clEnqueueWriteBuffer(commandQueue, devicePointerReference.get(), CL_TRUE, 0L,
 							(long)values.length  * Sizeof.cl_float, Pointer.to(values), 0, null, null);
-			} catch (Exception e) {
+				}}).get();
+			} catch (InterruptedException | ExecutionException e) {
 				logger.severe("Unable to a create device pointer for vector of size " + values.length);
-				throw new RuntimeException(e);
+				throw new RuntimeException(e.getCause());
 			}
 
 			return devicePointerReference;
@@ -510,11 +530,14 @@ public class RandomVariableOpenCL implements RandomVariable {
 		public float[] getValuesAsFloat(final DevicePointerReference devicePtr, final int size) {
 			final float[] result = new float[size];
 			try {
+				deviceExecutor.submit(new Runnable() { @Override
+					public void run() {
 					clEnqueueReadBuffer(commandQueue, devicePtr.get(), true, 0,
 							size * Sizeof.cl_float, Pointer.to(result), 0, null, null);
-			} catch (Exception e) {
+				}}).get();
+			} catch (InterruptedException | ExecutionException e) {
 				logger.severe("Unable to a create device pointer for vector of size " + size);
-				throw new RuntimeException(e);
+				throw new RuntimeException(e.getCause());
 			}
 			return result;
 		}
@@ -605,6 +628,9 @@ public class RandomVariableOpenCL implements RandomVariable {
 			// Set up the kernel parameters: A pointer to an array
 			// of pointers which point to the actual values.
 
+			deviceExecutor.submit(new Runnable() {
+				@Override
+				public void run() {
 					for(int i=0; i<arguments.length; i++) {
 						clSetKernelArg(function, i, argumentSizes[i], arguments[i]);
 					}
@@ -621,11 +647,10 @@ public class RandomVariableOpenCL implements RandomVariable {
 						logger.severe("Command " + function + " failed.");
 						throw new RuntimeException(e.getCause());
 					}
+				}});
 		}
 
 	}
-
-	private static final Logger logger = Logger.getLogger("net.finmath");
 
 	private static DeviceMemoryPool deviceMemoryPool = new DeviceMemoryPool();
 
@@ -643,6 +668,10 @@ public class RandomVariableOpenCL implements RandomVariable {
 
 	// Data model for the non-stochastic case (if realizations==null)
 	private final double      valueIfNonStochastic;
+
+	private static final Logger logger = Logger.getLogger("net.finmath");
+
+	private static final ExecutorService deviceExecutor = Executors.newSingleThreadExecutor();
 
 	private static cl_device_id device;
 	private static cl_context context;
@@ -1793,10 +1822,13 @@ public class RandomVariableOpenCL implements RandomVariable {
 
 		final double[] result = new double[gridSizeX];
 		try {
+			deviceExecutor.submit(new Runnable() { @Override
+				public void run() {
 				//				cuMemcpyDtoH(Pointer.to(result), reduceVector.get(), gridSizeX * Sizeof.cl_double);
-		} catch (Exception e) {
+			}}).get();
+		} catch (InterruptedException | ExecutionException e) {
 			logger.severe("Unable to execute function reduceFloatVectorToDoubleScalar.");
-			throw new RuntimeException(e);
+			throw new RuntimeException(e.getCause());
 		}
 
 		return (new RandomVariableFromDoubleArray(time, result));
