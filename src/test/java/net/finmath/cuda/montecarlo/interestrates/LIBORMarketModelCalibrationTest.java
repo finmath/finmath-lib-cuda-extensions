@@ -91,7 +91,7 @@ public class LIBORMarketModelCalibrationTest {
 
 	private final int numberOfPaths;
 	private final int numberOfFactors	= 5;
-	private final int numberOfThreads 	= 4;
+	private final int numberOfThreads 	= 1;
 	private static final int maxIterations = 30;
 
 	private static final DecimalFormat formatterReal2		= new DecimalFormat(" 0.00");
