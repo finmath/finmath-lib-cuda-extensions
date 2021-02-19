@@ -89,8 +89,6 @@ public class RandomVariableCuda implements RandomVariable {
 		}
 	}
 
-	public static final int blockSizeX;
-
 	/**
 	 * A memory pool for the GPU vectors.
 	 *
@@ -98,7 +96,7 @@ public class RandomVariableCuda implements RandomVariable {
 	 *
 	 * Implementation details:
 	 * The map vectorsToRecycleReferenceQueueMap maps each vector length to a ReferenceQueue&lt;DevicePointerReference&gt; holding
-	 * reference of recycleable vectors. The map vectorsInUseReferenceMap maps this weak reference to a Cuda vector.
+	 * reference of recyclable vectors. The map vectorsInUseReferenceMap maps this weak reference to a Cuda vector.
 	 *
 	 * @author Christian Fries
 	 */
@@ -111,30 +109,132 @@ public class RandomVariableCuda implements RandomVariable {
 		 * will put <code>WeakReference&lt;DevicePointerReference&gt;</code> into this queue once the
 		 * <code>DevicePointerReference</code>-object has become de-referenced.
 		 */
-		private static final Map<Integer, ReferenceQueue<DevicePointerReference>>		vectorsToRecycleReferenceQueueMap	= new ConcurrentHashMap<Integer, ReferenceQueue<DevicePointerReference>>();
+		private final Map<Integer, ReferenceQueue<DevicePointerReference>>		vectorsToRecycleReferenceQueueMap	= new ConcurrentHashMap<Integer, ReferenceQueue<DevicePointerReference>>();
 
 		/**
 		 * This map allow to recover the device pointer for a given <code>WeakReference&lt;DevicePointerReference&gt;</code>.
 		 */
-		private static final Map<WeakReference<DevicePointerReference>, CUdeviceptr>	vectorsInUseReferenceMap			= new ConcurrentHashMap<WeakReference<DevicePointerReference>, CUdeviceptr>();
+		private final Map<WeakReference<DevicePointerReference>, CUdeviceptr>	vectorsInUseReferenceMap			= new ConcurrentHashMap<WeakReference<DevicePointerReference>, CUdeviceptr>();
 
 		/**
 		 * Percentage of device memory at which we will trigger System.gc() to aggressively reduce references.
 		 */
-		private static final float	vectorsRecyclerPercentageFreeToStartGC		= 0.15f;		// should be set by monitoring GPU mem
+		private final float	vectorsRecyclerPercentageFreeToStartGC		= 0.15f;		// should be set by monitoring GPU mem
 
 		/**
 		 * Percentage of device memory at which we will try to wait a few milliseconds for recycled objects.
 		 */
-		private static final float	vectorsRecyclerPercentageFreeToWaitForGC	= 0.05f;		// should be set by monitoring GPU mem
+		private final float	vectorsRecyclerPercentageFreeToWaitForGC	= 0.05f;		// should be set by monitoring GPU mem
 
 		/**
 		 * Maximum time to wait for object recycled objects. (Higher value slows down the code, but prevents out-of-memory).
 		 */
-		private static final long	vectorsRecyclerMaxTimeOutMillis			= 1000;
+		private final long	vectorsRecyclerMaxTimeOutMillis			= 1000;
 
-		private static long	deviceAllocMemoryBytes = 0;
-		private static long	deviceMaxMemoryBytes;
+		private long	deviceAllocMemoryBytes = 0;
+		private long	deviceMaxMemoryBytes;
+
+		private final int blockSizeX;
+
+		private final ExecutorService deviceExecutor = Executors.newSingleThreadExecutor();
+		private final CUdevice device = new CUdevice();
+		private final CUcontext context = new CUcontext();
+		private final CUmodule module = new CUmodule();
+
+		public DeviceMemoryPool() {
+			// Initalize cuda
+
+			// Enable exceptions and omit all subsequent error checks
+			JCudaDriver.setExceptionsEnabled(true);
+			JCudaDriver.setLogLevel(LogLevel.LOG_ERROR);
+
+			// Initialize the driver and create a context for the first device.
+			cuInit(0);
+			cuDeviceGet(device, 0);
+
+			/*
+			 * Set blockSize according to compute capabilities
+			 */
+			final int[] majorComputeCapability = new int[1];
+			final int[] minorComputeCapability = new int[1];
+			JCudaDriver.cuDeviceGetAttribute(majorComputeCapability, CUdevice_attribute.CU_DEVICE_ATTRIBUTE_COMPUTE_CAPABILITY_MAJOR, device);
+			JCudaDriver.cuDeviceGetAttribute(minorComputeCapability, CUdevice_attribute.CU_DEVICE_ATTRIBUTE_COMPUTE_CAPABILITY_MINOR, device);
+			if(majorComputeCapability[0] >= 2) {
+				blockSizeX = 1024;
+			}
+			else {
+				blockSizeX = 512;
+			}
+
+			/*
+			 * Set arch
+			 */
+			final String arch = "sm_" + majorComputeCapability[0] + minorComputeCapability[0];
+
+			// Create the PTX file by calling the NVCC
+			String ptxFileName = null;
+			try(InputStream cuFileStream = RandomVariableCuda.class.getResourceAsStream("/net/finmath/cuda/montecarlo/RandomVariableCudaKernel.cu")) {
+				ptxFileName = net.finmath.jcuda.JCudaUtils.preparePtxFile(cuFileStream, arch);
+			} catch (IOException | URISyntaxException e) {
+				e.printStackTrace();
+			}
+
+			final String ptxFileName2 = ptxFileName;
+			deviceExecutor.submit(() -> {
+				//				cuCtxCreate(context, jcuda.driver.CUctx_flags.CU_CTX_SCHED_BLOCKING_SYNC, device);
+				cuCtxCreate(context, jcuda.driver.CUctx_flags.CU_CTX_SCHED_AUTO, device);
+
+				// Load the ptx file.
+				cuModuleLoad(module, ptxFileName2);
+
+				// Obtain a function pointers
+				cuModuleGetFunction(capByScalar, module, "capByScalar");
+				cuModuleGetFunction(floorByScalar, module, "floorByScalar");
+				cuModuleGetFunction(addScalar, module, "addScalar");
+				cuModuleGetFunction(subScalar, module, "subScalar");
+				cuModuleGetFunction(busScalar, module, "busScalar");
+				cuModuleGetFunction(multScalar, module, "multScalar");
+				cuModuleGetFunction(divScalar, module, "divScalar");
+				cuModuleGetFunction(vidScalar, module, "vidScalar");
+				cuModuleGetFunction(cuPow, module, "cuPow");
+				cuModuleGetFunction(cuSqrt, module, "cuSqrt");
+				cuModuleGetFunction(cuExp, module, "cuExp");
+				cuModuleGetFunction(cuLog, module, "cuLog");
+				cuModuleGetFunction(invert, module, "invert");
+				cuModuleGetFunction(cuAbs, module, "cuAbs");
+				cuModuleGetFunction(cap, module, "cap");
+				cuModuleGetFunction(cuFloor, module, "cuFloor");
+				cuModuleGetFunction(add, module, "add");
+				cuModuleGetFunction(sub, module, "sub");
+				cuModuleGetFunction(mult, module, "mult");
+				cuModuleGetFunction(cuDiv, module, "cuDiv");
+				cuModuleGetFunction(accrue, module, "accrue");
+				cuModuleGetFunction(discount, module, "discount");
+				cuModuleGetFunction(addProduct, module, "addProduct");
+				cuModuleGetFunction(addProduct_vs, module, "addProduct_vs");
+				cuModuleGetFunction(reducePartial, module, "reducePartial");
+				cuModuleGetFunction(reduceFloatVectorToDoubleScalar, module, "reduceFloatVectorToDoubleScalar");
+
+
+				final long[] free = new long[1];
+				final long[] total = new long[1];
+				jcuda.runtime.JCuda.cudaMemGetInfo(free, total);
+				deviceMaxMemoryBytes = total[0];
+				deviceAllocMemoryBytes = total[0]-free[0];
+
+				Runtime.getRuntime().addShutdownHook(new Thread(() -> {
+					DeviceMemoryPool.this.purge();
+					deviceExecutor.shutdown();
+					try {
+						deviceExecutor.awaitTermination(1, TimeUnit.SECONDS);
+					} catch (final InterruptedException e) {
+						// TODO Auto-generated catch block
+						e.printStackTrace();
+					}
+				}));
+			});
+
+		}
 
 		/**
 		 * Get a Java object ({@link DevicePointerReference}) representing a vector allocated on the GPU memory (device memory).
@@ -302,7 +402,7 @@ public class RandomVariableCuda implements RandomVariable {
 		 *
 		 * @return Returns the (estimated) percentage amount of free memory on the device.
 		 */
-		private static float getDeviceFreeMemPercentage() {
+		private float getDeviceFreeMemPercentage() {
 			float freeRate;// = 1.0f - 1.1f * (float)deviceAllocMemoryBytes / (float)deviceMaxMemoryBytes;
 			try {
 				freeRate = deviceExecutor.submit(() -> {
@@ -442,31 +542,6 @@ public class RandomVariableCuda implements RandomVariable {
 		}
 	}
 
-	private static DeviceMemoryPool deviceMemoryPool = new DeviceMemoryPool();
-
-	private static final long serialVersionUID = 7620120320663270600L;
-
-	private final double      time;	                // Time (filtration)
-
-	private static final int typePriorityDefault = 20;
-
-	private final int typePriority;
-
-	// Data model for the stochastic case (otherwise null)
-	private final DevicePointerReference	realizations;           // Realizations
-	private final long			size;
-
-	// Data model for the non-stochastic case (if realizations==null)
-	private final double      valueIfNonStochastic;
-
-
-	private static final Logger logger = Logger.getLogger("net.finmath");
-
-	private static final ExecutorService deviceExecutor = Executors.newSingleThreadExecutor();
-	public static final CUdevice device = new CUdevice();
-	public static final CUcontext context = new CUcontext();
-	public static final CUmodule module = new CUmodule();
-
 	private static final CUfunction capByScalar = new CUfunction();
 	private static final CUfunction floorByScalar = new CUfunction();
 	private static final CUfunction addScalar = new CUfunction();
@@ -494,102 +569,28 @@ public class RandomVariableCuda implements RandomVariable {
 	private static final CUfunction reducePartial = new CUfunction();
 	private static final CUfunction reduceFloatVectorToDoubleScalar = new CUfunction();
 
+	private static DeviceMemoryPool deviceMemoryPool = new DeviceMemoryPool();
+
+	private static final long serialVersionUID = 7620120320663270600L;
+
+	private final double      time;	                // Time (filtration)
+
+	private static final int typePriorityDefault = 20;
+
+	private final int typePriority;
+
+	// Data model for the stochastic case (otherwise null)
+	private final DevicePointerReference	realizations;           // Realizations
+	private final long			size;
+
+	// Data model for the non-stochastic case (if realizations==null)
+	private final double      valueIfNonStochastic;
+
+
+	private static final Logger logger = Logger.getLogger("net.finmath");
+
 	private static final int reduceGridSize = 1024;
 
-	// Initalize cuda
-	static {
-		synchronized (deviceMemoryPool) {
-			// Enable exceptions and omit all subsequent error checks
-			JCudaDriver.setExceptionsEnabled(true);
-			JCudaDriver.setLogLevel(LogLevel.LOG_ERROR);
-
-			// Initialize the driver and create a context for the first device.
-			cuInit(0);
-			cuDeviceGet(device, 0);
-
-			/*
-			 * Set blockSize according to compute capabilities
-			 */
-			final int[] majorComputeCapability = new int[1];
-			final int[] minorComputeCapability = new int[1];
-			JCudaDriver.cuDeviceGetAttribute(majorComputeCapability, CUdevice_attribute.CU_DEVICE_ATTRIBUTE_COMPUTE_CAPABILITY_MAJOR, device);
-			JCudaDriver.cuDeviceGetAttribute(minorComputeCapability, CUdevice_attribute.CU_DEVICE_ATTRIBUTE_COMPUTE_CAPABILITY_MINOR, device);
-			if(majorComputeCapability[0] >= 2) {
-				blockSizeX = 1024;
-			}
-			else {
-				blockSizeX = 512;
-			}
-
-			/*
-			 * Set arch
-			 */
-			final String arch = "sm_" + majorComputeCapability[0] + minorComputeCapability[0];
-
-			// Create the PTX file by calling the NVCC
-			String ptxFileName = null;
-			try(InputStream cuFileStream = RandomVariableCuda.class.getResourceAsStream("/net/finmath/cuda/montecarlo/RandomVariableCudaKernel.cu")) {
-				ptxFileName = net.finmath.jcuda.JCudaUtils.preparePtxFile(cuFileStream, arch);
-			} catch (IOException | URISyntaxException e) {
-				e.printStackTrace();
-			}
-
-			final String ptxFileName2 = ptxFileName;
-			deviceExecutor.submit(() -> {
-				//				cuCtxCreate(context, jcuda.driver.CUctx_flags.CU_CTX_SCHED_BLOCKING_SYNC, device);
-				cuCtxCreate(context, jcuda.driver.CUctx_flags.CU_CTX_SCHED_AUTO, device);
-
-				// Load the ptx file.
-				cuModuleLoad(module, ptxFileName2);
-
-				// Obtain a function pointers
-				cuModuleGetFunction(capByScalar, module, "capByScalar");
-				cuModuleGetFunction(floorByScalar, module, "floorByScalar");
-				cuModuleGetFunction(addScalar, module, "addScalar");
-				cuModuleGetFunction(subScalar, module, "subScalar");
-				cuModuleGetFunction(busScalar, module, "busScalar");
-				cuModuleGetFunction(multScalar, module, "multScalar");
-				cuModuleGetFunction(divScalar, module, "divScalar");
-				cuModuleGetFunction(vidScalar, module, "vidScalar");
-				cuModuleGetFunction(cuPow, module, "cuPow");
-				cuModuleGetFunction(cuSqrt, module, "cuSqrt");
-				cuModuleGetFunction(cuExp, module, "cuExp");
-				cuModuleGetFunction(cuLog, module, "cuLog");
-				cuModuleGetFunction(invert, module, "invert");
-				cuModuleGetFunction(cuAbs, module, "cuAbs");
-				cuModuleGetFunction(cap, module, "cap");
-				cuModuleGetFunction(cuFloor, module, "cuFloor");
-				cuModuleGetFunction(add, module, "add");
-				cuModuleGetFunction(sub, module, "sub");
-				cuModuleGetFunction(mult, module, "mult");
-				cuModuleGetFunction(cuDiv, module, "cuDiv");
-				cuModuleGetFunction(accrue, module, "accrue");
-				cuModuleGetFunction(discount, module, "discount");
-				cuModuleGetFunction(addProduct, module, "addProduct");
-				cuModuleGetFunction(addProduct_vs, module, "addProduct_vs");
-				cuModuleGetFunction(reducePartial, module, "reducePartial");
-				cuModuleGetFunction(reduceFloatVectorToDoubleScalar, module, "reduceFloatVectorToDoubleScalar");
-
-
-				final long[] free = new long[1];
-				final long[] total = new long[1];
-				jcuda.runtime.JCuda.cudaMemGetInfo(free, total);
-				DeviceMemoryPool.deviceMaxMemoryBytes = total[0];
-				DeviceMemoryPool.deviceAllocMemoryBytes = total[0]-free[0];
-
-				Runtime.getRuntime().addShutdownHook(new Thread(() -> {
-					deviceMemoryPool.purge();
-					deviceExecutor.shutdown();
-					try {
-						deviceExecutor.awaitTermination(1, TimeUnit.SECONDS);
-					} catch (final InterruptedException e) {
-						// TODO Auto-generated catch block
-						e.printStackTrace();
-					}
-				}));
-			});
-		}
-	}
 
 	/**
 	 * Create a <code>RandomVariableCuda</code>.
@@ -1690,7 +1691,6 @@ public class RandomVariableCuda implements RandomVariable {
 	 * Cuda specific implementations
 	 */
 
-
 	private RandomVariableFromDoubleArray reduceToDouble() {
 
 		final int blockSizeX = reduceGridSize;
@@ -1706,7 +1706,7 @@ public class RandomVariableCuda implements RandomVariable {
 
 		final double[] result = new double[gridSizeX];
 		try {
-			deviceExecutor.submit(() -> {
+			deviceMemoryPool.deviceExecutor.submit(() -> {
 				cuCtxSynchronize();
 				cuMemcpyDtoH(Pointer.to(result), reduceVector.get(), gridSizeX * Sizeof.DOUBLE);
 				cuCtxSynchronize();
