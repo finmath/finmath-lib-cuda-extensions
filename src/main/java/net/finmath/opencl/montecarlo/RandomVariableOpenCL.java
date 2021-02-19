@@ -652,6 +652,8 @@ public class RandomVariableOpenCL implements RandomVariable {
 
 	}
 
+	private static final Logger logger = Logger.getLogger("net.finmath");
+
 	private static DeviceMemoryPool deviceMemoryPool = new DeviceMemoryPool();
 
 	private static final long serialVersionUID = 7620120320663270600L;
@@ -668,8 +670,6 @@ public class RandomVariableOpenCL implements RandomVariable {
 
 	// Data model for the non-stochastic case (if realizations==null)
 	private final double      valueIfNonStochastic;
-
-	private static final Logger logger = Logger.getLogger("net.finmath");
 
 	private static final ExecutorService deviceExecutor = Executors.newSingleThreadExecutor();
 
