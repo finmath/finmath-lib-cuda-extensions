@@ -12,11 +12,13 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Locale;
 import java.util.Map;
 
 import org.junit.After;
 import org.junit.Assert;
+import org.junit.Ignore;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.junit.runners.Parameterized;
@@ -57,12 +59,15 @@ import net.finmath.time.TimeDiscretizationFromArray;
  *
  * @author Christian Fries
  */
+@Ignore
 @RunWith(Parameterized.class)
 public class LIBORMarketModelCalibrationTest {
 
 	@Parameters
 	public static Collection<Object[]> data() {
-		return Arrays.asList(new Object[][] {
+		List<Object[]> testParameters = new ArrayList<>();
+
+		testParameters.addAll(Arrays.asList(new Object[][] {
 			{ ProcessingUnit.CPU, 8192 },
 			//
 			{ ProcessingUnit.GPU_CUDA, 8192 },
@@ -80,11 +85,17 @@ public class LIBORMarketModelCalibrationTest {
 			{ ProcessingUnit.GPU_CUDA, 81920 },
 			{ ProcessingUnit.GPU_OPENCL, 81920 },
 			{ ProcessingUnit.CPU, 81920 },
-			//
-			{ ProcessingUnit.GPU_CUDA, 163840 },
-			{ ProcessingUnit.GPU_OPENCL, 163840 },
-			{ ProcessingUnit.CPU, 163840 },
-		});
+		}));
+
+		if(System.getProperty("net.finmath.cuda.montecarlo.interestrates.LIBORMarketModelCalibrationTest.testCases", "small").equalsIgnoreCase("large")) {
+			testParameters.addAll(Arrays.asList(new Object[][] {
+				{ ProcessingUnit.GPU_CUDA, 163840 },
+				{ ProcessingUnit.GPU_OPENCL, 163840 },
+				{ ProcessingUnit.CPU, 163840 },
+			}));
+		}
+
+		return testParameters;
 	}
 
 	private final boolean isPrintDetails = false;
