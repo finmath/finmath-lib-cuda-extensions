@@ -19,7 +19,6 @@ __kernel void addScalar(__global const float *a, float b, __global float *result
     size_t i = get_global_id(0);
 
     result[i] = a[i] + b;
-
 }
 
 __kernel void subScalar(__global const float *a, float b, __global float *result)
@@ -27,7 +26,6 @@ __kernel void subScalar(__global const float *a, float b, __global float *result
     size_t i = get_global_id(0);
 
     result[i] = a[i] - b;
-
 }
 
 __kernel void busScalar(__global const float *a, float b, __global float *result)
@@ -126,21 +124,21 @@ __kernel void add(__global const float *a, __global const float *b, __global flo
 {
     size_t i = get_global_id(0);
 
-    result[i] = a[i] + b[i];    
+    result[i] = a[i] + b[i];
 }
 
 __kernel void sub(__global const float *a, __global const float *b, __global float *result)
 {
     size_t i = get_global_id(0);
 
-    result[i] = a[i] - b[i];   
+    result[i] = a[i] - b[i];
 }
 
 __kernel void mult(__global const float *a, __global const float *b, __global float *result)
 {
     size_t i = get_global_id(0);
 
-    result[i] = a[i] * b[i];    
+    result[i] = a[i] * b[i];
 }
 
 __kernel void cuDiv(__global const float *a, __global const float *b, __global float *result)
