@@ -20,6 +20,7 @@ import org.junit.After;
 import org.junit.Assert;
 import org.junit.Ignore;
 import org.junit.Test;
+import org.junit.jupiter.api.Tag;
 import org.junit.runner.RunWith;
 import org.junit.runners.Parameterized;
 import org.junit.runners.Parameterized.Parameters;
@@ -59,7 +60,7 @@ import net.finmath.time.TimeDiscretizationFromArray;
  *
  * @author Christian Fries
  */
-@Ignore
+@Tag("long")
 @RunWith(Parameterized.class)
 public class LIBORMarketModelCalibrationTest {
 
@@ -78,13 +79,13 @@ public class LIBORMarketModelCalibrationTest {
 			{ ProcessingUnit.GPU_OPENCL, 16384 },
 			{ ProcessingUnit.CPU, 16384 },
 			//
-			{ ProcessingUnit.GPU_CUDA, 40960 },
-			{ ProcessingUnit.GPU_OPENCL, 40960 },
-			{ ProcessingUnit.CPU, 40960 },
+			{ ProcessingUnit.GPU_CUDA, 32768 },
+			{ ProcessingUnit.GPU_OPENCL, 32768 },
+			{ ProcessingUnit.CPU, 32768 },
 			//
-			{ ProcessingUnit.GPU_CUDA, 81920 },
-			{ ProcessingUnit.GPU_OPENCL, 81920 },
-			{ ProcessingUnit.CPU, 81920 },
+			{ ProcessingUnit.GPU_CUDA, 65536 },
+			{ ProcessingUnit.GPU_OPENCL, 65536 },
+			{ ProcessingUnit.CPU, 65536 },
 		}));
 
 		if(System.getProperty("net.finmath.cuda.montecarlo.interestrates.LIBORMarketModelCalibrationTest.testCases", "small").equalsIgnoreCase("large")) {
