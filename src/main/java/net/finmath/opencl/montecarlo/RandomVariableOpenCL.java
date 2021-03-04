@@ -246,7 +246,7 @@ public class RandomVariableOpenCL implements RandomVariable {
 			logger.fine("Created OpenCL command queue");
 
 			// Read our OpenCL kernel from file
-			final String resourceName = "/net/finmath/opencl/montecarlo/RandomVariableCudaKernel.cl";
+			final String resourceName = "/net/finmath/opencl/montecarlo/RandomVariableOpenCLKernel.cl";
 
 			final String source;
 			try(InputStream inputStreamOfSource = RandomVariableOpenCL.class.getResourceAsStream(resourceName)) {
