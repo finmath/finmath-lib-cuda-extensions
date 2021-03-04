@@ -234,16 +234,16 @@ public class RandomVariableOpenCL implements RandomVariable {
 			try {
 				org.jocl.cl_queue_properties properties = new org.jocl.cl_queue_properties();
 				commandQueue = CL.clCreateCommandQueueWithProperties(context, device, properties, null);
-				logger.info("Using OpenCL 2.x");
+				logger.config("Using OpenCL 2.x");
 			}
 			catch(Exception e) {
 				// Fall back to OpenCL 1.x
 				commandQueue = clCreateCommandQueue(context, device, 0, returnCode);
-				logger.info("Using OpenCL 1.x");
+				logger.config("Using OpenCL 1.x");
 			}
 
 			if(returnCode[0] != 0 || commandQueue == null) throw new RuntimeException("Unable to create OpenCL command queue: " + returnCode[0]);
-			logger.info("Created OpenCL command queue");
+			logger.fine("Created OpenCL command queue");
 
 			// Read our OpenCL kernel from file
 			final String resourceName = "/net/finmath/opencl/montecarlo/RandomVariableCudaKernel.cl";
@@ -254,14 +254,14 @@ public class RandomVariableOpenCL implements RandomVariable {
 			} catch (final IOException e) {
 				throw new RuntimeException(e);
 			}
-			logger.info("Read OpenCL program");
+			logger.fine("Read OpenCL program");
 
 			// Create the program
 			final cl_program cpProgram = clCreateProgramWithSource(context, 1, new String[]{ source }, null, null);
 
 			// Build the program
 			clBuildProgram(cpProgram, 0, null, "-cl-mad-enable", null, null);
-			logger.info("Compiled OpenCL program");
+			logger.fine("Compiled OpenCL program");
 
 			Function<String, cl_kernel> createKernel = kernelName -> {
 				try {
@@ -301,16 +301,16 @@ public class RandomVariableOpenCL implements RandomVariable {
 			addProductVectorScalar = createKernel.apply("addProduct_vs");
 			//				reducePartial = createKernel.apply("reducePartial");
 			//				reduceFloatVectorToDoubleScalar = createKernel.apply("reduceFloatVectorToDoubleScalar");
-			logger.info("Created all OpenCL kernels");
+			logger.fine("Created all OpenCL kernels");
 
 			final long[] deviceMaxMemoryBytesResult = new long[1];
 			try {
 				CL.clGetDeviceInfo(device, CL.CL_DEVICE_GLOBAL_MEM_SIZE, Sizeof.cl_long, Pointer.to(deviceMaxMemoryBytesResult), null);
 				deviceMaxMemoryBytes = deviceMaxMemoryBytesResult[0];
-				logger.info("OpenCL reported " + deviceMaxMemoryBytes + " bytes.");
+				logger.config("OpenCL reported " + deviceMaxMemoryBytes + " bytes.");
 			}
 			catch(Exception e) {
-				logger.info("Failed to get available memory for OpenCL.\n" + e.getStackTrace());
+				logger.warning("Failed to get available memory for OpenCL.\n" + e.getStackTrace());
 			}
 
 			Runtime.getRuntime().addShutdownHook(new Thread(new Runnable() {
@@ -327,7 +327,7 @@ public class RandomVariableOpenCL implements RandomVariable {
 				}}
 					));
 
-			logger.info("OpenCL initialized");
+			logger.config("OpenCL initialized");
 		}
 
 		/**
