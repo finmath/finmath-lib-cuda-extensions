@@ -69,8 +69,6 @@ public class LIBORMarketModelCalibrationTest {
 		List<Object[]> testParameters = new ArrayList<>();
 
 		testParameters.addAll(Arrays.asList(new Object[][] {
-			{ ProcessingUnit.CPU, 8192 },
-			//
 			{ ProcessingUnit.GPU_CUDA, 8192 },
 			{ ProcessingUnit.GPU_OPENCL, 8192 },
 			{ ProcessingUnit.CPU, 8192 },
