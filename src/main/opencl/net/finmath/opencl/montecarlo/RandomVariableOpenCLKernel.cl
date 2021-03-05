@@ -196,20 +196,20 @@ __kernel void subRatio(__global const float *a, __global const float *b, __globa
     result[i] = a[i] - b[i] / c[i];
 }
 
-__kernel void reduceFloatVectorToDoubleScalar(__global float* inVector, __global float* outVector, const int inVectorSize, __local float* resultScratch){
+__kernel void reduceFloatVectorToDoubleScalar(__global float* inVector, __global float* outVector, const int inVectorSize, __local float* sumPerTheadInCurrentGourp){
     int gid = get_global_id(0);
     int wid = get_local_id(0);
     int wsize = get_local_size(0);
     int grid = get_group_id(0);
     int grcount = get_num_groups(0);
 
-    int elementsPerGourp = (inVectorSize-1)/grcount+1;
-    int startOffest = elementsPerGourp * grid + wid;
-    int maxOffset = elementsPerGourp * (grid + 1);
+    int startOffest = (inVectorSize * grid)/grcount + wid;
+    int maxOffset = (inVectorSize * (grid + 1))/grcount;
     if(maxOffset > inVectorSize){
         maxOffset = inVectorSize;
     }
 
+	// Within a group take a sum over (inVectorSize/grcount)/wsize items - in parallel (number of wsize parallel runs), store in sumPerTheadInCurrentGourp
     int i;
     double error = 0.0;
     double sum = 0.0;
@@ -219,15 +219,16 @@ __kernel void reduceFloatVectorToDoubleScalar(__global float* inVector, __global
     	double error = (newSum - sum) - value;
         sum = newSum;
     }
-    resultScratch[wid] = sum;
+    sumPerTheadInCurrentGourp[wid] = sum;
 
     barrier(CLK_LOCAL_MEM_FENCE);
 
+	// For each group sum sumPerTheadInCurrentGourp store in outVector
     if(wid == 0){
 	    double error = 0.0;
 	    double sum = 0.0;
         for(i=0;i<wsize;i++){
-	    	double value = resultScratch[i] - error;
+	    	double value = sumPerTheadInCurrentGourp[i] - error;
 	    	double newSum = sum + value;
 	    	double error = (newSum - sum) - value;
 	        sum = newSum;
@@ -235,6 +236,7 @@ __kernel void reduceFloatVectorToDoubleScalar(__global float* inVector, __global
         outVector[gid] = sum;
     }
 
+	// In thread 0 sum over all groups
     if(gid == 0) {
 	    double error = 0.0;
 	    double sum = 0.0;
