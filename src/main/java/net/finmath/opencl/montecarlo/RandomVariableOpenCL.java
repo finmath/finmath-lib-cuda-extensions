@@ -257,7 +257,15 @@ public class RandomVariableOpenCL implements RandomVariable {
 			logger.fine("Read OpenCL program");
 
 			// Create the program
-			final cl_program cpProgram = clCreateProgramWithSource(context, 1, new String[]{ source }, null, null);
+			final cl_program cpProgram;
+			try {
+				cpProgram = clCreateProgramWithSource(context, 1, new String[]{ source }, null, null);
+			}
+			catch(Exception e) {
+				logger.severe("Unable to create OpenCL program: " + e.getMessage());
+				e.printStackTrace();
+				throw e;
+			}
 
 			// Build the program
 			clBuildProgram(cpProgram, 0, null, "-cl-mad-enable", null, null);
@@ -300,7 +308,7 @@ public class RandomVariableOpenCL implements RandomVariable {
 			addProduct = createKernel.apply("addProduct");
 			addProductVectorScalar = createKernel.apply("addProduct_vs");
 			//				reducePartial = createKernel.apply("reducePartial");
-			//				reduceFloatVectorToDoubleScalar = createKernel.apply("reduceFloatVectorToDoubleScalar");
+			reduceFloatVectorToDoubleScalar = createKernel.apply("reduceFloatVectorToDoubleScalar");
 			logger.fine("Created all OpenCL kernels");
 
 			final long[] deviceMaxMemoryBytesResult = new long[1];
@@ -420,7 +428,8 @@ public class RandomVariableOpenCL implements RandomVariable {
 				// Still no pointer found, create new one
 				try {
 					final int[] errorCode = new int[1];
-					cuDevicePtr = deviceExecutor.submit(() -> CL.clCreateBuffer(context,
+					cuDevicePtr = deviceExecutor.submit(() -> CL.clCreateBuffer(
+							context,
 							CL_MEM_READ_WRITE,
 							size * Sizeof.cl_float, null, errorCode)).get();
 				} catch (InterruptedException | ExecutionException e) {
@@ -902,7 +911,7 @@ public class RandomVariableOpenCL implements RandomVariable {
 		deviceMemoryPool.purge();
 	}
 
-	private static RandomVariableOpenCL getRandomVariableCuda(final RandomVariable randomVariable) {
+	private static RandomVariableOpenCL getRandomVariableOpenCL(final RandomVariable randomVariable) {
 		if(randomVariable instanceof RandomVariableOpenCL) {
 			return (RandomVariableOpenCL)randomVariable;
 		} else {
@@ -1020,12 +1029,8 @@ public class RandomVariableOpenCL implements RandomVariable {
 			return Double.NaN;
 		}
 
-		// TODO Use kernel
-		return (new RandomVariableFromFloatArray(getFiltrationTime(), deviceMemoryPool.getValuesAsFloat(realizations, size()))).getAverage();
-
-		//RandomVariable reduced = reduceToDouble();
-		//return reduced.getAverage() * reduced.size() / size();		// Temp hack @FIXME @TODO
-		//return  reduce()/size();
+		double reduced = reduceToDouble();
+		return reduced / size();
 	}
 
 	@Override
@@ -1546,11 +1551,11 @@ public class RandomVariableOpenCL implements RandomVariable {
 			return of(newTime, newValueIfNonStochastic);
 		}
 		else if(isDeterministic()) {
-			return getRandomVariableCuda(randomVariable).add(valueIfNonStochastic);
+			return getRandomVariableOpenCL(randomVariable).add(valueIfNonStochastic);
 		} else if(randomVariable.isDeterministic()) {
 			return this.add(randomVariable.doubleValue());
 		} else {
-			final DevicePointerReference result = deviceMemoryPool.callFunctionv2s0(add, size, realizations, getRandomVariableCuda(randomVariable).realizations);
+			final DevicePointerReference result = deviceMemoryPool.callFunctionv2s0(add, size, realizations, getRandomVariableOpenCL(randomVariable).realizations);
 			return of(time, result, size());
 		}
 	}
@@ -1570,11 +1575,11 @@ public class RandomVariableOpenCL implements RandomVariable {
 			return of(newTime, newValueIfNonStochastic);
 		}
 		else if(isDeterministic()) {
-			return getRandomVariableCuda(randomVariable).bus(valueIfNonStochastic);
+			return getRandomVariableOpenCL(randomVariable).bus(valueIfNonStochastic);
 		} else if(randomVariable.isDeterministic()) {
 			return this.sub(randomVariable.doubleValue());
 		} else {
-			final DevicePointerReference result = deviceMemoryPool.callFunctionv2s0(sub, size, realizations, getRandomVariableCuda(randomVariable).realizations);
+			final DevicePointerReference result = deviceMemoryPool.callFunctionv2s0(sub, size, realizations, getRandomVariableOpenCL(randomVariable).realizations);
 			return of(time, result, size());
 		}
 	}
@@ -1594,12 +1599,12 @@ public class RandomVariableOpenCL implements RandomVariable {
 			return of(newTime, newValueIfNonStochastic);
 		}
 		else if(isDeterministic()) {
-			return getRandomVariableCuda(randomVariable).sub(valueIfNonStochastic);
+			return getRandomVariableOpenCL(randomVariable).sub(valueIfNonStochastic);
 		} else if(randomVariable.isDeterministic()) {
 			return this.bus(randomVariable.doubleValue());
 		} else {
 			// flipped arguments
-			final DevicePointerReference result = deviceMemoryPool.callFunctionv2s0(sub, size, getRandomVariableCuda(randomVariable).realizations, realizations);
+			final DevicePointerReference result = deviceMemoryPool.callFunctionv2s0(sub, size, getRandomVariableOpenCL(randomVariable).realizations, realizations);
 			return of(time, result, size());
 		}
 	}
@@ -1621,9 +1626,9 @@ public class RandomVariableOpenCL implements RandomVariable {
 		else if(randomVariable.isDeterministic()) {
 			return this.mult(randomVariable.doubleValue());
 		} else if(isDeterministic() && !randomVariable.isDeterministic()) {
-			return getRandomVariableCuda(randomVariable).mult(this.valueIfNonStochastic);
+			return getRandomVariableOpenCL(randomVariable).mult(this.valueIfNonStochastic);
 		} else {
-			final DevicePointerReference result = deviceMemoryPool.callFunctionv2s0(mult, size, realizations, getRandomVariableCuda(randomVariable).realizations);
+			final DevicePointerReference result = deviceMemoryPool.callFunctionv2s0(mult, size, realizations, getRandomVariableOpenCL(randomVariable).realizations);
 			return of(newTime, result, size());
 		}
 	}
@@ -1643,11 +1648,11 @@ public class RandomVariableOpenCL implements RandomVariable {
 			return of(newTime, newValueIfNonStochastic);
 		}
 		else if(isDeterministic()) {
-			return getRandomVariableCuda(randomVariable).vid(valueIfNonStochastic);
+			return getRandomVariableOpenCL(randomVariable).vid(valueIfNonStochastic);
 		} else if(randomVariable.isDeterministic()) {
 			return this.div(randomVariable.doubleValue());
 		} else {
-			final DevicePointerReference result = deviceMemoryPool.callFunctionv2s0(cuDiv, size, realizations, getRandomVariableCuda(randomVariable).realizations);
+			final DevicePointerReference result = deviceMemoryPool.callFunctionv2s0(cuDiv, size, realizations, getRandomVariableOpenCL(randomVariable).realizations);
 			return of(newTime, result, size());
 		}
 	}
@@ -1667,12 +1672,12 @@ public class RandomVariableOpenCL implements RandomVariable {
 			return of(newTime, newValueIfNonStochastic);
 		}
 		else if(isDeterministic()) {
-			return getRandomVariableCuda(randomVariable).div(valueIfNonStochastic);
+			return getRandomVariableOpenCL(randomVariable).div(valueIfNonStochastic);
 		} else if(randomVariable.isDeterministic()) {
 			return this.vid(randomVariable.doubleValue());
 		} else {
 			// flipped arguments
-			final DevicePointerReference result = deviceMemoryPool.callFunctionv2s0(cuDiv, size, getRandomVariableCuda(randomVariable).realizations, realizations);
+			final DevicePointerReference result = deviceMemoryPool.callFunctionv2s0(cuDiv, size, getRandomVariableOpenCL(randomVariable).realizations, realizations);
 			return of(newTime, result, size());
 		}
 	}
@@ -1694,7 +1699,7 @@ public class RandomVariableOpenCL implements RandomVariable {
 		else if(isDeterministic()) {
 			return randomVariable.cap(valueIfNonStochastic);
 		} else {
-			final DevicePointerReference result = deviceMemoryPool.callFunctionv2s0(cap, size, realizations, getRandomVariableCuda(randomVariable).realizations);
+			final DevicePointerReference result = deviceMemoryPool.callFunctionv2s0(cap, size, realizations, getRandomVariableOpenCL(randomVariable).realizations);
 			return of(newTime, result, size());
 		}
 	}
@@ -1714,11 +1719,11 @@ public class RandomVariableOpenCL implements RandomVariable {
 			return of(newTime, newValueIfNonStochastic);
 		}
 		else if(isDeterministic()) {
-			return getRandomVariableCuda(randomVariable).floor(valueIfNonStochastic);
+			return getRandomVariableOpenCL(randomVariable).floor(valueIfNonStochastic);
 		} else if(randomVariable.isDeterministic()) {
 			return this.floor(randomVariable.doubleValue());
 		} else {
-			final DevicePointerReference result = deviceMemoryPool.callFunctionv2s0(cuFloor, size, realizations, getRandomVariableCuda(randomVariable).realizations);
+			final DevicePointerReference result = deviceMemoryPool.callFunctionv2s0(cuFloor, size, realizations, getRandomVariableOpenCL(randomVariable).realizations);
 			return of(newTime, result, size());
 		}
 	}
@@ -1736,9 +1741,9 @@ public class RandomVariableOpenCL implements RandomVariable {
 		if(rate.isDeterministic()) {
 			return this.mult(1.0 + rate.doubleValue() * periodLength);
 		} else if(isDeterministic() && !rate.isDeterministic()) {
-			return getRandomVariableCuda(rate.mult(periodLength).add(1.0).mult(valueIfNonStochastic));
+			return getRandomVariableOpenCL(rate.mult(periodLength).add(1.0).mult(valueIfNonStochastic));
 		} else {
-			final DevicePointerReference result = deviceMemoryPool.callFunctionv2s1(accrue, size, realizations, getRandomVariableCuda(rate).realizations, periodLength);
+			final DevicePointerReference result = deviceMemoryPool.callFunctionv2s1(accrue, size, realizations, getRandomVariableOpenCL(rate).realizations, periodLength);
 			return of(newTime, result, size());
 		}
 	}
@@ -1759,10 +1764,10 @@ public class RandomVariableOpenCL implements RandomVariable {
 			if(valueIfNonStochastic == 0) {
 				return this;
 			}
-			return (getRandomVariableCuda(rate.mult(periodLength).add(1.0)).vid(valueIfNonStochastic));
+			return (getRandomVariableOpenCL(rate.mult(periodLength).add(1.0)).vid(valueIfNonStochastic));
 		}
 		else {
-			final DevicePointerReference result = deviceMemoryPool.callFunctionv2s1(discount, size, realizations, getRandomVariableCuda(rate).realizations, periodLength);
+			final DevicePointerReference result = deviceMemoryPool.callFunctionv2s1(discount, size, realizations, getRandomVariableOpenCL(rate).realizations, periodLength);
 			return of(newTime, result, size());
 		}
 	}
@@ -1791,7 +1796,7 @@ public class RandomVariableOpenCL implements RandomVariable {
 		if(factor1.isDeterministic()) {
 			return this.add(factor1.doubleValue() * factor2);
 		} else if(!isDeterministic() && !factor1.isDeterministic()) {
-			final DevicePointerReference result = deviceMemoryPool.callFunctionv2s1(addProductVectorScalar, size, realizations, getRandomVariableCuda(factor1).realizations, factor2);
+			final DevicePointerReference result = deviceMemoryPool.callFunctionv2s1(addProductVectorScalar, size, realizations, getRandomVariableOpenCL(factor1).realizations, factor2);
 			return of(newTime, result, size());
 		} else {
 			return this.add(factor1.mult(factor2));
@@ -1819,7 +1824,7 @@ public class RandomVariableOpenCL implements RandomVariable {
 		} else if(factor1.isDeterministic()) {
 			return this.addProduct(factor2, factor1.doubleValue());
 		} else if(!isDeterministic() && !factor1.isDeterministic() && !factor2.isDeterministic()) {
-			final DevicePointerReference result = deviceMemoryPool.callFunctionv3s0(addProduct, size, realizations, getRandomVariableCuda(factor1).realizations, getRandomVariableCuda(factor2).realizations);
+			final DevicePointerReference result = deviceMemoryPool.callFunctionv3s0(addProduct, size, realizations, getRandomVariableOpenCL(factor1).realizations, getRandomVariableOpenCL(factor2).realizations);
 			return of(newTime, result, size());
 		} else {
 			return this.add(factor1.mult(factor2));
@@ -1849,43 +1854,33 @@ public class RandomVariableOpenCL implements RandomVariable {
 	 */
 
 
-	private RandomVariableFromDoubleArray reduceToDouble() {
+	private double reduceToDouble() {
 
-		final int blockSizeX = reduceGridSize;
-		final int gridSizeX = (int)Math.ceil((double)size()/2 / blockSizeX);
+		final int workItemSize = (int)Math.ceil((double)size() / reduceGridSize);
 
-		final DevicePointerReference reduceVector = getDevicePointer(2*gridSizeX);
+		final DevicePointerReference result = getDevicePointer(workItemSize);
+		deviceExecutor.submit(() -> {
+			clSetKernelArg(reduceFloatVectorToDoubleScalar, 0, Sizeof.cl_mem, Pointer.to(realizations.get()));
+			clSetKernelArg(reduceFloatVectorToDoubleScalar, 1, Sizeof.cl_mem, Pointer.to(result.get()));
+			clSetKernelArg(reduceFloatVectorToDoubleScalar, 2, Sizeof.cl_int, Pointer.to(new int[] { size() }));
+			clSetKernelArg(reduceFloatVectorToDoubleScalar, 3, reduceGridSize * Sizeof.cl_float, null);
 
-		deviceMemoryPool.callFunction(reduceFloatVectorToDoubleScalar, new Pointer[] {
-				Pointer.to(new int[] { size() }),
-				Pointer.to(realizations.get()),
-				Pointer.to(reduceVector.get())},
-				new int[] { Sizeof.cl_int, Sizeof.cl_mem, Sizeof.cl_mem },
-				gridSizeX, blockSizeX, blockSizeX*2*3);
+			// Set the work-item dimensions
+			final long[] globalWorkSize = new long[]{ workItemSize };
+			final long[] localWorkSize = null;
+			//cuCtxSynchronize();
+			// Launching on the same stream (default stream)
+			try {
+				clEnqueueNDRangeKernel(commandQueue, reduceFloatVectorToDoubleScalar, 1, null,
+						globalWorkSize, localWorkSize, 0, null, null);
+			}
+			catch(Exception e) {
+				logger.severe("Command reduceFloatVectorToDoubleScalar failed.");
+				throw new RuntimeException(e.getCause());
+			}
+		});
 
-		final double[] result = new double[gridSizeX];
-		try {
-			deviceExecutor.submit(() -> {
-				//				cuMemcpyDtoH(Pointer.to(result), reduceVector.get(), gridSizeX * Sizeof.cl_double);
-			}).get();
-		} catch (InterruptedException | ExecutionException e) {
-			logger.severe("Unable to execute function reduceFloatVectorToDoubleScalar.");
-			throw new RuntimeException(e.getCause());
-		}
-
-		return (new RandomVariableFromDoubleArray(time, result));
-	}
-
-	private double reduce() {
-		if(this.isDeterministic()) {
-			return valueIfNonStochastic;
-		}
-
-		RandomVariableOpenCL reduced = this;
-		while(reduced.size() > 1) {
-			reduced = reduced.reduceBySize(reduceGridSize);
-		}
-		return reduced.getRealizations()[0];
+		return of(-Double.MAX_VALUE, result, workItemSize).getRealizations()[0];
 	}
 
 	private RandomVariableOpenCL reduceBySize(final int bySize) {

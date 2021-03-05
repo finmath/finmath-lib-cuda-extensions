@@ -195,3 +195,31 @@ __kernel void subRatio(__global const float *a, __global const float *b, __globa
 
     result[i] = a[i] - b[i] / c[i];
 }
+
+__kernel void reduceFloatVectorToDoubleScalar(__global float* inVector, __global float* outVector, const int inVectorSize, __local float* resultScratch){
+    int gid = get_global_id(0);
+    int wid = get_local_id(0);
+    int wsize = get_local_size(0);
+    int grid = get_group_id(0);
+    int grcount = get_num_groups(0);
+
+    int i;
+    int workAmount = inVectorSize/grcount;
+    int startOffest = workAmount * grid + wid;
+    int maxOffset = workAmount * (grid + 1);
+    if(maxOffset > inVectorSize){
+        maxOffset = inVectorSize;
+    }
+    resultScratch[wid] = 0.0;
+    for(i=startOffest;i<maxOffset;i+=wsize){
+            resultScratch[wid] += inVector[i];
+    }
+    barrier(CLK_LOCAL_MEM_FENCE);
+
+    if(gid == 0){
+            for(i=1;i<wsize;i++){
+                    resultScratch[0] += resultScratch[i];
+            }
+            outVector[grid] = resultScratch[0];
+    }
+}
