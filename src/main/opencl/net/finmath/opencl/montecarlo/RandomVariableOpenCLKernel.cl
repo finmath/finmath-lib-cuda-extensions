@@ -203,23 +203,30 @@ __kernel void reduceFloatVectorToDoubleScalar(__global float* inVector, __global
     int grid = get_group_id(0);
     int grcount = get_num_groups(0);
 
-    int i;
-    int workAmount = inVectorSize/grcount;
-    int startOffest = workAmount * grid + wid;
-    int maxOffset = workAmount * (grid + 1);
+    int elementsPerGourp = (inVectorSize-1)/grcount+1;
+    int startOffest = elementsPerGourp * grid + wid;
+    int maxOffset = elementsPerGourp * (grid + 1);
     if(maxOffset > inVectorSize){
         maxOffset = inVectorSize;
     }
     resultScratch[wid] = 0.0;
+
+    int i;
     for(i=startOffest;i<maxOffset;i+=wsize){
             resultScratch[wid] += inVector[i];
     }
+
     barrier(CLK_LOCAL_MEM_FENCE);
 
-    if(gid == 0){
-            for(i=1;i<wsize;i++){
-                    resultScratch[0] += resultScratch[i];
-            }
-            outVector[grid] = resultScratch[0];
+    if(wid == 0){
+        for(i=1;i<wsize;i++){
+            resultScratch[0] += resultScratch[i];
+        }
+        outVector[grid] = resultScratch[0];
+    }
+    if(gid == 0) {
+        for(i=1;i<grcount;i++){
+            outVector[0] += outVector[i];
+        }
     }
 }
