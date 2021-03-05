@@ -209,24 +209,41 @@ __kernel void reduceFloatVectorToDoubleScalar(__global float* inVector, __global
     if(maxOffset > inVectorSize){
         maxOffset = inVectorSize;
     }
-    resultScratch[wid] = 0.0;
 
     int i;
-    for(i=startOffest;i<maxOffset;i+=wsize){
-            resultScratch[wid] += inVector[i];
+    double error = 0.0;
+    double sum = 0.0;
+    for(i=startOffest;i<maxOffset;i+=wsize) {
+    	double value = inVector[i] - error;
+    	double newSum = sum + value;
+    	double error = (newSum - sum) - value;
+        sum = newSum;
     }
+    resultScratch[wid] = sum;
 
     barrier(CLK_LOCAL_MEM_FENCE);
 
     if(wid == 0){
-        for(i=1;i<wsize;i++){
-            resultScratch[0] += resultScratch[i];
+	    double error = 0.0;
+	    double sum = 0.0;
+        for(i=0;i<wsize;i++){
+	    	double value = resultScratch[i] - error;
+	    	double newSum = sum + value;
+	    	double error = (newSum - sum) - value;
+	        sum = newSum;
         }
-        outVector[grid] = resultScratch[0];
+        outVector[gid] = sum;
     }
+
     if(gid == 0) {
-        for(i=1;i<grcount;i++){
-            outVector[0] += outVector[i];
+	    double error = 0.0;
+	    double sum = 0.0;
+        for(i=0;i<grcount;i++) {
+	    	double value = outVector[i] - error;
+	    	double newSum = sum + value;
+	    	double error = (newSum - sum) - value;
+	        sum = newSum;
         }
+        outVector[0] = sum;
     }
 }

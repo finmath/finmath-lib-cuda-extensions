@@ -1858,12 +1858,12 @@ public class RandomVariableOpenCL implements RandomVariable {
 
 		final int workItemSize = (int)Math.ceil((double)size() / reduceGridSize);
 
-		final DevicePointerReference result = getDevicePointer(workItemSize);
+		final DevicePointerReference result = getDevicePointer(reduceGridSize);
 		deviceExecutor.submit(() -> {
 			clSetKernelArg(reduceFloatVectorToDoubleScalar, 0, Sizeof.cl_mem, Pointer.to(realizations.get()));
 			clSetKernelArg(reduceFloatVectorToDoubleScalar, 1, Sizeof.cl_mem, Pointer.to(result.get()));
 			clSetKernelArg(reduceFloatVectorToDoubleScalar, 2, Sizeof.cl_int, Pointer.to(new int[] { size() }));
-			clSetKernelArg(reduceFloatVectorToDoubleScalar, 3, reduceGridSize * Sizeof.cl_float, null);
+			clSetKernelArg(reduceFloatVectorToDoubleScalar, 3, workItemSize * Sizeof.cl_float, null);
 
 			// Set the work-item dimensions
 			final long[] globalWorkSize = new long[]{ workItemSize };
@@ -1880,7 +1880,7 @@ public class RandomVariableOpenCL implements RandomVariable {
 			}
 		});
 
-		return of(-Double.MAX_VALUE, result, workItemSize).getRealizations()[0];
+		return of(-Double.MAX_VALUE, result, reduceGridSize).getRealizations()[0];
 	}
 
 	private RandomVariableOpenCL reduceBySize(final int bySize) {
