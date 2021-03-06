@@ -22,7 +22,6 @@ import java.lang.ref.WeakReference;
 import java.net.URISyntaxException;
 import java.util.Map;
 import java.util.Map.Entry;
-import java.util.concurrent.Callable;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.ExecutorService;
