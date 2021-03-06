@@ -190,7 +190,7 @@ __kernel void subRatio(__global const float *a, __global const float *b, __globa
     result[i] = a[i] - b[i] / c[i];
 }
 
-__kernel void reduceFloatVectorToDoubleScalar(__global float* inVector, __global float* outVector, const int inVectorSize, __local float* sumPerTheadInCurrentGourp, __local float* errorPerTheadInCurrentGourp){
+__kernel void reduceFloatVectorToDoubleScalar(__global const float* inVector, __global float* outVector, const int inVectorSize, __local float* sumPerTheadInCurrentGourp){
     int gid = get_global_id(0);
     int wid = get_local_id(0);
     int wsize = get_local_size(0);
@@ -198,72 +198,39 @@ __kernel void reduceFloatVectorToDoubleScalar(__global float* inVector, __global
     int grcount = get_num_groups(0);
     int i;
 
-	// We zero the vector
-    if(gid == 0) {
-        for(i=0;i<grcount;i++) {
-	    	outVector[i] = 0.0;
-        }
-    }
-    barrier(CLK_GLOBAL_MEM_FENCE);
-
     int startOffest = (inVectorSize * grid)/grcount + wid;
     int maxOffset = (inVectorSize * (grid + 1))/grcount;
     if(maxOffset > inVectorSize){
         maxOffset = inVectorSize;
     }
-
+	
 	// Within a group take a sum over (inVectorSize/grcount)/wsize items - in parallel (number of wsize parallel runs), store in sumPerTheadInCurrentGourp
     float error = 0.0;
     float sum = 0.0;
     for(i=startOffest;i<maxOffset;i+=wsize) {
-    	float value = inVector[i] - error;
+    	float value = inVector[i] + error;
     	float newSum = sum + value;
-    	float error = (newSum - sum) - value;
+    	error = value - (newSum - sum);
         sum = newSum;
     }
     sumPerTheadInCurrentGourp[wid] = sum;
-    errorPerTheadInCurrentGourp[wid] = error;
+    sumPerTheadInCurrentGourp[wsize+wid] = error;
 
 	// Sync memory - ensure that we read what we wrote, within this group
     barrier(CLK_LOCAL_MEM_FENCE);
 
 	// For each group sum sumPerTheadInCurrentGourp store in outVector
     if(wid == 0){
-    	// Sum of errors
-	    float error = 0.0;
-	    float sum = 0.0;
-        for(i=0;i<wsize;i++){
-	    	float value = errorPerTheadInCurrentGourp[i] - error;
-	    	float newSum = sum + value;
-	    	float error = (newSum - sum) - value;
-	        sum = newSum;
-        }
-		
-		error = sum;
-
 		// Sum of values
-        for(i=0;i<wsize;i++){
-	    	float value = sumPerTheadInCurrentGourp[i] - error;
+	    error = 0.0;
+	    sum = 0.0;
+        for(i=0;i<2*wsize;i++){
+	    	float value = sumPerTheadInCurrentGourp[i] + error;
 	    	float newSum = sum + value;
-	    	float error = (newSum - sum) - value;
+	    	error = value - (newSum - sum);
 	        sum = newSum;
         }
         outVector[grid] = (float)sum;
-    }
-
-	// Sync memory - ensure that we read what we wrote, globally
-    barrier(CLK_GLOBAL_MEM_FENCE);
-
-	// In group 0 / thread 0 sum over all groups
-    if(gid == 0) {
-	    float error = 0.0;
-	    float sum = 0.0;
-        for(i=0;i<grcount;i++) {
-	    	float value = outVector[i] - error;
-	    	float newSum = sum + value;
-	    	float error = (newSum - sum) - value;
-	        sum = newSum;
-        }
-        outVector[gid] = sum;
+        outVector[grcount+grid] = (float)error;
     }
 }

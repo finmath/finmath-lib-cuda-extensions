@@ -308,6 +308,11 @@ public class RandomVariableOpenCL implements RandomVariable {
 			reduceFloatVectorToDoubleScalar = createKernel.apply("reduceFloatVectorToDoubleScalar");
 			logger.fine("Created all OpenCL kernels");
 
+			// Query max number of work items for reduce
+			long[] workGroupSize = new long[1];
+			CL.clGetKernelWorkGroupInfo(reduceFloatVectorToDoubleScalar, device, CL.CL_KERNEL_WORK_GROUP_SIZE, Sizeof.cl_long, Pointer.to(workGroupSize), null);
+			reduceGridSize = workGroupSize[0];
+
 			final long[] deviceMaxMemoryBytesResult = new long[1];
 			try {
 				CL.clGetDeviceInfo(device, CL.CL_DEVICE_GLOBAL_MEM_SIZE, Sizeof.cl_long, Pointer.to(deviceMaxMemoryBytesResult), null);
@@ -494,7 +499,6 @@ public class RandomVariableOpenCL implements RandomVariable {
 		 */
 		private float getDeviceFreeMemPercentage() {
 			final float freeRate = 1.0f - 1.1f * deviceAllocMemoryBytes / deviceMaxMemoryBytes;
-			//System.out.println("OpCL: " + deviceMemoryPool.vectorsInUseReferenceMap.size() + "\t" + freeRate);
 			return freeRate;
 		}
 
@@ -533,7 +537,7 @@ public class RandomVariableOpenCL implements RandomVariable {
 				logger.severe("Unable to a create device pointer for vector of size " + size);
 				throw new RuntimeException(e.getCause());
 			}
-//			System.out.println(Arrays.toString(result));
+//			System.out.println(java.util.Arrays.toString(result));
 			return result;
 		}
 
@@ -754,7 +758,7 @@ public class RandomVariableOpenCL implements RandomVariable {
 	private static cl_kernel reducePartial;
 	private static cl_kernel reduceFloatVectorToDoubleScalar;
 
-	private static int reduceGridSize = 1024;
+	private static long reduceGridSize;
 
 	// Initalize OpenCL
 
@@ -780,7 +784,7 @@ public class RandomVariableOpenCL implements RandomVariable {
 	 * @param size The size of the vector associated with <code>DevicePointerReference</code>.
 	 * @return A new instance of RandomVariableOpenCL wrapping the given DevicePointerReference.
 	 */
-	public static RandomVariableOpenCL of(final double time, final DevicePointerReference realizations, final long size) {
+	private static RandomVariableOpenCL of(final double time, final DevicePointerReference realizations, final long size) {
 		final RandomVariableOpenCL randomVariableOpenCL = new RandomVariableOpenCL(time, realizations, size, typePriorityDefault);
 		return randomVariableOpenCL;
 	}
@@ -1854,20 +1858,19 @@ public class RandomVariableOpenCL implements RandomVariable {
 
 	private double reduceToDouble() {
 
-		reduceGridSize = 256;
-
-		final DevicePointerReference result = getDevicePointer(reduceGridSize);
+		long numberOfGroups = 1;
+		long numberOfWorkItems = reduceGridSize;
+		final DevicePointerReference result = getDevicePointer(2*numberOfGroups);
 		deviceExecutor.submit(() -> {
 			clSetKernelArg(reduceFloatVectorToDoubleScalar, 0, Sizeof.cl_mem, Pointer.to(realizations.get()));
 			clSetKernelArg(reduceFloatVectorToDoubleScalar, 1, Sizeof.cl_mem, Pointer.to(result.get()));
 			clSetKernelArg(reduceFloatVectorToDoubleScalar, 2, Sizeof.cl_int, Pointer.to(new int[] { size() }));
-			clSetKernelArg(reduceFloatVectorToDoubleScalar, 3, reduceGridSize * Sizeof.cl_float, null);
-			clSetKernelArg(reduceFloatVectorToDoubleScalar, 4, reduceGridSize * Sizeof.cl_float, null);
+			clSetKernelArg(reduceFloatVectorToDoubleScalar, 3, 2*numberOfWorkItems * Sizeof.cl_float, null);
 
 			// Set the work-item dimensions
 			final long[] globalWorkSize = new long[]{ reduceGridSize };
-			final long[] localWorkSize = null;//new long[]{ workItemSize };
-			//cuCtxSynchronize();
+			final long[] localWorkSize = new long[]{ reduceGridSize };
+
 			// Launching on the same stream (default stream)
 			try {
 				clEnqueueNDRangeKernel(commandQueue, reduceFloatVectorToDoubleScalar, 1, null,
@@ -1878,9 +1881,9 @@ public class RandomVariableOpenCL implements RandomVariable {
 				throw new RuntimeException(e.getCause());
 			}
 		});
-//		return deviceMemoryPool.getValuesAsFloat(result, workItemSize)[0];
+		return deviceMemoryPool.getValuesAsFloat(result, 1)[0];
 
-		return of(-Double.MAX_VALUE, result, reduceGridSize).getRealizations()[0];
+//		return of(-Double.MAX_VALUE, result, 2*reduceGridSize).getRealizations()[0];
 	}
 
 	private RandomVariableOpenCL reduceBySize(final int bySize) {
