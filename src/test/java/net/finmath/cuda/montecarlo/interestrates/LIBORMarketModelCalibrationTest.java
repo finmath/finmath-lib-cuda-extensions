@@ -18,7 +18,6 @@ import java.util.Map;
 
 import org.junit.After;
 import org.junit.Assert;
-import org.junit.Ignore;
 import org.junit.Test;
 import org.junit.jupiter.api.Tag;
 import org.junit.runner.RunWith;
@@ -29,10 +28,12 @@ import net.finmath.cpu.montecarlo.RandomVariableFloatFactory;
 import net.finmath.cuda.montecarlo.RandomVariableCuda;
 import net.finmath.cuda.montecarlo.RandomVariableCudaFactory;
 import net.finmath.exception.CalculationException;
+import net.finmath.functions.AnalyticFormulas;
 import net.finmath.marketdata.model.curves.DiscountCurve;
 import net.finmath.marketdata.model.curves.DiscountCurveFromForwardCurve;
 import net.finmath.marketdata.model.curves.ForwardCurve;
 import net.finmath.marketdata.model.curves.ForwardCurveInterpolation;
+import net.finmath.marketdata.products.SwapAnnuity;
 import net.finmath.montecarlo.BrownianMotion;
 import net.finmath.montecarlo.BrownianMotionFromMersenneRandomNumbers;
 import net.finmath.montecarlo.BrownianMotionView;
@@ -151,9 +152,16 @@ public class LIBORMarketModelCalibrationTest {
 		 * Alternatively you may change here to Monte-Carlo valuation on price or
 		 * use an analytic approximation formula, etc.
 		 */
-		final SwaptionSimple swaptionMonteCarlo = new SwaptionSimple(swaprate, swapTenor, SwaptionSimple.ValueUnit.VOLATILITYLOGNORMAL);
-		//		double targetValuePrice = AnalyticFormulas.blackModelSwaptionValue(swaprate, targetVolatility, fixingDates[0], swaprate, getSwapAnnuity(discountCurve, swapTenor));
-		return new CalibrationProduct(swaptionMonteCarlo, targetVolatility, 1.0);
+		boolean isCalibrateToVolatility = true;
+		if(isCalibrateToVolatility) {
+			final SwaptionSimple swaptionMonteCarlo = new SwaptionSimple(swaprate, swapTenor, SwaptionSimple.ValueUnit.VOLATILITYLOGNORMAL);
+			return new CalibrationProduct(swaptionMonteCarlo, targetVolatility, 1.0);
+		}
+		else {
+			final SwaptionSimple swaptionMonteCarlo = new SwaptionSimple(swaprate, swapTenor, SwaptionSimple.ValueUnit.VALUE);
+			double targetValuePrice = AnalyticFormulas.blackModelSwaptionValue(swaprate, targetVolatility, fixingDates[0], swaprate, SwapAnnuity.getSwapAnnuity(new TimeDiscretizationFromArray(swapTenor), discountCurve));
+			return new CalibrationProduct(swaptionMonteCarlo, targetVolatility, 1.0);
+		}
 	}
 
 	@After
