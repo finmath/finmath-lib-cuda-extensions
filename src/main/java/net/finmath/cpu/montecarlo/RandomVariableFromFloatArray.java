@@ -831,7 +831,7 @@ public class RandomVariableFromFloatArray implements RandomVariable {
 		else {
 			final float[] newRealizations = new float[realizations.length];
 			for(int i=0; i<newRealizations.length; i++) {
-				newRealizations[i]		 = realizations[i] / (float)value;
+				newRealizations[i]		 = (float)((float)realizations[i] / (float)value);
 			}
 			return new RandomVariableFromFloatArray(time, newRealizations);
 		}
@@ -896,13 +896,13 @@ public class RandomVariableFromFloatArray implements RandomVariable {
 	@Override
 	public RandomVariableFromFloatArray exp() {
 		if(isDeterministic()) {
-			final double newValueIfNonStochastic = FastMath.exp(valueIfNonStochastic);
+			final double newValueIfNonStochastic = Math.exp(valueIfNonStochastic);
 			return new RandomVariableFromFloatArray(time, newValueIfNonStochastic);
 		}
 		else {
 			final float[] newRealizations = new float[realizations.length];
 			for(int i=0; i<newRealizations.length; i++) {
-				newRealizations[i]		 = (float)FastMath.exp(realizations[i]);
+				newRealizations[i]		 = (float)Math.exp(realizations[i]);
 			}
 			return new RandomVariableFromFloatArray(time, newRealizations);
 		}
@@ -917,7 +917,7 @@ public class RandomVariableFromFloatArray implements RandomVariable {
 		else {
 			final float[] newRealizations = new float[realizations.length];
 			for(int i=0; i<newRealizations.length; i++) {
-				newRealizations[i]		 = (float)FastMath.log(realizations[i]);
+				newRealizations[i]		 = (float)Math.log(realizations[i]);
 			}
 			return new RandomVariableFromFloatArray(time, newRealizations);
 		}
@@ -1092,6 +1092,9 @@ public class RandomVariableFromFloatArray implements RandomVariable {
 			final double newValueIfNonStochastic = valueIfNonStochastic / randomVariable.get(0);
 			return new RandomVariableFromFloatArray(newTime, newValueIfNonStochastic);
 		}
+		else if(randomVariable.isDeterministic()) {
+			return this.div(randomVariable.get(0));
+		}
 		else if(isDeterministic()) {
 			final float[] newRealizations = new float[Math.max(size(), randomVariable.size())];
 			for(int i=0; i<newRealizations.length; i++) {
@@ -1132,7 +1135,7 @@ public class RandomVariableFromFloatArray implements RandomVariable {
 		else {
 			final float[] newRealizations = new float[Math.max(size(), randomVariable.size())];
 			for(int i=0; i<newRealizations.length; i++) {
-				newRealizations[i]		 = (float)randomVariable.get(i) / realizations[i];
+				newRealizations[i]		 = (float)((double)randomVariable.get(i) / (double)realizations[i]);
 			}
 			return new RandomVariableFromFloatArray(newTime, newRealizations);
 		}
