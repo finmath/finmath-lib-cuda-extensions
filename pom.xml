@@ -17,7 +17,7 @@
 
 	<name>finmath-lib-cuda-extensions</name>
 	<description>
-		Vector class (RandomVariable) running on GPUs (Cuda and OpenCL). Enabling finmath lib with Cuda (via jcuda) and OpenCL (via jocl). - Running finmath lib models on a GPU.**
+		Vector class (RandomVariable) running on GPUs using Cuda. Enabling finmath lib with Cuda (via jcuda). - Running finmath lib models on a GPU.**
 	</description>
 	<url>http://finmath.net/finmath-lib-cuda-extensions</url>
 
@@ -72,12 +72,6 @@
 			<groupId>net.finmath</groupId>
 			<artifactId>finmath-lib</artifactId>
 			<version>${finmath-lib.version}</version>
-		</dependency>
-
-		<dependency>
-			<groupId>org.jocl</groupId>
-			<artifactId>jocl</artifactId>
-			<version>2.0.4</version>
 		</dependency>
 
 		<dependency>
@@ -326,10 +320,6 @@
 		<resources>
 			<resource>
 				<directory>src/main/cuda</directory>
-				<filtering>false</filtering>
-			</resource>
-			<resource>
-				<directory>src/main/opencl</directory>
 				<filtering>false</filtering>
 			</resource>
 		</resources>

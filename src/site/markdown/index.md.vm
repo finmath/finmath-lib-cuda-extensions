@@ -3,15 +3,40 @@ finmath lib cuda extensions
 
 ****************************************
 
-**Vector class (RandomVariable) running on GPUs (Cuda and OpenCL).**
+**Vector class (RandomVariable) running on GPUs using CUDA.**
 
-**Enabling finmath lib with Cuda (via jcuda) and OpenCL (via jocl). - Running finmath lib models on a GPU.**
+**Enabling finmath lib with Cuda via jcuda. - Running finmath lib models on a GPU.**
 
 ****************************************
 
-The *finmath lib cuda extensions* provide a **Cuda** and **OpenCL** implementation of the [finmath lib](http://finmath.net/finmath-lib/) interfaces `RandomVariable` and `BrownianMotion` compatible with finmath lib 4.0.12 or later
-(tested on GRID GPU Kepler GK105, GeForce GTX 1080, GeForce GT 750M (Cuda and OpenCL) and ATI Radeon Pro 560 (OpenCL only)).
+The *finmath lib cuda extensions* provide a **Cuda** implementation of the [finmath lib](http://finmath.net/finmath-lib/) interfaces `RandomVariable` and `BrownianMotion` compatible with finmath lib 4.0.12 or later
+(tested on GRID GPU Kepler GK105, GeForce GTX 1080, GeForce GT 750M.
 
+Performance Characteristics
+-------------------------------------
+
+<img src="images/LIBORMarketModelCalibrationTest-Graph.png" style="width: 50%; float: right;"/>
+
+The current implementation uses very small CUDA kernels which affects the performance. This may be optimized quite straight forwardly in future version.
+This implies a specific performance characteristic: the CUDA communication overhead constitutes a certain amount of "fixed costs".
+Depending on GPU and CPU specifics the performance is at par for Monte Carlo simulations with 5000 paths.
+However, for larger number of paths, the CPU scales linear, while the GPU show almost no change. That is, For a
+Monte-Carlo simulation with 50000 paths, the GPU is 10 times faster than the CPU. For 100000 paths, the GPU is 20 times faster than the CPU.
+
+#[[
+### Limitations
+]]#
+
+The main limitation is GPU memory. RandomVariable objects are held on the GPU and keept as long as they are referenced.
+Since multiple processes may aquire GPU memory, it may be less clear how much GPU memory is available.
+Larger Monte-Carlo simulations may require 12 GB or more of GPU memory.
+
+Another aspect that may affect the performance is the CUDA implementation.
+
+<div style="clear: both;"/>
+
+Interfaces for which CUDA Implementations are Provided
+-------------------------------------
 #[[
 ### RandomVariable
 ]]#
@@ -21,8 +46,6 @@ A `RandomVariableCudaFactory` is provided, which can be injected in any finmath 
 The implementation supports type priorities (see http://ssrn.com/abstract=3246127 ) and the default priority of `RandomVariableCuda` is 20. For example: operators involving CPU and GPU vectors will result in GPU vectors.
 
 The `RandomVariableCudaFactory` can be combined with *algorithmic differentiation* AAD wrappers, for example `RandomVariableDifferentiableAAD`, to allow algorithmic differentiation together with calculations performed on the GPU. For the type priority: objects allowing for algorithmic differentiation (AAD) have higher priority, AAD on GPU has higher priority than AAD on CPU.
-
-For OpenCL you may use `RandomVariableOpenCLFactory` and `RandomVariableOpenCL` respectively
 
 #[[
 ### BrownianMotion
@@ -40,7 +63,7 @@ finmath-lib-cuda-extensions is distributed through the central Maven repository.
 	<version>${project.version}</version>
 
 
-The project is currently build for Cuda 10.2 and OpenCL 2.0.
+The project is currently build for Cuda 10.2.
 For other Cuda versions use the Maven command line property `cuda.version` set to one of `8.0`, `9.2`, `10.0`, `10.1`, `10.2` and the Maven classifyer `cuda-${cuda.version}`.
 
 Example
@@ -49,7 +72,7 @@ Example
 Create a vector of floats on the GPU device
 
 ```
-RandomVariableInterface randomVariable = new RandomVariableCuda(new float[] {-4.0f, -2.0f, 0.0f, 2.0f, 4.0f} );
+RandomVariable randomVariable = new RandomVariableCuda(new float[] {-4.0f, -2.0f, 0.0f, 2.0f, 4.0f} );
 ```
 
 perform some calculations (still on the GPU device)
@@ -324,7 +347,7 @@ Some topics come with additional documentations (technical papers).
 License
 -------
 
-The code of "finmath lib", "finmath experiments" and "finmath lib cuda extensions" (packages
+The code of "finmath lib", "finmath lib opencl extensions" and "finmath lib cuda extensions" (packages
 `net.finmath.*`) are distributed under the [Apache License version
 2.0](http://www.apache.org/licenses/LICENSE-2.0.html), unless otherwise explicitly stated.
 

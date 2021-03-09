@@ -2,7 +2,6 @@
 module net.finmath.gpu {
 	exports net.finmath.cuda.montecarlo;
 	exports net.finmath.cuda.montecarlo.alternative;
-	exports net.finmath.opencl.montecarlo;
 
 	requires net.finmath.lib;
 
@@ -11,5 +10,4 @@ module net.finmath.gpu {
 
 	requires jcuda;
 	requires jcurand;
-	requires jocl;
 }

@@ -14,7 +14,6 @@ import org.junit.Test;
 
 import net.finmath.cuda.montecarlo.alternative.BrownianMotionCudaWithRandomVariableCuda;
 import net.finmath.montecarlo.BrownianMotion;
-import net.finmath.opencl.montecarlo.RandomVariableOpenCL;
 import net.finmath.stochastic.RandomVariable;
 import net.finmath.time.TimeDiscretization;
 import net.finmath.time.TimeDiscretizationFromArray;
@@ -34,10 +33,6 @@ public class BrownianMotionMemoryTest {
 	public void cleanUp() {
 		try {
 			RandomVariableCuda.purge();
-		}
-		catch(Exception | Error e) {}
-		try {
-			RandomVariableOpenCL.purge();
 		}
 		catch(Exception | Error e) {}
 	}

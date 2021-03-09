@@ -21,15 +21,12 @@ import org.junit.runners.Parameterized.Parameters;
 import net.finmath.cpu.montecarlo.RandomVariableFloatFactory;
 import net.finmath.cpu.montecarlo.RandomVariableFromFloatArray;
 import net.finmath.montecarlo.RandomVariableFactory;
-import net.finmath.opencl.montecarlo.RandomVariableOpenCL;
-import net.finmath.opencl.montecarlo.RandomVariableOpenCLFactory;
 import net.finmath.stochastic.RandomVariable;
 
 /**
- * Test cases for the class net.finmath.montecarlo.opencl.RandomVariableOpenCL and net.finmath.montecarlo.cuda.RandomVariableCuda
+ * Test cases for the class net.finmath.montecarlo.cuda.RandomVariableCuda
  *
  * @author Christian Fries
- * @see net.finmath.opencl.montecarlo.RandomVariableOpenCL
  * @see net.finmath.cuda.montecarlo.RandomVariableCuda
  */
 @RunWith(Parameterized.class)
@@ -39,7 +36,7 @@ public class RandomVariableGPUTest {
 	 * An error tolerance for the unit tests.
 	 *
 	 * Note: on many hardwares the test succeed with an errorTolerance of 0.
-	 * However, on some systems (maybe depending on the OpenCL version) the floating
+	 * However, on some systems (maybe depending on the CUDA version) the floating
 	 * point arithmetic differs by 1 ULP.
 	 */
 	private static final double errorTolerance = 1E-7;
@@ -47,7 +44,6 @@ public class RandomVariableGPUTest {
 	@Parameters(name="{0}")
 	public static Collection<Object[]> data() {
 		return Arrays.asList(new Object[][] {
-			{ "OpenCL", new RandomVariableOpenCLFactory() },
 			{ "Cuda", new RandomVariableCudaFactory() },
 		});
 	}
@@ -65,10 +61,6 @@ public class RandomVariableGPUTest {
 	public void cleanUp() {
 		try {
 			RandomVariableCuda.purge();
-		}
-		catch(Exception | Error e) {}
-		try {
-			RandomVariableOpenCL.purge();
 		}
 		catch(Exception | Error e) {}
 	}

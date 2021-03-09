@@ -48,8 +48,6 @@ import net.finmath.montecarlo.interestrate.models.covariance.LIBORCovarianceMode
 import net.finmath.montecarlo.interestrate.products.SwaptionSimple;
 import net.finmath.montecarlo.interestrate.products.TermStructureMonteCarloProduct;
 import net.finmath.montecarlo.process.EulerSchemeFromProcessModel;
-import net.finmath.opencl.montecarlo.RandomVariableOpenCL;
-import net.finmath.opencl.montecarlo.RandomVariableOpenCLFactory;
 import net.finmath.optimizer.LevenbergMarquardt;
 import net.finmath.optimizer.OptimizerFactory;
 import net.finmath.optimizer.OptimizerFactoryLevenbergMarquardt;
@@ -170,10 +168,6 @@ public class LIBORMarketModelCalibrationTest {
 			RandomVariableCuda.purge();
 		}
 		catch(Exception | Error e) {}
-		try {
-			RandomVariableOpenCL.purge();
-		}
-		catch(Exception | Error e) {}
 	}
 
 	@Test
@@ -194,9 +188,6 @@ public class LIBORMarketModelCalibrationTest {
 		switch(processingUnit) {
 		case GPU_CUDA:
 			randomVariableFactory = new RandomVariableCudaFactory();
-			break;
-		case GPU_OPENCL:
-			randomVariableFactory = new RandomVariableOpenCLFactory();
 			break;
 		case CPU:
 		default:

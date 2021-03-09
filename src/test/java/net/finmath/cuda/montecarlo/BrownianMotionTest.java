@@ -23,7 +23,6 @@ import net.finmath.cuda.montecarlo.alternative.BrownianMotionJavaRandom;
 import net.finmath.montecarlo.BrownianMotion;
 import net.finmath.montecarlo.BrownianMotionLazyInit;
 import net.finmath.montecarlo.RandomVariableFromArrayFactory;
-import net.finmath.opencl.montecarlo.RandomVariableOpenCL;
 import net.finmath.stochastic.RandomVariable;
 import net.finmath.time.TimeDiscretization;
 import net.finmath.time.TimeDiscretizationFromArray;
@@ -59,10 +58,6 @@ public class BrownianMotionTest {
 	public void cleanUp() {
 		try {
 			RandomVariableCuda.purge();
-		}
-		catch(Exception | Error e) {}
-		try {
-			RandomVariableOpenCL.purge();
 		}
 		catch(Exception | Error e) {}
 	}
