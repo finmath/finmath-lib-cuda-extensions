@@ -3,15 +3,38 @@ finmath lib cuda extensions
 
 ****************************************
 
-**Vector class (RandomVariable) running on GPUs (Cuda and OpenCL).**
+**Vector class (RandomVariable) running on GPUs using CUDA.**
 
-**Enabling finmath lib with Cuda (via jcuda) and OpenCL (via jocl). - Running finmath lib models on a GPU.**
+**Enabling finmath lib with Cuda via jcuda. - Running finmath lib models on a GPU.**
 
 ****************************************
 
-The *finmath lib cuda extensions* provide a Cuda implementation of the [finmath lib](http://finmath.net/finmath-lib/) interfaces `RandomVariable` and `BrownianMotion` compatible with finmath lib 4.0.12 or later
-(tested on GRID GPU Kepler GK105, GeForce GTX 1080, GeForce GT 750M).
+The *finmath lib cuda extensions* provide a **Cuda** implementation of the [finmath lib](http://finmath.net/finmath-lib/) interfaces `RandomVariable` and `BrownianMotion` compatible with finmath lib 4.0.12 or later
+(tested on GRID GPU Kepler GK105, GeForce GTX 1080, GeForce GT 750M.
 
+Performance Characteristics
+-------------------------------------
+
+The current implementation uses very small CUDA kernels which affects the performance. This may be optimized quite straight forwardly in future version.
+This implies a specific performance characteristic: the CUDA communication overhead constitutes a certain amount of "fixed costs".
+Depending on GPU and CPU specifics the performance is at par for Monte Carlo simulations with 5000 paths.
+However, for larger number of paths, the CPU scales linear, while the GPU show almost no change. That is, For a
+Monte-Carlo simulation with 50000 paths, the GPU is 10 times faster than the CPU. For 100000 paths, the GPU is 20 times faster than the CPU.
+
+
+### Limitations
+
+
+The main limitation is GPU memory. RandomVariable objects are held on the GPU and keept as long as they are referenced.
+Since multiple processes may aquire GPU memory, it may be less clear how much GPU memory is available.
+Larger Monte-Carlo simulations may require 12 GB or more of GPU memory.
+
+Another aspect that may affect the performance is the CUDA implementation.
+
+<div style="clear: both;"/>
+
+Interfaces for which CUDA Implementations are Provided
+-------------------------------------
 
 ### RandomVariable
 
@@ -35,9 +58,10 @@ finmath-lib-cuda-extensions is distributed through the central Maven repository.
 
     <groupId>net.finmath</groupId>
     <artifactId>finmath-lib-cuda-extensions</artifactId>
-	<version>4.0.11</version>
 
-Note: For Cuda 10.0 use version 4.0.10.
+
+The project is currently build for Cuda 10.2.
+For other Cuda versions use the Maven command line property `cuda.version` set to one of `8.0`, `9.2`, `10.0`, `10.1`, `10.2` and the Maven classifyer `cuda-${cuda.version}`.
 
 Example
 -------------------------------------
@@ -45,7 +69,7 @@ Example
 Create a vector of floats on the GPU device
 
 ```
-RandomVariableInterface randomVariable = new RandomVariableCuda(new float[] {-4.0f, -2.0f, 0.0f, 2.0f, 4.0f} );
+RandomVariable randomVariable = new RandomVariableCuda(new float[] {-4.0f, -2.0f, 0.0f, 2.0f, 4.0f} );
 ```
 
 perform some calculations (still on the GPU device)
@@ -93,14 +117,13 @@ cd finmath-lib-cuda-extensions
 mvn clean package
 ```
 
-This will build the version using Cuda 10.1. For Cuda 10.0 use
+This will build the version using Cuda 10.2. For Cuda 10.1 use
 
 ```
-mvn -Dcuda.version=10.0 clean package
+mvn -Dcuda.version=10.1 clean package
 ```
 
 If everything goes well, you will see unit test run. Note that some of the tests may fail if the device (GPU) has not enough memory. 
-
 
 Trying on Amazon EC2
 -------------------------------------
@@ -188,9 +211,59 @@ Calibration to Swaptions using GPU    calculation time =  51.70 sec    RMS Error
 Profiles for Other Cuda Versions
 -------------------------------------
 
-The default profile will build the version using Cuda 10.1.
+The default profile will build the version using Cuda 10.2.
+
+
+#### Cuda 11.1
+
+
+For Cuda 11.1 use
+
+```
+mvn -Pcuda-11.1 clean package
+```
+
+or
+
+```
+mvn -Dcuda.version=11.1 clean package
+```
+
+
+#### Cuda 11.0
+
+
+For Cuda 11.0 use
+
+```
+mvn -Pcuda-11.0 clean package
+```
+
+or
+
+```
+mvn -Dcuda.version=11.0 clean package
+```
+
+
+#### Cuda 10.1
+
+
+For Cuda 10.1 use
+
+```
+mvn -Pcuda-10.1 clean package
+```
+
+or
+
+```
+mvn -Dcuda.version=10.1 clean package
+```
+
 
 #### Cuda 10.0
+
 
 For Cuda 10.0 use
 
@@ -204,7 +277,9 @@ or
 mvn -Dcuda.version=10.0 clean package
 ```
 
+
 #### Cuda 9.2
+
 
 For Cuda 9.2 use
 
@@ -218,7 +293,9 @@ or
 mvn -Dcuda.version=9.2 clean package
 ```
 
+
 #### Cuda 8.0
+
 
 For Cuda 8.0 use
 
@@ -232,7 +309,9 @@ or
 mvn -Dcuda.version=8.0 clean package
 ```
 
+
 #### Cuda 6.0
+
 
 For Cuda 6.0 use
 
@@ -265,7 +344,7 @@ Some topics come with additional documentations (technical papers).
 License
 -------
 
-The code of "finmath lib", "finmath experiments" and "finmath lib cuda extensions" (packages
+The code of "finmath lib", "finmath lib opencl extensions" and "finmath lib cuda extensions" (packages
 `net.finmath.*`) are distributed under the [Apache License version
 2.0](http://www.apache.org/licenses/LICENSE-2.0.html), unless otherwise explicitly stated.
 

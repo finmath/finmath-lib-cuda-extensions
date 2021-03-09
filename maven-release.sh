@@ -11,7 +11,7 @@
 # before running this script and check if this is successful.
 #
 # To re-release a given tag / version you need to run
-# 	git checkout finmath-lib-<verion>
+# 	git checkout finmath-lib-cuda-extensions<verion>
 # before running this script.
 #
 # If this script is run on a newly setup system, the following things need to be setup:
@@ -47,4 +47,5 @@ mvn verify javadoc:jar source:jar gpg:sign deploy:deploy -Dcuda.version=10.2 -Ds
 mvn verify javadoc:jar source:jar gpg:sign deploy:deploy -DskipTests=true
 
 # deploy site (clover:instrument takes a long time)
-mvn clover:instrument site site:stage site-deploy
+mvn clover:instrument
+mvn site site:stage site-deploy
