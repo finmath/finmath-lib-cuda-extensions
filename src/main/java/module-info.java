@@ -1,5 +1,5 @@
 
-module net.finmath.gpu {
+module net.finmath.cuda {
 	exports net.finmath.cuda.montecarlo;
 	exports net.finmath.cuda.montecarlo.alternative;
 

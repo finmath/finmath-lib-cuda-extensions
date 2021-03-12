@@ -6,6 +6,15 @@ finmath lib cuda extensions Release Notes
 # Release Notes
 
 
+## 5.1.1 (12
+.03.2021)
+
+### General
+
+ - Created separate project splitting Cuda and OpenCL
+ - Referencing finmath-lib 5.1.2
+ 
+
 ## 5.0.5 (29.08.2020)
 
 ### General

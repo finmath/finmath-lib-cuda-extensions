@@ -9,15 +9,17 @@ finmath lib cuda extensions
 
 ****************************************
 
-The *finmath lib cuda extensions* provide a **Cuda** implementation of the [finmath lib](http://finmath.net/finmath-lib/) interfaces `RandomVariable` and `BrownianMotion` compatible with finmath lib 4.0.12 or later
+The *finmath lib cuda extensions* provide a **Cuda** implementation of the [finmath lib](http://finmath.net/finmath-lib/) interfaces `RandomVariable` and `BrownianMotion` compatible with finmath lib 5.1 or later
 (tested on GRID GPU Kepler GK105, GeForce GTX 1080, GeForce GT 750M.
+
+For OpenCL support see finmath-lib-opencl-extensions.
 
 Performance Characteristics
 -------------------------------------
 
 <img src="images/LIBORMarketModelCalibrationTest-Graph.png" style="width: 50%; float: right;"/>
 
-The current implementation uses very small CUDA kernels which affects the performance. This may be optimized quite straight forwardly in future version.
+The current implementation uses very small CUDA kernels which affects the performance. This may be optimized quite straight forwardly in future versions.
 This implies a specific performance characteristic: the CUDA communication overhead constitutes a certain amount of "fixed costs".
 Depending on GPU and CPU specifics the performance is at par for Monte Carlo simulations with 5000 paths.
 However, for larger number of paths, the CPU scales linear, while the GPU show almost no change. That is, For a
@@ -41,7 +43,9 @@ Interfaces for which CUDA Implementations are Provided
 ### RandomVariable
 ]]#
 
-A `RandomVariableCudaFactory` is provided, which can be injected in any finmath lib model/algorithm using a random variable factory to construct `RandomVariable` objects. Objects created from this factory or from objects created from this factory perform their calculation on the GPU.
+A `RandomVariableCudaFactory` is provided, which can be injected in any finmath lib model/algorithm using a random variable factory to construct `RandomVariable` objects.
+
+Objects created from this factory or from objects created from this factory perform their calculation on the CUDA device (GPU).
 
 The implementation supports type priorities (see http://ssrn.com/abstract=3246127 ) and the default priority of `RandomVariableCuda` is 20. For example: operators involving CPU and GPU vectors will result in GPU vectors.
 
@@ -96,6 +100,27 @@ double[] result = randomVariable.getRealizations();
 
 (note: the result is always double, since different implementation may support float or double on the device).
 
+#[[
+### RandomVariableFactory
+]]#
+
+A better approach is to use a `RandomVariableFactory` instead of a constructor. You may then write your program in terms of the `RandomVariableFactory` interface:
+
+
+```
+RandomVariableFactory randomVariableFactory = new RandomVariableCudaFactory();
+```
+and then
+```
+RandomVariable randomVariable = randomVariableFactory.createRandomVariable(new float[] {-4.0f, -2.0f, 0.0f, 2.0f, 4.0f} );
+```
+
+If you write your code in terms of the `RandomVariableFactory` interface you may easily switch your implementations by using one of the following factories:
+
+- `RandomVariableCudaFactory` - CUDA vectors running on an CUDA device (GPU).
+- `RandomVariableFromArrayFactory` - Java floating point array (single or double precision).
+- `RandomVariableDifferentiableAADFactory` - Endowing any of the above with adjoint algorithmic differentiation.
+
 Installation / Build
 -------------------------------------
 
@@ -127,6 +152,30 @@ mvn -Dcuda.version=10.1 clean package
 ```
 
 If everything goes well, you will see unit test run. Note that some of the tests may fail if the device (GPU) has not enough memory. 
+
+Trying more
+-------------------------------------
+
+You may turn on logging using `-Djava.util.logging.config.file=logging.properties`. To try different configurations you may use
+
+  - `-Dnet.finmath.montecarlo.opencl.RandomVariableOpenCL.deviceType=GPU -Dnet.finmath.montecarlo.opencl.RandomVariableOpenCL.deviceIndex=0`
+  - `-Dnet.finmath.montecarlo.opencl.RandomVariableOpenCL.deviceType=CPU -Dnet.finmath.montecarlo.opencl.RandomVariableOpenCL.deviceIndex=0`
+  - `-Dnet.finmath.montecarlo.opencl.RandomVariableOpenCL.deviceType=GPU -Dnet.finmath.montecarlo.opencl.RandomVariableOpenCL.deviceIndex=1`
+
+for example
+  
+```
+mvn clean install test -Djava.util.logging.config.file=logging.properties -Dnet.finmath.montecarlo.opencl.RandomVariableOpenCL.deviceType=GPU -Dnet.finmath.montecarlo.opencl.RandomVariableOpenCL.deviceIndex=1
+```
+
+You may run dedicated tests using
+
+  - `-Dtest=RandomVariableGPUTest`
+  - `-Dtest=MonteCarloBlackScholesModelTest`
+  - `-Dtest=LIBORMarketModelCalibrationATMTest`
+  - `-Dtest=LIBORMarketModelCalibrationTest`
+
+The last tests are computationally heavy Monte-Carlo interest rate models. The test may fail on devices that lack sufficient memory.
 
 Trying on Amazon EC2
 -------------------------------------
