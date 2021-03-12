@@ -9,6 +9,7 @@ import static jcuda.driver.JCudaDriver.cuCtxCreate;
 import static jcuda.driver.JCudaDriver.cuCtxSynchronize;
 import static jcuda.driver.JCudaDriver.cuDeviceGet;
 import static jcuda.driver.JCudaDriver.cuInit;
+import static jcuda.driver.JCudaDriver.cuDeviceGetCount;
 import static jcuda.driver.JCudaDriver.cuLaunchKernel;
 import static jcuda.driver.JCudaDriver.cuMemcpyDtoH;
 import static jcuda.driver.JCudaDriver.cuModuleGetFunction;
@@ -63,7 +64,23 @@ import net.finmath.stochastic.RandomVariable;
  * Accesses performed exclusively through the interface
  * <code>RandomVariable</code> is thread safe (and does not mutate the class).
  *
- * <b>This implementation uses floats for the realizations on a Cuda GPU.</b> There is a CPU implementation in {@link RandomVariableFromFloatArray} which give exactly the same results for all methods (checked by unit test).
+ * <b>This implementation uses floats for the realizations on a OpenCL device.</b>
+ * There is a CPU implementation in {@link RandomVariableFromFloatArray} which give exactly the same results for all methods (checked by unit test).
+ *
+ * <b>Configuration</b>
+ *
+ * The class can be configured with system property to use a chosen OpenCL device. The properties are:
+ * <dl>
+ * 	<dt>
+ * 		"net.finmath.montecarlo.opencl.RandomVariableCuda.deviceIndex"
+ * 	</dt>
+ * 	<dd>
+ *		being an integer. For a positive values, the device
+ * 		with the corresponding index is used. For a negative value the device with the index numberOfDevices - deviceIndex is used.
+ * 		That is, a value of -1 selects the last device in the list of devices. To select the dedicated GPU in a MacBook Pro you may use
+ * 		"GPU" with index "-1".
+ * 	</dd>
+ * </dl>
  *
  * @author Christian Fries
  * @version 2.1
@@ -140,7 +157,10 @@ public class RandomVariableCuda implements RandomVariable {
 		private final CUcontext context = new CUcontext();
 		private final CUmodule module = new CUmodule();
 
-		public DeviceMemoryPool() {
+		DeviceMemoryPool() {
+			final int		cudaDeviceIndex = Integer.parseInt(System.getProperty("net.finmath.montecarlo.opencl.RandomVariableCuda.deviceIndex", "-1"));
+			logger.config("Configured class with device index " + cudaDeviceIndex);
+
 			// Initalize cuda
 
 			// Enable exceptions and omit all subsequent error checks
@@ -149,7 +169,15 @@ public class RandomVariableCuda implements RandomVariable {
 
 			// Initialize the driver and create a context for the first device.
 			cuInit(0);
-			cuDeviceGet(device, 0);
+
+			final int[] numDevices = new int[1];
+			cuDeviceGetCount(numDevices);
+			logger.config("Found " + numDevices[0]);
+
+			int deviceIndex = cudaDeviceIndex >= 0 ? cudaDeviceIndex : numDevices[0] + cudaDeviceIndex;
+			logger.config("Using device " + deviceIndex);
+
+			cuDeviceGet(device, deviceIndex);
 
 			/*
 			 * Set blockSize according to compute capabilities

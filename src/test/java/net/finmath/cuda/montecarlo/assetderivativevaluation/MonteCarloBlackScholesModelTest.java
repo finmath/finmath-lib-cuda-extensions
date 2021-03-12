@@ -18,19 +18,17 @@ import org.junit.runner.RunWith;
 import org.junit.runners.Parameterized;
 import org.junit.runners.Parameterized.Parameters;
 
-import net.finmath.cuda.montecarlo.RandomVariableCuda;
-import net.finmath.cuda.montecarlo.RandomVariableCudaFactory;
-import net.finmath.cuda.montecarlo.alternative.BrownianMotionCudaWithRandomVariableCuda;
-import net.finmath.cuda.montecarlo.alternative.BrownianMotionJavaRandom;
 import net.finmath.exception.CalculationException;
 import net.finmath.functions.AnalyticFormulas;
 import net.finmath.montecarlo.BrownianMotion;
-import net.finmath.montecarlo.BrownianMotionFromMersenneRandomNumbers;
+import net.finmath.montecarlo.BrownianMotionLazyInit;
 import net.finmath.montecarlo.RandomVariableFromArrayFactory;
 import net.finmath.montecarlo.assetderivativevaluation.models.BlackScholesModel;
 import net.finmath.montecarlo.model.ProcessModel;
 import net.finmath.montecarlo.process.EulerSchemeFromProcessModel;
 import net.finmath.montecarlo.process.MonteCarloProcessFromProcessModel;
+import net.finmath.cuda.montecarlo.RandomVariableCuda;
+import net.finmath.cuda.montecarlo.RandomVariableCudaFactory;
 import net.finmath.stochastic.RandomVariable;
 import net.finmath.time.TimeDiscretization;
 import net.finmath.time.TimeDiscretizationFromArray;
@@ -45,12 +43,8 @@ public class MonteCarloBlackScholesModelTest {
 	@Parameters
 	public static Collection<Object[]> data() {
 		return Arrays.asList(new Object[][] {
-			//			{ "BrownianMotionOnCPUSimulationUsingCPUFloat" },			// Test case 4: Java implementation using MersenneTwister
-			//			{ "BrownianMotionJavaRandomSimulationUsingCPUDouble" },		// Test case 5: Java implementation using Java LCG
-			//			{ "BrownianMotionCudaWithHostRandomVariable" },	// Test case 6: Java implementation using Cuda LCG with Host RandomVariable
-			//			{ "BrownianMotionCudaWithRandomVariableCuda" },	// Test case 7: Java implementation using Cuda LCG with Cuda RandomVariable
-			{ "SimulationUsingCPUDouble" },			// Test case 1: Java implementation using MersenneTwister with CPU Double RandomVariable
-			{ "SimulationUsingCuda" },				// Test case 3: Java implementation using MersenneTwister with Cuda RandomVariable
+			{ "SimulationUsingCPU" },			// Test case 1: Java implementation using MersenneTwister with CPU Double RandomVariable
+			{ "SimulationUsingCuda" },				// Test case 2: Java implementation using MersenneTwister with Cuda RandomVariable
 		});
 	}
 
@@ -77,14 +71,14 @@ public class MonteCarloBlackScholesModelTest {
 	private final double	optionMaturity = 2.0;
 	private final double	optionStrike = 1.05;
 
-	static final BrownianMotion brownianCPU = new BrownianMotionFromMersenneRandomNumbers(new TimeDiscretizationFromArray(0.0 /* initial */, numberOfTimeSteps, deltaT), 1, numberOfPaths, seed,
+	static final BrownianMotion brownianCPU = new BrownianMotionLazyInit(new TimeDiscretizationFromArray(0.0 /* initial */, numberOfTimeSteps, deltaT), 1, numberOfPaths, seed,
 			new RandomVariableFromArrayFactory(true));
 
-	static final BrownianMotion brownianCuda = new BrownianMotionFromMersenneRandomNumbers(new TimeDiscretizationFromArray(0.0 /* initial */, numberOfTimeSteps, deltaT), 1, numberOfPaths, seed,
+	static final BrownianMotion brownianCL = new BrownianMotionLazyInit(new TimeDiscretizationFromArray(0.0 /* initial */, numberOfTimeSteps, deltaT), 1, numberOfPaths, seed,
 			new RandomVariableCudaFactory());
 
 	static {
-		try { brownianCuda.getBrownianIncrement(1, 0); } catch(final Error e) {}
+		try { brownianCL.getBrownianIncrement(1, 0); } catch(final Error e) {}
 		try { brownianCPU.getBrownianIncrement(1, 0); } catch(final Error e) {}
 	}
 
@@ -111,26 +105,16 @@ public class MonteCarloBlackScholesModelTest {
 		switch(testCase) {
 		case "BrownianMotionOnCPUSimulationUsingCPUFloat":
 		default:
-			brownian = new BrownianMotionFromMersenneRandomNumbers(timeDiscretization, 1, numberOfPaths, seed, new RandomVariableFromArrayFactory(false));
+			brownian = new BrownianMotionLazyInit(timeDiscretization, 1, numberOfPaths, seed,
+					new RandomVariableFromArrayFactory(false));
 			break;
-		case "SimulationUsingCPUDouble":
+		case "SimulationUsingCPU":
 			//			brownian = new BrownianMotionLazyInit(timeDiscretization, 1, numberOfPaths, seed, new RandomVariableFromArrayFactory(true));
 			brownian = brownianCPU;
 			break;
-		case "BrownianMotionJavaRandomSimulationUsingCPUDouble":
-			brownian = new BrownianMotionJavaRandom(timeDiscretization, 1, numberOfPaths, seed, new RandomVariableFromArrayFactory(true));
-			break;
 		case "SimulationUsingCuda":
-			// brownian = new BrownianMotionCudaWithHostRandomVariable(timeDiscretization, 1, numberOfPaths, seed);
-			brownian = brownianCuda;
-			break;
-		case "BrownianMotionCudaWithRandomVariableCuda":
-			brownian = new BrownianMotionCudaWithRandomVariableCuda(
-					timeDiscretization,
-					1,
-					numberOfPaths,
-					seed
-					);
+			//			brownian = new BrownianMotionLazyInit(timeDiscretization, 1, numberOfPaths, seed, new RandomVariableCudaFactory());
+			brownian = brownianCL;
 			break;
 		}
 	}
