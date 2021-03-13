@@ -151,7 +151,7 @@ public class LIBORMarketModelCalibrationATMTest {
 	public void testATMSwaptionCalibration() throws CalculationException, SolverException {
 
 		// Small number of path, to reduce runtime of the unit test. Calibration should use 10 to 100 times more.
-		final int numberOfPaths		= 50000;
+		final int numberOfPaths		= 10000;
 		final int numberOfFactors	= 1;
 
 		final long millisCurvesStart = System.currentTimeMillis();
