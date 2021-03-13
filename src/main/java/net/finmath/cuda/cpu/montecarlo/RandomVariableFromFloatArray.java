@@ -3,7 +3,7 @@
  *
  * Created on 09.02.2006
  */
-package net.finmath.cpu.montecarlo;
+package net.finmath.cuda.cpu.montecarlo;
 
 import java.util.Arrays;
 import java.util.List;

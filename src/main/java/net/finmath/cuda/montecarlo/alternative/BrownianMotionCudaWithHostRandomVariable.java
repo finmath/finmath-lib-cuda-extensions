@@ -16,12 +16,14 @@ import static jcuda.runtime.cudaMemcpyKind.cudaMemcpyDeviceToHost;
 
 import java.io.Serializable;
 
+import jcuda.LibUtils;
 import jcuda.Pointer;
 import jcuda.Sizeof;
 import jcuda.jcurand.JCurand;
 import jcuda.jcurand.curandGenerator;
 import jcuda.runtime.JCuda;
-import net.finmath.cpu.montecarlo.RandomVariableFromFloatArray;
+import net.finmath.cuda.cpu.montecarlo.RandomVariableFromFloatArray;
+import net.finmath.jcuda.LibUtilsPatch;
 import net.finmath.montecarlo.BrownianMotion;
 import net.finmath.montecarlo.RandomVariableFactory;
 import net.finmath.montecarlo.RandomVariableFromArrayFactory;
@@ -148,6 +150,10 @@ public class BrownianMotionCudaWithHostRandomVariable implements BrownianMotion,
 		{
 			return;	// Nothing to do
 		}
+
+        String libraryBaseName = "JCudaRuntime-" + JCuda.getJCudaVersion();
+        String libraryName = LibUtilsPatch.createPlatformLibraryName(libraryBaseName);
+        LibUtilsPatch.loadLibrary(libraryName);
 
 		// Enable exceptions and omit all subsequent error checks
 		JCuda.setExceptionsEnabled(true);

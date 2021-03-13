@@ -4,7 +4,7 @@
  * Created on 21.06.2017
  */
 
-package net.finmath.cpu.montecarlo;
+package net.finmath.cuda.cpu.montecarlo;
 
 import net.finmath.montecarlo.AbstractRandomVariableFactory;
 import net.finmath.stochastic.RandomVariable;

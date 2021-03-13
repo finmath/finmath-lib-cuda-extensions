@@ -45,7 +45,7 @@ import jcuda.driver.CUdeviceptr;
 import jcuda.driver.CUfunction;
 import jcuda.driver.CUmodule;
 import jcuda.driver.JCudaDriver;
-import net.finmath.cpu.montecarlo.RandomVariableFromFloatArray;
+import net.finmath.cuda.cpu.montecarlo.RandomVariableFromFloatArray;
 import net.finmath.functions.DoubleTernaryOperator;
 import net.finmath.montecarlo.RandomVariableFromDoubleArray;
 import net.finmath.stochastic.RandomVariable;

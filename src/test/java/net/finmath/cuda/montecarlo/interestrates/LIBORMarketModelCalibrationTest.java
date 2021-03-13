@@ -24,7 +24,7 @@ import org.junit.runner.RunWith;
 import org.junit.runners.Parameterized;
 import org.junit.runners.Parameterized.Parameters;
 
-import net.finmath.cpu.montecarlo.RandomVariableFloatFactory;
+import net.finmath.cuda.cpu.montecarlo.RandomVariableFloatFactory;
 import net.finmath.cuda.montecarlo.RandomVariableCuda;
 import net.finmath.cuda.montecarlo.RandomVariableCudaFactory;
 import net.finmath.exception.CalculationException;
