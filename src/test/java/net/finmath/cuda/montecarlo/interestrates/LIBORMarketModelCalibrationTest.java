@@ -76,16 +76,16 @@ public class LIBORMarketModelCalibrationTest {
 			//
 			{ ProcessingUnit.GPU_CUDA, 32768 },
 			{ ProcessingUnit.CPU, 32768 },
-			//
-			{ ProcessingUnit.GPU_CUDA, 65536 },
-			{ ProcessingUnit.CPU, 65536 },
-			//
-			{ ProcessingUnit.GPU_CUDA, 131072 },
-			{ ProcessingUnit.CPU, 131072 },
 		}));
 
 		if(System.getProperty("net.finmath.cuda.montecarlo.interestrates.LIBORMarketModelCalibrationTest.testCases", "small").equalsIgnoreCase("large")) {
 			testParameters.addAll(Arrays.asList(new Object[][] {
+				{ ProcessingUnit.GPU_CUDA, 65536 },
+				{ ProcessingUnit.CPU, 65536 },
+				//
+				{ ProcessingUnit.GPU_CUDA, 131072 },
+				{ ProcessingUnit.CPU, 131072 },
+				//
 				{ ProcessingUnit.GPU_CUDA, 163840 },
 				{ ProcessingUnit.CPU, 163840 },
 			}));
