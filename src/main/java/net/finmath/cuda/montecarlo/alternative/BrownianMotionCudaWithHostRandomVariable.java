@@ -16,7 +16,6 @@ import static jcuda.runtime.cudaMemcpyKind.cudaMemcpyDeviceToHost;
 
 import java.io.Serializable;
 
-import jcuda.LibUtils;
 import jcuda.Pointer;
 import jcuda.Sizeof;
 import jcuda.jcurand.JCurand;

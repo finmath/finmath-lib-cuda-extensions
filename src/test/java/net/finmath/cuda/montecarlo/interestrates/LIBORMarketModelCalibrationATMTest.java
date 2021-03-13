@@ -32,6 +32,7 @@ import org.junit.runner.RunWith;
 import org.junit.runners.Parameterized;
 import org.junit.runners.Parameterized.Parameters;
 
+import net.finmath.cuda.montecarlo.RandomVariableCudaFactory;
 import net.finmath.exception.CalculationException;
 import net.finmath.functions.AnalyticFormulas;
 import net.finmath.marketdata.calibration.ParameterObject;
@@ -69,7 +70,6 @@ import net.finmath.montecarlo.interestrate.products.AbstractLIBORMonteCarloProdu
 import net.finmath.montecarlo.interestrate.products.SwaptionGeneralizedAnalyticApproximation;
 import net.finmath.montecarlo.interestrate.products.SwaptionSimple;
 import net.finmath.montecarlo.process.EulerSchemeFromProcessModel;
-import net.finmath.cuda.montecarlo.RandomVariableCudaFactory;
 import net.finmath.optimizer.LevenbergMarquardt.RegularizationMethod;
 import net.finmath.optimizer.OptimizerFactory;
 import net.finmath.optimizer.OptimizerFactoryLevenbergMarquardt;
@@ -452,7 +452,7 @@ public class LIBORMarketModelCalibrationATMTest {
 		System.out.printf("%8s: %-12s ", "model", modelType);
 		System.out.printf("%8s: %-12s ", "calib", calibrationProductType);
 		System.out.printf("%8s: %-12d ", "paths", numberOfPaths);
-		
+
 		System.out.print("\t Calibration time: ");
 		System.out.printf("rate curves: %5.2f s, ", (millisCurvesEnd-millisCurvesStart)/1000.0);
 		System.out.printf("volatilities: %7.2f s, ", (millisCalibrationEnd-millisCalibrationStart)/1000.0);

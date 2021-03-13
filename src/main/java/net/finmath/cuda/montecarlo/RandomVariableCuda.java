@@ -8,8 +8,8 @@ package net.finmath.cuda.montecarlo;
 import static jcuda.driver.JCudaDriver.cuCtxCreate;
 import static jcuda.driver.JCudaDriver.cuCtxSynchronize;
 import static jcuda.driver.JCudaDriver.cuDeviceGet;
-import static jcuda.driver.JCudaDriver.cuInit;
 import static jcuda.driver.JCudaDriver.cuDeviceGetCount;
+import static jcuda.driver.JCudaDriver.cuInit;
 import static jcuda.driver.JCudaDriver.cuLaunchKernel;
 import static jcuda.driver.JCudaDriver.cuMemcpyDtoH;
 import static jcuda.driver.JCudaDriver.cuModuleGetFunction;
@@ -1231,6 +1231,7 @@ public class RandomVariableCuda implements RandomVariable {
 		}
 	}
 
+	@Override
 	public RandomVariable bus(final double value) {
 		if(isDeterministic()) {
 			final double newValueIfNonStochastic = -valueIfNonStochastic + value;
@@ -1266,6 +1267,7 @@ public class RandomVariableCuda implements RandomVariable {
 		}
 	}
 
+	@Override
 	public RandomVariable vid(final double value) {
 		if(isDeterministic()) {
 			final double newValueIfNonStochastic = value / valueIfNonStochastic;

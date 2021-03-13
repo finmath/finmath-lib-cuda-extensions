@@ -148,7 +148,7 @@ public class RandomVariableGPUTest {
 
 			final double average = randomVariable.getAverage();
 
-			Assert.assertEquals("Average("+size+")", size%2==0 ? (size/2.0)/size : (double)((int)(size/2))/size, average, size/2.0*1E-7);
+			Assert.assertEquals("Average("+size+")", size%2==0 ? (size/2.0)/size : (double)(size/2)/size, average, size/2.0*1E-7);
 		}
 	}
 
@@ -207,7 +207,7 @@ public class RandomVariableGPUTest {
 				final double[] xr = f.apply(x,y).getRealizations();
 				return xr;
 			};
-			
+
 			final Consumer<BiFunction<RandomVariable,RandomVariable,RandomVariable>> test = f -> {
 				final double[] xr0 = hash.apply(rvf[0],f);
 				final double[] xr1 = hash.apply(rvf[1],f);
@@ -287,10 +287,10 @@ public class RandomVariableGPUTest {
 			test.accept((x,y) -> y.div(1.0/3.0));
 
 			System.out.print("\nTesting vid...");
-//			test.accept((x,y) -> x.vid(x));
-//			test.accept((x,y) -> x.vid(y));
-//			test.accept((x,y) -> y.vid(x));
-//			test.accept((x,y) -> y.vid(y));
+			//			test.accept((x,y) -> x.vid(x));
+			//			test.accept((x,y) -> x.vid(y));
+			//			test.accept((x,y) -> y.vid(x));
+			//			test.accept((x,y) -> y.vid(y));
 
 			System.out.print("\nTesting exp...");
 			test.accept((x,y) -> x.exp());
@@ -301,8 +301,8 @@ public class RandomVariableGPUTest {
 			test.accept((x,y) -> y.log());
 
 			System.out.print("\nTesting invert...");
-//			test.accept((x,y) -> x.invert());
-//			test.accept((x,y) -> y.invert());
+			//			test.accept((x,y) -> x.invert());
+			//			test.accept((x,y) -> y.invert());
 
 			System.out.print("\nTesting abs...");
 			test.accept((x,y) -> x.abs());
