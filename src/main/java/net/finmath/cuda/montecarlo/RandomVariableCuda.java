@@ -391,7 +391,10 @@ public class RandomVariableCuda implements RandomVariable {
 		 * Free all unused device memory.
 		 */
 		public void clean() {
-			synchronized (lock) {
+			synchronized (lock)
+			{
+				logger.fine("Cleaning device pointers");
+
 				// Clean up all remaining pointers
 				for(final Entry<Integer, ReferenceQueue<DevicePointerReference>> entry : vectorsToRecycleReferenceQueueMap.entrySet()) {
 					final int size = entry.getKey();
@@ -569,6 +572,25 @@ public class RandomVariableCuda implements RandomVariable {
 		}
 	}
 
+	private static final Logger logger = Logger.getLogger("net.finmath");
+
+	private static DeviceMemoryPool deviceMemoryPool = new DeviceMemoryPool();
+
+	private static final long serialVersionUID = 7620120320663270600L;
+
+	private final double      time;	                // Time (filtration)
+
+	private static final int typePriorityDefault = 20;
+
+	private final int typePriority;
+
+	// Data model for the stochastic case (otherwise null)
+	private final DevicePointerReference	realizations;           // Realizations
+	private final long			size;
+
+	// Data model for the non-stochastic case (if realizations==null)
+	private final double      valueIfNonStochastic;
+
 	private static final CUfunction capByScalar = new CUfunction();
 	private static final CUfunction floorByScalar = new CUfunction();
 	private static final CUfunction addScalar = new CUfunction();
@@ -595,26 +617,6 @@ public class RandomVariableCuda implements RandomVariable {
 	private static final CUfunction addProduct_vs = new CUfunction();		// add the product of a vector and a scalar
 	private static final CUfunction reducePartial = new CUfunction();
 	private static final CUfunction reduceFloatVectorToDoubleScalar = new CUfunction();
-
-	private static DeviceMemoryPool deviceMemoryPool = new DeviceMemoryPool();
-
-	private static final long serialVersionUID = 7620120320663270600L;
-
-	private final double      time;	                // Time (filtration)
-
-	private static final int typePriorityDefault = 20;
-
-	private final int typePriority;
-
-	// Data model for the stochastic case (otherwise null)
-	private final DevicePointerReference	realizations;           // Realizations
-	private final long			size;
-
-	// Data model for the non-stochastic case (if realizations==null)
-	private final double      valueIfNonStochastic;
-
-
-	private static final Logger logger = Logger.getLogger("net.finmath");
 
 	private static final int reduceGridSize = 1024;
 
