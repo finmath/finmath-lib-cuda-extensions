@@ -18,6 +18,7 @@ import org.junit.runner.RunWith;
 import org.junit.runners.Parameterized;
 import org.junit.runners.Parameterized.Parameters;
 
+import net.finmath.cuda.cpu.montecarlo.RandomVariableFloatFactory;
 import net.finmath.cuda.montecarlo.RandomVariableCuda;
 import net.finmath.cuda.montecarlo.RandomVariableCudaFactory;
 import net.finmath.exception.CalculationException;
@@ -43,13 +44,15 @@ public class MonteCarloBlackScholesModelTest {
 	@Parameters
 	public static Collection<Object[]> data() {
 		return Arrays.asList(new Object[][] {
-			{ "SimulationUsingCPU" },			// Test case 1: Java implementation using MersenneTwister with CPU Double RandomVariable
-			{ "SimulationUsingCuda" },				// Test case 2: Java implementation using MersenneTwister with Cuda RandomVariable
+			{ "CPU (Double)" },			// Test case 1: Java implementation using MersenneTwister with CPU Double RandomVariable
+			{ "CPU (Float)" },			// Test case 1: Java implementation using MersenneTwister with CPU Double RandomVariable
+			{ "Cuda (Float)" },		// Test case 2: Java implementation using MersenneTwister with Cuda RandomVariable
 		});
 	}
 
 	static final DecimalFormat formatterReal2	= new DecimalFormat(" 0.00");
 	static final DecimalFormat formatterReal4	= new DecimalFormat(" 0.0000");
+	static final DecimalFormat formatterReal16	= new DecimalFormat(" 0.0000000000000000");
 	static final DecimalFormat formatterSci4	= new DecimalFormat(" 0.0000E00;-0.0000E00");
 	static final DecimalFormat formatterSci1	= new DecimalFormat(" 0E00;-0.E00");
 
@@ -71,6 +74,9 @@ public class MonteCarloBlackScholesModelTest {
 	private final double	optionMaturity = 2.0;
 	private final double	optionStrike = 1.05;
 
+	static final BrownianMotion brownianCPUSinglePrecision = new BrownianMotionLazyInit(new TimeDiscretizationFromArray(0.0 /* initial */, numberOfTimeSteps, deltaT), 1, numberOfPaths, seed,
+			new RandomVariableFloatFactory());
+
 	static final BrownianMotion brownianCPU = new BrownianMotionLazyInit(new TimeDiscretizationFromArray(0.0 /* initial */, numberOfTimeSteps, deltaT), 1, numberOfPaths, seed,
 			new RandomVariableFromArrayFactory(true));
 
@@ -79,6 +85,7 @@ public class MonteCarloBlackScholesModelTest {
 
 	static {
 		try { brownianCL.getBrownianIncrement(1, 0); } catch(final Error e) {}
+		try { brownianCPUSinglePrecision.getBrownianIncrement(1, 0); } catch(final Error e) {}
 		try { brownianCPU.getBrownianIncrement(1, 0); } catch(final Error e) {}
 	}
 
@@ -103,17 +110,16 @@ public class MonteCarloBlackScholesModelTest {
 		final TimeDiscretization timeDiscretization = new TimeDiscretizationFromArray(0.0 /* initial */, numberOfTimeSteps, deltaT);
 
 		switch(testCase) {
-		case "BrownianMotionOnCPUSimulationUsingCPUFloat":
+		case "CPU (Float)":
 		default:
-			brownian = new BrownianMotionLazyInit(timeDiscretization, 1, numberOfPaths, seed,
-					new RandomVariableFromArrayFactory(false));
+			brownian = brownianCPUSinglePrecision;
 			break;
 		case "SimulationUsingCPU":
 			//			brownian = new BrownianMotionLazyInit(timeDiscretization, 1, numberOfPaths, seed, new RandomVariableFromArrayFactory(true));
 			brownian = brownianCPU;
 			break;
-		case "SimulationUsingCuda":
-			//			brownian = new BrownianMotionLazyInit(timeDiscretization, 1, numberOfPaths, seed, new RandomVariableCudaFactory());
+		case "Cuda (Float)":
+			//			brownian = new BrownianMotionLazyInit(timeDiscretization, 1, numberOfPaths, seed, new RandomVariableOpenCLFactory());
 			brownian = brownianCL;
 			break;
 		}
@@ -147,8 +153,8 @@ public class MonteCarloBlackScholesModelTest {
 
 		System.out.print(String.format("%-25s", testCase));
 		System.out.print("\t calculation time = " + formatterReal2.format((millisEnd - millisStart)/1000.0) + " sec.");
-		System.out.print("\t value Monte-Carlo = " + formatterReal4.format(value));
-		System.out.print("\t value analytic    = " + formatterReal4.format(valueAnalytic));
+		System.out.print("\t value Monte-Carlo = " + formatterReal16.format(value));
+		System.out.print("\t value analytic    = " + formatterReal16.format(valueAnalytic));
 		System.out.println();
 
 		Assert.assertEquals(valueAnalytic, value, 0.005);
