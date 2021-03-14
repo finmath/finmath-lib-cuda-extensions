@@ -481,8 +481,6 @@ public class RandomVariableCuda implements RandomVariable {
 		}
 
 		public DevicePointerReference callFunctionv1s0(final CUfunction function, final long resultSize, final DevicePointerReference argument1) {
-			//			synchronized (lock)
-			{
 				final DevicePointerReference result = getDevicePointer(resultSize);
 				callFunction(function, resultSize, new Pointer[] {
 						Pointer.to(new int[] { (int)resultSize }),
@@ -490,12 +488,9 @@ public class RandomVariableCuda implements RandomVariable {
 						Pointer.to(result.get()) }
 						);
 				return result;
-			}
 		}
 
 		public DevicePointerReference callFunctionv2s0(final CUfunction function, final long resultSize, final DevicePointerReference argument1, final DevicePointerReference argument2) {
-			//			synchronized (lock)
-			{
 				final DevicePointerReference result = getDevicePointer(resultSize);
 				callFunction(function, resultSize, new Pointer[] {
 						Pointer.to(new int[] { (int)resultSize }),
@@ -504,12 +499,9 @@ public class RandomVariableCuda implements RandomVariable {
 						Pointer.to(result.get()) }
 						);
 				return result;
-			}
 		}
 
 		public DevicePointerReference callFunctionv3s0(final CUfunction function, final long resultSize, final DevicePointerReference argument1, final DevicePointerReference argument2, final DevicePointerReference argument3) {
-			//			synchronized (lock)
-			{
 				final DevicePointerReference result = getDevicePointer(resultSize);
 				callFunction(function, resultSize, new Pointer[] {
 						Pointer.to(new int[] { (int)resultSize }),
@@ -519,12 +511,9 @@ public class RandomVariableCuda implements RandomVariable {
 						Pointer.to(result.get()) }
 						);
 				return result;
-			}
 		}
 
 		public DevicePointerReference callFunctionv1s1(final CUfunction function, final long resultSize, final DevicePointerReference argument1, final double value) {
-			//			synchronized (lock)
-			{
 				final DevicePointerReference result = getDevicePointer(resultSize);
 				callFunction(function, resultSize, new Pointer[] {
 						Pointer.to(new int[] { (int)resultSize }),
@@ -533,12 +522,9 @@ public class RandomVariableCuda implements RandomVariable {
 						Pointer.to(result.get()) }
 						);
 				return result;
-			}
 		}
 
 		public DevicePointerReference callFunctionv2s1(final CUfunction function, final long resultSize, final DevicePointerReference argument1, final DevicePointerReference argument2, final double value) {
-			//			synchronized (lock)
-			{
 				final DevicePointerReference result = getDevicePointer(resultSize);
 				callFunction(function, resultSize, new Pointer[] {
 						Pointer.to(new int[] { (int)resultSize }),
@@ -548,7 +534,6 @@ public class RandomVariableCuda implements RandomVariable {
 						Pointer.to(result.get()) }
 						);
 				return result;
-			}
 		}
 
 		public void callFunction(final CUfunction function, final long resultSize, final Pointer[] arguments) {
