@@ -24,6 +24,7 @@ import net.finmath.cuda.montecarlo.RandomVariableCudaFactory;
 import net.finmath.exception.CalculationException;
 import net.finmath.functions.AnalyticFormulas;
 import net.finmath.montecarlo.BrownianMotion;
+import net.finmath.montecarlo.BrownianMotionFromMersenneRandomNumbers;
 import net.finmath.montecarlo.BrownianMotionLazyInit;
 import net.finmath.montecarlo.RandomVariableFromArrayFactory;
 import net.finmath.montecarlo.assetderivativevaluation.models.BlackScholesModel;
@@ -74,13 +75,13 @@ public class MonteCarloBlackScholesModelTest {
 	private final double	optionMaturity = 2.0;
 	private final double	optionStrike = 1.05;
 
-	static final BrownianMotion brownianCPUSinglePrecision = new BrownianMotionLazyInit(new TimeDiscretizationFromArray(0.0 /* initial */, numberOfTimeSteps, deltaT), 1, numberOfPaths, seed,
+	static final BrownianMotion brownianCPUSinglePrecision = new BrownianMotionFromMersenneRandomNumbers(new TimeDiscretizationFromArray(0.0 /* initial */, numberOfTimeSteps, deltaT), 1, numberOfPaths, seed,
 			new RandomVariableFloatFactory());
 
-	static final BrownianMotion brownianCPU = new BrownianMotionLazyInit(new TimeDiscretizationFromArray(0.0 /* initial */, numberOfTimeSteps, deltaT), 1, numberOfPaths, seed,
+	static final BrownianMotion brownianCPU = new BrownianMotionFromMersenneRandomNumbers(new TimeDiscretizationFromArray(0.0 /* initial */, numberOfTimeSteps, deltaT), 1, numberOfPaths, seed,
 			new RandomVariableFromArrayFactory(true));
 
-	static final BrownianMotion brownianCL = new BrownianMotionLazyInit(new TimeDiscretizationFromArray(0.0 /* initial */, numberOfTimeSteps, deltaT), 1, numberOfPaths, seed,
+	static final BrownianMotion brownianCL = new BrownianMotionFromMersenneRandomNumbers(new TimeDiscretizationFromArray(0.0 /* initial */, numberOfTimeSteps, deltaT), 1, numberOfPaths, seed,
 			new RandomVariableCudaFactory());
 
 	static {
@@ -106,20 +107,15 @@ public class MonteCarloBlackScholesModelTest {
 
 	@Before
 	public void setUp() {
-		// Create a time discretizeion
-		final TimeDiscretization timeDiscretization = new TimeDiscretizationFromArray(0.0 /* initial */, numberOfTimeSteps, deltaT);
-
 		switch(testCase) {
 		case "CPU (Float)":
 		default:
 			brownian = brownianCPUSinglePrecision;
 			break;
-		case "SimulationUsingCPU":
-			//			brownian = new BrownianMotionLazyInit(timeDiscretization, 1, numberOfPaths, seed, new RandomVariableFromArrayFactory(true));
+		case "CPU (Double)":
 			brownian = brownianCPU;
 			break;
 		case "Cuda (Float)":
-			//			brownian = new BrownianMotionLazyInit(timeDiscretization, 1, numberOfPaths, seed, new RandomVariableOpenCLFactory());
 			brownian = brownianCL;
 			break;
 		}
