@@ -1,1 +1,1 @@
-packageSearchIndex = [{"l":"All Packages","url":"allpackages-index.html"},{"l":"net.finmath.cpu.montecarlo"},{"l":"net.finmath.cuda.montecarlo"},{"l":"net.finmath.cuda.montecarlo.alternative"},{"l":"net.finmath.jcuda"},{"l":"net.finmath.opencl.montecarlo"}]
+packageSearchIndex = [{"l":"All Packages","url":"allpackages-index.html"},{"m":"net.finmath.cuda","l":"net.finmath.cuda.cpu.montecarlo"},{"m":"net.finmath.cuda","l":"net.finmath.cuda.montecarlo"},{"m":"net.finmath.cuda","l":"net.finmath.cuda.montecarlo.alternative"},{"m":"net.finmath.cuda","l":"net.finmath.jcuda"}]
