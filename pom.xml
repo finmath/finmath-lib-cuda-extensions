@@ -12,7 +12,7 @@
 
 	<groupId>net.finmath</groupId>
 	<artifactId>finmath-lib-cuda-extensions</artifactId>
-	<version>5.1.3</version>
+	<version>5.1.4-SNAPSHOT</version>
 	<packaging>jar</packaging>
 
 	<name>finmath-lib-cuda-extensions</name>
@@ -739,6 +739,6 @@
 		<url>https://github.com/finmath/finmath-lib-cuda-extensions</url>
 		<connection>scm:git:https://github.com/finmath/finmath-lib-cuda-extensions.git</connection>
 		<developerConnection>scm:git:https://github.com/finmath/finmath-lib-cuda-extensions.git</developerConnection>
-		<tag>finmath-lib-cuda-extensions-5.1.3</tag>
+		<tag>HEAD</tag>
 	</scm>
 </project>
