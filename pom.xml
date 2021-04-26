@@ -27,7 +27,7 @@
 		<src.test.java.dir>src/test/java</src.test.java.dir>
 		<!-- libs -->
 		<finmath-lib.version>5.1.3</finmath-lib.version>
-		<commons-io.version>2.6</commons-io.version>
+		<commons-io.version>2.7</commons-io.version>
 		<junit.version>5.6.2</junit.version>
 		<!-- maven plugins -->
 		<maven.compiler-plugin.version>3.8.1</maven.compiler-plugin.version>
